@@ -1,0 +1,31 @@
+# --- Secrets: never commit these -----------------------------------------
+# Google service account keys (used only by tools/sheets_export.py)
+google-service-account.json
+*service-account*.json
+*credentials*.json
+client_secret*.json
+# Environment files
+.env
+.env.*
+!.env.example
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+
+# --- Generated data --------------------------------------------------------
+# stats.json is rebuilt by GitHub Actions on every deploy; the demo files are committed.
+docs/data/stats.json
+.cache/
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# --- Editors / OS ----------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

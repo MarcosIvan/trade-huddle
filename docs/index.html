@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--
+  Content Security Policy: only this site's own script runs, the only API the
+  page can call is Sleeper's public API, and fonts come from Google Fonts.
+  GitHub Pages cannot set HTTP headers, so the policy lives in this meta tag.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' https://api.sleeper.app; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Trade Huddle</title>
+<meta name="description" content="Trade suggestions and a trade analyzer for Sleeper redraft leagues, valuing players by what they have produced and how they are playing right now.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%232446B3'/%3E%3Cpath d='M8 12h13l-3-3M24 20H11l3 3' stroke='white' stroke-width='2.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="wrap">
+  <div id="entry" hidden>
+    <div class="entry">
+      <p class="brand">Trade Huddle</p>
+      <h1>Trades that make both teams better</h1>
+      <p class="lede">Enter your Sleeper username and pick a league. Trade Huddle builds your lineup, suggests up to three trades that raise your starters and your trade partner's starters, and shows whether each deal is balanced.</p>
+      <form id="user-form">
+        <input id="username" type="text" placeholder="Sleeper username" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="40" aria-label="Sleeper username">
+        <button class="btn primary" id="user-submit" type="submit">Find my leagues</button>
+      </form>
+      <p class="hint" id="entry-hint">Use your profile username, not your team name. <button class="btn link" id="demo-btn" type="button">Try the demo league</button></p>
+      <p class="error" id="entry-error" role="alert" hidden></p>
+      <ul class="leagues" id="league-list"></ul>
+    </div>
+  </div>
+
+  <div id="loading" class="loading" role="status">Loading…</div>
+
+  <div id="app" hidden>
+    <header class="top">
+      <div>
+        <p class="brand">Trade Huddle</p>
+        <h1 class="league-name" id="league-name"></h1>
+        <p class="meta" id="league-meta"></p>
+      </div>
+      <div class="controls">
+        <div class="field">
+          <label for="team-select">View as</label>
+          <select id="team-select"></select>
+        </div>
+        <button class="btn self-end" id="change-league" type="button">Change league</button>
+      </div>
+    </header>
+
+    <div id="banners"></div>
+
+    <div class="grid">
+      <section aria-labelledby="team-h">
+        <div class="sec-head">
+          <h2 id="team-h">Your team</h2>
+          <p class="sec-sub">Best lineup by current value</p>
+        </div>
+        <div id="team"></div>
+      </section>
+
+      <section aria-labelledby="sugg-h">
+        <div class="sec-head">
+          <h2 id="sugg-h">Trade ideas</h2>
+          <p class="sec-sub">Only deals that improve both starting lineups</p>
+        </div>
+        <div id="suggestions" class="cards"></div>
+      </section>
+    </div>
+
+    <section class="analyzer" id="analyzer" aria-labelledby="an-h">
+      <div class="sec-head">
+        <h2 id="an-h">Trade analyzer</h2>
+        <p class="sec-sub">Pick players on each side to see the impact and the balance</p>
+      </div>
+      <div class="field narrow">
+        <label for="partner-select">Trade with</label>
+        <select id="partner-select"></select>
+      </div>
+      <div class="an-grid">
+        <div>
+          <span class="label" id="give-label">You send</span>
+          <div class="picklist" id="give-list" role="group" aria-labelledby="give-label"></div>
+        </div>
+        <div>
+          <span class="label" id="get-label">You get</span>
+          <div class="picklist" id="get-list" role="group" aria-labelledby="get-label"></div>
+        </div>
+      </div>
+      <div class="an-result" id="an-result" aria-live="polite"></div>
+    </section>
+
+    <details class="method">
+      <summary>How player value is calculated</summary>
+      <div id="method-body"></div>
+    </details>
+
+    <footer>
+      Independent open-source project, not affiliated with Sleeper. Data comes from Sleeper's public API.
+      <a href="https://github.com/" id="source-link" rel="noopener noreferrer">Source code</a>
+    </footer>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

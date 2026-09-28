@@ -1,0 +1,64 @@
+# Builds the stats file from Sleeper's public API and deploys the site to GitHub Pages.
+#
+# Security notes:
+#   - No secrets are used. Sleeper's API is public.
+#   - The default token is read-only; only the deploy job may publish to Pages.
+#   - Runs on schedule, manual dispatch, and pushes to main. Never on pull
+#     requests from forks, so outside code can't run with deploy permissions.
+#   - Dependabot (.github/dependabot.yml) keeps the actions below up to date.
+name: Build and deploy
+
+on:
+  schedule:
+    # Tuesdays 12:00 UTC (09:00 in Brasilia), after Monday Night Football.
+    - cron: "0 12 * * 2"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build stats file
+        run: python build_data.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
