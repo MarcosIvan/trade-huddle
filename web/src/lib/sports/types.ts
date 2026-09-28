@@ -26,6 +26,21 @@ export interface ModelParams {
   injury: Readonly<Record<string, InjuryRule>>;
   /** Replacement level is the average of this many best players left after filling every lineup. */
   replacementPool: number;
+  /**
+   * How last season's weight fades. 0: linearly (wPrevStart − wPrevDecay × games).
+   * k > 0: by reliability, k / (k + games), so a few games move it less.
+   */
+  prevReliabilityGames: number;
+  /** Count the recent-games average only once more games than the window have been played. */
+  recentAfterWindow: boolean;
+  /** A single game counts at most this multiple of the player's usual output (0 = no cap). */
+  outlierCap: number;
+  /** Share of each game's points replaced by the points its targets and carries usually produce. */
+  usageBlend: number;
+  /** Positions whose expected points can be estimated from targets and carries. */
+  usagePositions: readonly string[];
+  /** Value multiplier for players without a team (they cannot be started); null turns the rule off. */
+  noTeamMult: number | null;
 
   /** Your starters must gain at least this many points per game. */
   minGainMe: number;

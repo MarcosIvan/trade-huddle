@@ -22,6 +22,8 @@ export interface StatsPlayer {
   prev?: { g: number; s: PackedStats };
   /** This season, by week number. */
   w?: Readonly<Record<string, PackedStats>>;
+  /** The team the player played for, by week number. */
+  tw?: Readonly<Record<string, string>>;
 }
 
 /** The league-independent stats file built by the data pipeline. */
@@ -32,6 +34,10 @@ export interface StatsFile {
   weeks: readonly number[];
   keys: readonly string[];
   players: Readonly<Record<string, StatsPlayer>>;
+  /** Stats summed per team and week in team_weeks (targets, carries, ...). */
+  usage_keys?: readonly string[];
+  /** Team totals of usage_keys, by team and week number. */
+  team_weeks?: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>>;
   demo?: boolean;
 }
 
@@ -69,6 +75,8 @@ export interface WeekPoints {
 
 export interface Player extends Valued {
   team: string;
+  /** No NFL team right now (released, retired or unsigned). */
+  noTeam: boolean;
   age: number | undefined;
   inj: string | null;
   status: string | null;

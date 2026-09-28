@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NFL } from "../sports/nfl";
+import { NFL as NFL_LIVE, NFL_PROTOTYPE as NFL } from "../sports/nfl";
 import type { SportConfig } from "../sports/types";
 import { buildModel, modelSlots } from "./build";
 import { bestLineup } from "./lineup";
@@ -22,6 +22,7 @@ function player(id: string, pos: string, value: number, extra: Partial<Player> =
     vorp: 0,
     startable: true,
     team: "",
+    noTeam: false,
     age: undefined,
     inj: null,
     status: null,
@@ -376,5 +377,36 @@ describe("verdict", () => {
     });
     expect(verdict({ vGive: 5, vGet: 10 }, P)).toEqual({ cls: "skew", text: "Clearly favors you" });
     expect(verdict({ vGive: 0, vGet: 0 }, P)).toEqual({ cls: "fair", text: "Balanced" });
+  });
+});
+
+describe("estimate with the calibrated settings", () => {
+  const C = NFL_LIVE.model;
+  const vet = (g: number, extra: Partial<ValueInputs> = {}) =>
+    inputs({ g, seasonAvg: 12, lastAvg: 12, prevG: 16, prevPpg: 10, ...extra });
+
+  it("fades last season by reliability, 3 / (3 + games)", () => {
+    expect(estimate(vet(1), null, C).weights.prev).toBeCloseTo(0.75);
+    expect(estimate(vet(3), null, C).weights.prev).toBeCloseTo(0.5);
+    expect(estimate(vet(9), null, C).weights.prev).toBeCloseTo(0.25);
+  });
+
+  it("counts recent form only after more games than the window", () => {
+    expect(estimate(vet(3), null, C).weights.recent).toBe(0);
+    expect(estimate(vet(4), null, C).weights.recent).toBeGreaterThan(0);
+  });
+
+  it("keeps a quarter of a player's value when he has no team, and never starts him", () => {
+    const signed = estimate(vet(0), null, C);
+    const unsigned = estimate(vet(0, { noTeam: true }), null, C);
+    expect(unsigned.value).toBeCloseTo(signed.value * 0.25);
+    expect(unsigned.startable).toBe(false);
+  });
+
+  it("leaves players without a team alone in the prototype settings", () => {
+    expect(estimate(vet(0, { noTeam: true }), null, P)).toMatchObject({
+      value: 10,
+      startable: true,
+    });
   });
 });

@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "backtest": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot"
   },
   "dependencies": {
     "next": "16.3.6",

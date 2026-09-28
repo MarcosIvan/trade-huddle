@@ -12,6 +12,8 @@ export interface ValueInputs {
   prevG: number;
   prevPpg: number | null;
   inj: string | null;
+  /** No team right now: the player cannot score until someone signs him. */
+  noTeam?: boolean;
 }
 
 export interface Estimate {
@@ -45,12 +47,16 @@ export function estimate(
     }
   } else {
     if (hasPrev) {
-      wPrev =
-        Math.max(params.wPrevMin, params.wPrevStart - params.wPrevDecay * pl.g) *
-        Math.min(1, pl.prevG / params.prevFullGames);
+      const fade =
+        params.prevReliabilityGames > 0
+          ? (params.wPrevStart * params.prevReliabilityGames) / (params.prevReliabilityGames + pl.g)
+          : params.wPrevStart - params.wPrevDecay * pl.g;
+      wPrev = Math.max(params.wPrevMin, fade) * Math.min(1, pl.prevG / params.prevFullGames);
     }
     const rest = 1 - wPrev;
-    wRecent = rest * params.recentShare;
+    // Early on, "this season" and "the last games" are the same games: count them once.
+    const recentCounts = !params.recentAfterWindow || pl.g > params.recentGames;
+    wRecent = recentCounts ? rest * params.recentShare : 0;
     wSeason = rest - wRecent;
     base =
       wPrev * (hasPrev ? prevPpg : 0) + wSeason * (pl.seasonAvg ?? 0) + wRecent * (pl.lastAvg ?? 0);
@@ -67,11 +73,12 @@ export function estimate(
   const raw = (1 - wRepl) * base + wRepl * replVal;
 
   const rule = pl.inj ? params.injury[pl.inj] : undefined;
-  const mult = rule?.mult ?? 1;
+  const noTeam = Boolean(pl.noTeam) && params.noTeamMult !== null;
+  const mult = (rule?.mult ?? 1) * (noTeam ? (params.noTeamMult ?? 1) : 1);
   const k = 1 - wRepl;
   return {
     value: Math.max(0, raw * mult),
-    startable: rule?.startable ?? true,
+    startable: (rule?.startable ?? true) && !noTeam,
     injMult: mult,
     weights: { prev: wPrev * k, season: wSeason * k, recent: wRecent * k, repl: wRepl },
   };

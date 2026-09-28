@@ -95,7 +95,7 @@ export function TeamLineup({
       <div className="table-wrap">
         <table className="table">
           <caption className="visually-hidden">
-            Your best starting lineup, bench and injured reserve
+            Your best starting lineup, bench and unavailable players
           </caption>
           <thead>
             <tr>
@@ -125,9 +125,9 @@ export function TeamLineup({
             {bench.map((p) => (
               <Row key={p.id} slot="BN" player={p} sparkMax={sparkMax} />
             ))}
-            {reserve.length > 0 && <Group label="Injured reserve" />}
+            {reserve.length > 0 && <Group label="Unavailable" />}
             {reserve.map((p) => (
-              <Row key={p.id} slot="IR" player={p} sparkMax={sparkMax} />
+              <Row key={p.id} slot={p.noTeam ? "FA" : "IR"} player={p} sparkMax={sparkMax} />
             ))}
           </tbody>
         </table>

@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { demoLeague, demoStats, reference } from "../../../tests/demo";
-import { NFL } from "../sports/nfl";
+import { NFL_PROTOTYPE as NFL } from "../sports/nfl";
 import {
   bestLineup,
   buildModel,
