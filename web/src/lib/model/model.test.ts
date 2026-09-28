@@ -32,6 +32,7 @@ function player(id: string, pos: string, value: number, extra: Partial<Player> =
     lastAvg: null,
     prevG: 0,
     prevPpg: null,
+    projPpg: null,
     injMult: 1,
     weights: { prev: 0, season: 0, recent: 0, repl: 0 },
     ...extra,
@@ -394,10 +395,11 @@ describe("estimate with the calibrated settings", () => {
   const vet = (g: number, extra: Partial<ValueInputs> = {}) =>
     inputs({ g, seasonAvg: 12, lastAvg: 12, prevG: 16, prevPpg: 10, ...extra });
 
-  it("fades last season by reliability, 3 / (3 + games)", () => {
-    expect(estimate(vet(1), null, C).weights.prev).toBeCloseTo(0.75);
-    expect(estimate(vet(3), null, C).weights.prev).toBeCloseTo(0.5);
-    expect(estimate(vet(9), null, C).weights.prev).toBeCloseTo(0.25);
+  it("fades the prior by reliability, k / (k + games)", () => {
+    const k = C.prevReliabilityGames;
+    for (const g of [1, 3, 9]) {
+      expect(estimate(vet(g), null, C).weights.prev).toBeCloseTo(k / (k + g));
+    }
   });
 
   it("counts recent form only after more games than the window", () => {
@@ -417,5 +419,34 @@ describe("estimate with the calibrated settings", () => {
       value: 10,
       startable: true,
     });
+  });
+});
+
+describe("the preseason outlook", () => {
+  const C = NFL_LIVE.model;
+
+  it("replaces last season as the prior when there is a projection", () => {
+    const e = estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, C);
+    expect(e.value).toBeCloseTo(14 * C.projScale);
+  });
+
+  it("gives rookies a full prior instead of replacement level", () => {
+    const repl = { WR: 8 };
+    const rookie = estimate(inputs({ projPpg: 12 }), repl, C);
+    expect(rookie.weights.repl).toBe(0);
+    expect(rookie.value).toBeCloseTo(12 * C.projScale);
+    // Without a projection the same rookie is valued at replacement level.
+    expect(estimate(inputs({}), repl, C).value).toBe(8);
+  });
+
+  it("blends last season and the projection when projWeight is below 1", () => {
+    const half = { ...C, projWeight: 0.5, projScale: 1 };
+    expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, half).value).toBeCloseTo(
+      12,
+    );
+  });
+
+  it("is ignored by the prototype settings", () => {
+    expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, P).value).toBe(10);
   });
 });

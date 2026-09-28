@@ -94,6 +94,8 @@ export interface Player extends Valued {
   /** Games played last season. */
   prevG: number;
   prevPpg: number | null;
+  /** Sleeper's preseason projection, points per game under the league's scoring. */
+  projPpg: number | null;
   injMult: number;
   weights: ValueWeights;
 }

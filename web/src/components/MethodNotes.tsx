@@ -12,7 +12,7 @@ function exampleWeights(games: number): string {
     null,
     P,
   ).weights;
-  const parts = [`${pct(w.prev)} last season`, `${pct(w.season)} season average`];
+  const parts = [`${pct(w.prev)} outlook`, `${pct(w.season)} season average`];
   if (w.recent > 0) parts.push(`${pct(w.recent)} last ${P.recentGames}`);
   return `after ${games} game${games > 1 ? "s" : ""}: ${parts.join(", ")}`;
 }
@@ -32,9 +32,11 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
         </p>
         <ul>
           <li>
-            <b>Last season ({stats.prev_season})</b>: what the player has already proven. It keeps a
-            lot of weight early and fades as games are played this season, so one big game does not
-            erase a track record.
+            <b>The outlook</b>: Sleeper&apos;s preseason projection for {stats.season}, which
+            already weighs last season, age, role changes and rookies
+            {P.projWeight < 1 && <> (blended with {stats.prev_season})</>}. Players without a
+            projection use last season ({stats.prev_season}). It keeps a lot of weight early and
+            fades as games are played, so one big game does not erase a track record.
           </li>
           <li>
             <b>This season ({stats.season})</b>: every game so far.

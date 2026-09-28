@@ -14,6 +14,8 @@ export interface ValueInputs {
   inj: string | null;
   /** No team right now: the player cannot score until someone signs him. */
   noTeam?: boolean;
+  /** Preseason projection, points per game under the league's scoring. */
+  projPpg?: number | null;
 }
 
 export interface Estimate {
@@ -37,8 +39,21 @@ export function estimate(
   let wSeason = 0;
   let wRecent = 0;
   let base = 0;
-  const hasPrev = pl.prevG > 0;
-  const prevPpg = pl.prevPpg ?? 0;
+  // The prior: last season, blended with the preseason projection when there is one.
+  // A projection counts as a full track record, so rookies are not pulled to replacement.
+  const proj =
+    params.projWeight > 0 && pl.projPpg != null && pl.projPpg > 0
+      ? pl.projPpg * params.projScale
+      : null;
+  const lastSeason = pl.prevG > 0 ? (pl.prevPpg ?? 0) : null;
+  const prevPpg =
+    proj === null
+      ? (lastSeason ?? 0)
+      : lastSeason === null
+        ? proj
+        : (1 - params.projWeight) * lastSeason + params.projWeight * proj;
+  const prevG = proj === null ? pl.prevG : Math.max(pl.prevG, params.prevFullGames);
+  const hasPrev = prevG > 0;
 
   if (pl.g === 0) {
     if (hasPrev) {
@@ -51,7 +66,7 @@ export function estimate(
         params.prevReliabilityGames > 0
           ? (params.wPrevStart * params.prevReliabilityGames) / (params.prevReliabilityGames + pl.g)
           : params.wPrevStart - params.wPrevDecay * pl.g;
-      wPrev = Math.max(params.wPrevMin, fade) * Math.min(1, pl.prevG / params.prevFullGames);
+      wPrev = Math.max(params.wPrevMin, fade) * Math.min(1, prevG / params.prevFullGames);
     }
     const rest = 1 - wPrev;
     // Early on, "this season" and "the last games" are the same games: count them once.
@@ -64,9 +79,9 @@ export function estimate(
 
   // Small sample and no track record: pull toward replacement level.
   let wRepl = 0;
-  if (repl && pl.prevG < params.prevFullGames) {
-    const missing = 1 - pl.prevG / params.prevFullGames;
-    wRepl = (params.shrinkGames * missing) / (params.shrinkGames * missing + pl.g + pl.prevG) || 0;
+  if (repl && prevG < params.prevFullGames) {
+    const missing = 1 - prevG / params.prevFullGames;
+    wRepl = (params.shrinkGames * missing) / (params.shrinkGames * missing + pl.g + prevG) || 0;
     if (pl.g === 0 && !hasPrev) wRepl = 1;
   }
   const replVal = repl ? (repl[pl.pos] ?? 0) : 0;

@@ -74,27 +74,20 @@ const REFERENCES: [string, ModelParams][] = [
 ];
 
 function* grid(): Generator<[string, ModelParams]> {
-  for (const k of [2, 3, 4, 6])
-    for (const start of [0.8, 1])
-      for (const cap of [0])
-        for (const usage of [0.4, 0.5, 0.6, 0.7, 0.85])
-          for (const recentShare of [0.15, 0.3, 0.45])
-            for (const recentAfterWindow of [true, false]) {
-              const params: ModelParams = {
-                ...base,
-                prevReliabilityGames: k,
-                wPrevStart: start,
-                wPrevMin: 0,
-                outlierCap: cap,
-                usageBlend: usage,
-                recentShare,
-                recentAfterWindow,
-              };
-              yield [
-                `k=${k} start=${start} usage=${usage} recent=${recentShare}${recentAfterWindow ? "" : " (recent always)"}`,
-                params,
-              ];
-            }
+  for (const projWeight of [0.75, 0.9, 1])
+    for (const projScale of [1.05, 1.1, 1.15])
+      for (const k of [8, 12, 16, 24])
+        for (const usage of [0.2, 0.3, 0.4]) {
+          if (projWeight === 0 && projScale !== 1) continue;
+          const params: ModelParams = {
+            ...NFL.model,
+            projWeight,
+            projScale,
+            prevReliabilityGames: k,
+            usageBlend: usage,
+          };
+          yield [`proj=${projWeight} scale=${projScale} k=${k} usage=${usage}`, params];
+        }
 }
 
 const f = (x: number, d = 3) => x.toFixed(d);

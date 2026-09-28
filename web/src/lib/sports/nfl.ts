@@ -29,6 +29,8 @@ export const PROTOTYPE_MODEL: ModelParams = {
   usagePositions: ["RB", "WR", "TE"],
   noTeamMult: null,
   benchDepth: {},
+  projWeight: 0,
+  projScale: 1,
 
   minGainMe: 0.3,
   minGainThem: 0.1,
@@ -65,14 +67,18 @@ export const NFL: SportConfig = {
   model: {
     ...PROTOTYPE_MODEL,
     // Calibrated by backtest on 2024 and 2025 (docs/adr/0001-value-model-calibration.md).
-    // Last season's weight is 3 / (3 + games): 75% after 1 game, 50% after 3, 27% after 8.
+    // The prior is Sleeper's preseason projection (5% above it: projections run
+    // conservative), or last season when there is none (docs/adr/0003-market-prior.md).
+    projWeight: 1,
+    projScale: 1.05,
+    // The prior's weight is 8 / (8 + games): 73% after 3 games, 50% after 8.
     wPrevStart: 1,
     wPrevMin: 0,
-    prevReliabilityGames: 3,
+    prevReliabilityGames: 8,
     recentShare: 0.3,
     recentAfterWindow: true,
-    // Half of each game's points come from what its targets and carries usually produce.
-    usageBlend: 0.5,
+    // 30% of each game's points come from what its targets and carries usually produce.
+    usageBlend: 0.3,
     // No team: a quarter of the value (he may sign somewhere) and never started.
     noTeamMult: 0.25,
     // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).

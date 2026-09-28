@@ -57,7 +57,10 @@ function PickList({
 function valueMix(p: Player, prevSeason: string): string {
   const w = p.weights;
   const parts: string[] = [];
-  if (w.prev > 0.005) parts.push(`${pct(w.prev)} ${prevSeason}`);
+  if (w.prev > 0.005) {
+    const outlook = p.projPpg !== null && NFL.model.projWeight > 0;
+    parts.push(`${pct(w.prev)} ${outlook ? "outlook" : prevSeason}`);
+  }
   if (w.season > 0.005) parts.push(`${pct(w.season)} season`);
   if (w.recent > 0.005) parts.push(`${pct(w.recent)} last ${RECENT}`);
   if (w.repl > 0.005) parts.push(`${pct(w.repl)} replacement`);

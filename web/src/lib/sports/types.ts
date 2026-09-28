@@ -47,6 +47,14 @@ export interface ModelParams {
    * replacement level is measured, so deep positions such as RB get scarcer.
    */
   benchDepth: Readonly<Record<string, number>>;
+  /**
+   * Weight of Sleeper's preseason projection in the prior (the rest is last
+   * season). The projection carries what the market knows: age, role changes,
+   * rookies. 0 ignores projections.
+   */
+  projWeight: number;
+  /** Projections run conservative; they are multiplied by this before use. */
+  projScale: number;
 
   /** Your starters must gain at least this many points per game. */
   minGainMe: number;

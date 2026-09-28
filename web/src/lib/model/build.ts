@@ -5,6 +5,9 @@ import type { LeagueSettings, Model, PackedStats, Player, StatsFile } from "./ty
 import { expectedPoints, fitPointsPerOpportunity, USAGE_KEYS, type UsageSample } from "./usage";
 import { estimate } from "./value";
 
+/** Games in an NFL regular season, when the stats file does not say. */
+const DEFAULT_SEASON_GAMES = 17;
+
 /** The league's lineup slots that the model can fill (bench, IR and IDP slots are dropped). */
 export function modelSlots(league: LeagueSettings, sport: SportConfig): string[] {
   return (league.roster_positions ?? []).filter((s) => s in sport.slotEligibility);
@@ -102,6 +105,7 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
       lastAvg: average(played.pts.slice(-params.recentGames)),
       prevG,
       prevPpg: prevG && p.prev ? score(p.prev.s) / prevG : null,
+      projPpg: p.proj ? score(p.proj) / (stats.season_games ?? DEFAULT_SEASON_GAMES) : null,
       value: 0,
       vorp: 0,
       startable: true,
