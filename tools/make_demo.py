@@ -13,7 +13,7 @@ from pathlib import Path
 
 random.seed(7)
 
-OUT = Path(__file__).resolve().parent.parent / "docs" / "data"
+OUT = Path(__file__).resolve().parent.parent / "web" / "public" / "data" / "nfl"
 SEASON, PREV = "2026", "2025"
 WEEKS = [1, 2, 3, 4]
 

@@ -15,6 +15,7 @@ client_secret*.json
 
 # --- Generated data --------------------------------------------------------
 # stats.json is rebuilt by GitHub Actions on every deploy; the demo files are committed.
+# Past seasons for backtests are built into .cache/seasons/.
 docs/data/stats.json
 web/public/data/*/stats.json
 .cache/
@@ -24,6 +25,10 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # --- Editors / OS ----------------------------------------------------------
 .vscode/
