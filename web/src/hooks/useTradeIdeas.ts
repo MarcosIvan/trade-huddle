@@ -20,6 +20,7 @@ export function useTradeIdeas(
   model: Model | null,
   teams: Team[],
   myRid: number | null,
+  tradeScores: ReadonlyMap<string, number>,
 ): TradeIdeasState {
   const [state, setState] = useState<TradeIdeasState>({ ideas: [], searching: false });
   const workerRef = useRef<Worker | null>(null);
@@ -45,6 +46,7 @@ export function useTradeIdeas(
       model,
       rosters: teams.map((t) => ({ rid: t.rid, playerIds: t.playerIds })),
       myRid,
+      tradeScores: [...tradeScores],
     };
     const finish = (response: SearchResponse) => {
       if (response.requestId !== requestRef.current) return; // a newer search replaced this one
@@ -68,7 +70,7 @@ export function useTradeIdeas(
       worker.removeEventListener("message", onMessage);
       worker.removeEventListener("error", onError);
     };
-  }, [model, teams, myRid]);
+  }, [model, teams, myRid, tradeScores]);
 
   return state;
 }

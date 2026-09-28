@@ -1,9 +1,14 @@
 export { buildModel, modelSlots, rosterPlayers } from "./build";
 export { bestLineup, type Lineup } from "./lineup";
 export { replacementLevels } from "./replacement";
+export { playerScores, SCORE_WEIGHTS, type PlayerScore } from "./score";
 export { average, makeScorer } from "./scoring";
 export {
   evaluateTrade,
+  fairnessLevel,
+  isTrueMatch,
+  MATCH,
+  type FairnessLevel,
   freeAgent,
   freeAgentPool,
   type FreeAgentPool,

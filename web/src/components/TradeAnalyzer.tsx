@@ -78,6 +78,7 @@ export function TradeAnalyzer({
   get,
   sparkMax,
   pool,
+  tradeScores,
   onPartner,
   onToggleGive,
   onToggleGet,
@@ -91,6 +92,7 @@ export function TradeAnalyzer({
   get: ReadonlySet<string>;
   sparkMax: number;
   pool: FreeAgentPool;
+  tradeScores: ReadonlyMap<string, number>;
   onPartner: (rid: number) => void;
   onToggleGive: (id: string) => void;
   onToggleGet: (id: string) => void;
@@ -120,8 +122,9 @@ export function TradeAnalyzer({
       model,
       NFL,
       pool,
+      tradeScores,
     );
-  }, [mine, theirs, give, get, model, pool]);
+  }, [mine, theirs, give, get, model, pool, tradeScores]);
 
   const partnerName = partner?.name ?? "Partner";
   const read = !result
@@ -188,8 +191,8 @@ export function TradeAnalyzer({
                 </span>
               </div>
               <div className={`card ${styles.stat}`}>
-                <span className="label">Value balance</span>
-                <BalanceMeter vGive={result.vGive} vGet={result.vGet} />
+                <span className="label">Fairness</span>
+                <BalanceMeter sGive={result.sGive} sGet={result.sGet} fairness={result.fairness} />
                 <span className={styles.small}>{read}</span>
               </div>
             </div>

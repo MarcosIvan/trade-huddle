@@ -52,6 +52,7 @@
 
 .verdict {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 2px 10px;
@@ -70,24 +71,32 @@
   line-height: 1;
   color: var(--surface);
 }
-.fair {
+.green {
   background: var(--good-soft);
   color: var(--good);
 }
-.fair .icon {
+.green .icon {
   background: var(--good);
 }
-.lean {
+.yellow {
   background: var(--warn-soft);
   color: var(--warn);
 }
-.lean .icon {
+.yellow .icon {
   background: var(--warn);
 }
-.skew {
+.red {
   background: var(--bad-soft);
   color: var(--bad);
 }
-.skew .icon {
+.red .icon {
   background: var(--bad);
+}
+
+.favors {
+  font-weight: 600;
+  opacity: 0.9;
+}
+.favors::before {
+  content: "· ";
 }

@@ -121,7 +121,7 @@ export function WeeklyLineup({
     <>
       <div className={styles.strength}>
         <span className={styles.big}>{fmt(lineup.total)}</span>
-        <span className={styles.unit}>projected points from your starters in week {week}</span>
+        <span className={styles.unit}>projected points for week {week}</span>
       </div>
       <div className="table-wrap">
         <table className="table">
