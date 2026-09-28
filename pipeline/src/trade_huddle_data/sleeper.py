@@ -17,6 +17,7 @@ from .transform import Entry, sum_weeks, to_entries
 API = "https://api.sleeper.app/v1"
 STATS_API = "https://api.sleeper.com/stats"
 PROJECTIONS_API = "https://api.sleeper.com/projections"
+SCHEDULE_API = "https://api.sleeper.com/schedule"
 USER_AGENT = "trade-huddle-data-builder"
 #: Sleeper asks for the player directory to be downloaded at most once a day.
 DIRECTORY_MAX_AGE_SECONDS = 24 * 3600
@@ -82,6 +83,21 @@ class SleeperClient:
             ("position[]", pos) for pos in sorted(sport.fantasy_positions)
         ]
         entries = to_entries(self.get(f"{PROJECTIONS_API}/{sport.id}/{season}", params))
+        return {str(e["player_id"]): e.get("stats") or {} for e in entries}
+
+    def schedule(self, sport: SportConfig, season: str) -> list[dict[str, Any]]:
+        """Every regular-season game: week, home, away and status."""
+        data = self.get(f"{SCHEDULE_API}/{sport.id}/regular/{season}")
+        return [g for g in (data or []) if isinstance(g, dict)]
+
+    def week_projections(
+        self, sport: SportConfig, season: str, week: int
+    ) -> dict[str, dict[str, Any]]:
+        """Sleeper's projection for one week (it already accounts for the opponent)."""
+        params = [("season_type", "regular")] + [
+            ("position[]", pos) for pos in sorted(sport.fantasy_positions)
+        ]
+        entries = to_entries(self.get(f"{PROJECTIONS_API}/{sport.id}/{season}/{week}", params))
         return {str(e["player_id"]): e.get("stats") or {} for e in entries}
 
     def season_totals(self, sport: SportConfig, season: str) -> dict[str, dict[str, Any]]:

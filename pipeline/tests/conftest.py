@@ -114,3 +114,25 @@ def prev_totals() -> dict[str, dict[str, Any]]:
 @pytest.fixture
 def projections() -> dict[str, dict[str, Any]]:
     return PROJECTIONS
+
+
+SCHEDULE: list[dict[str, Any]] = [
+    {"week": 1, "home": "AAA", "away": "BBB", "status": "complete"},
+    {"week": 2, "home": "BBB", "away": "AAA", "status": "complete"},
+    {"week": 3, "home": "AAA", "away": "CCC", "status": "pre_game"},
+    {"week": 3, "home": "DDD", "away": "BBB", "status": "pre_game"},
+]
+
+WEEK_PROJECTIONS: dict[int, dict[str, dict[str, Any]]] = {
+    3: {"100": {"rec": 6, "rec_yd": 75, "pts_ppr": 13.5}, "700": {"rec": 1}},
+}
+
+
+@pytest.fixture
+def schedule() -> list[dict[str, Any]]:
+    return SCHEDULE
+
+
+@pytest.fixture
+def week_projections() -> dict[int, dict[str, dict[str, Any]]]:
+    return WEEK_PROJECTIONS

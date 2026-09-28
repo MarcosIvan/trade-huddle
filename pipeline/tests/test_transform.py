@@ -6,7 +6,9 @@ from trade_huddle_data.sports import NFL
 from trade_huddle_data.transform import (
     KeyIndex,
     build_stats,
+    compact_schedule,
     keep_key,
+    lineup_week,
     played,
     player_info,
     season_window,
@@ -213,3 +215,34 @@ class TestProjections:
         assert players["600"]["adp"] == {"half": 140.0}
         assert "700" not in players
         assert "400" not in players
+
+
+class TestSchedule:
+    def test_groups_games_by_week(self, schedule: Any) -> None:
+        assert compact_schedule(schedule) == {
+            "1": [["BBB", "AAA"]],
+            "2": [["AAA", "BBB"]],
+            "3": [["BBB", "DDD"], ["CCC", "AAA"]],
+        }
+
+    def test_lineup_week_is_the_first_week_not_finished(self, schedule: Any) -> None:
+        assert lineup_week(schedule) == 3
+        assert lineup_week([{**g, "status": "complete"} for g in schedule]) is None
+
+    def test_keeps_weekly_projections_for_known_players(
+        self, directory: Any, prev_totals: Any, weeks: Any, schedule: Any, week_projections: Any
+    ) -> None:
+        data = build_stats(
+            sport=NFL,
+            directory=directory,
+            prev_totals=prev_totals,
+            weeks=weeks,
+            season="2026",
+            prev_season="2025",
+            generated_at="2026-09-29T10:00:00+00:00",
+            schedule=schedule,
+            week_projections=week_projections,
+        )
+        assert unpack(data, data["players"]["100"]["wp"]["3"]) == {"rec": 6, "rec_yd": 75}
+        assert "700" not in data["players"]
+        assert data["lineup_week"] == 3
