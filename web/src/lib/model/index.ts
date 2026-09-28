@@ -5,6 +5,8 @@ export { average, makeScorer } from "./scoring";
 export {
   evaluateTrade,
   freeAgent,
+  freeAgentPool,
+  type FreeAgentPool,
   suggestTrades,
   type TeamRoster,
   type TradeIdea,

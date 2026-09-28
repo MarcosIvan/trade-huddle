@@ -5,7 +5,15 @@ import { buildModel, modelSlots } from "./build";
 import { bestLineup } from "./lineup";
 import { replacementLevels } from "./replacement";
 import { average, makeScorer } from "./scoring";
-import { combos, evaluateTrade, pickDiverse, suggestTrades, type TradeIdea } from "./trades";
+import {
+  combos,
+  evaluateTrade,
+  freeAgentPool,
+  pickDiverse,
+  suggestTrades,
+  withFreeAgents,
+  type TradeIdea,
+} from "./trades";
 import type { Model, Player } from "./types";
 import { estimate, type ValueInputs } from "./value";
 import { verdict } from "./verdict";
@@ -449,5 +457,46 @@ describe("the preseason outlook", () => {
 
   it("is ignored by the prototype settings", () => {
     expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, P).value).toBe(10);
+  });
+});
+
+describe("real free agents", () => {
+  const sport: SportConfig = { ...NFL, freeAgentPositions: ["RB", "WR"] };
+  const fa = (id: string, pos: string, value: number, extra: Partial<Player> = {}) =>
+    player(id, pos, value, { team: "AAA", g: 3, ...extra });
+  const players = {
+    wrFree: fa("wrFree", "WR", 9),
+    wrFree2: fa("wrFree2", "WR", 8),
+    rbFree: fa("rbFree", "RB", 6),
+    rostered: fa("rostered", "WR", 15),
+    noTeam: fa("noTeam", "WR", 14, { team: "", noTeam: true }),
+    noEvidence: fa("noEvidence", "WR", 13, { g: 0, prevG: 0, projPpg: null }),
+  };
+  const model: Model = { players, repl: { RB: 5, WR: 4 }, slots: ["RB", "WR"], teams: 2 };
+  const pool = freeAgentPool(model, new Set(["rostered"]));
+
+  it("lists players on no roster who could help, best first", () => {
+    expect(pool.get("WR")?.map((p) => p.id)).toEqual(["wrFree", "wrFree2"]);
+    expect(pool.get("RB")?.map((p) => p.id)).toEqual(["rbFree"]);
+  });
+
+  it("names the free agent to add after sending two for one", () => {
+    const mine = [player("rb", "RB", 12, { vorp: 7 }), player("wr", "WR", 11, { vorp: 7 })];
+    const theirs = [player("star", "RB", 20, { vorp: 15 })];
+    const r = evaluateTrade(mine, theirs, mine, theirs, 23, 20, model, sport, pool);
+    // I lose my WR and my RB, get the star RB, and the best free agent fills the WR slot.
+    expect(r.myPickups.map((p) => p.id)).toEqual(["wrFree"]);
+    expect(r.meAfter).toBe(20 + 9);
+  });
+
+  it("never gives both teams the same free agent", () => {
+    const taken = new Set<string>(["wrFree"]);
+    const { added } = withFreeAgents([player("rb", "RB", 12)], 1, model, sport, pool, taken);
+    expect(added.map((p) => p.id)).toEqual(["wrFree2"]);
+  });
+
+  it("falls back to distinct placeholders without a pool", () => {
+    const { added } = withFreeAgents([], 2, model, sport);
+    expect(new Set(added.map((p) => p.id)).size).toBe(2);
   });
 });

@@ -4,7 +4,7 @@ import { useId, useMemo, useState } from "react";
 import type { LeagueView } from "@/hooks/useLeague";
 import { useTradeIdeas } from "@/hooks/useTradeIdeas";
 import { shortDate } from "@/lib/format";
-import { rosterPlayers, type TradeIdea } from "@/lib/model";
+import { freeAgentPool, rosterPlayers, type TradeIdea } from "@/lib/model";
 import { MethodNotes } from "./MethodNotes";
 import { Notices } from "./Notices";
 import { Section } from "./Section";
@@ -66,6 +66,12 @@ export function LeagueScreen({
     }
     return max;
   }, [model, teams]);
+
+  // Players on no roster in this league: who you could pick up after an uneven trade.
+  const pool = useMemo(
+    () => freeAgentPool(model, new Set(teams.flatMap((t) => t.playerIds))),
+    [model, teams],
+  );
 
   const sortedTeams = useMemo(
     () => [...teams].sort((a, b) => a.name.localeCompare(b.name)),
@@ -157,6 +163,7 @@ export function LeagueScreen({
           give={current.give}
           get={partnerRid === current.partnerRid ? current.get : new Set()}
           sparkMax={sparkMax}
+          pool={pool}
           onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
           onToggleGive={(id) =>
             setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })

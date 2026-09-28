@@ -5,6 +5,7 @@ import {
   bestLineup,
   evaluateTrade,
   rosterPlayers,
+  type FreeAgentPool,
   type Model,
   type Player,
   type StatsFile,
@@ -76,6 +77,7 @@ export function TradeAnalyzer({
   give,
   get,
   sparkMax,
+  pool,
   onPartner,
   onToggleGive,
   onToggleGet,
@@ -88,6 +90,7 @@ export function TradeAnalyzer({
   give: ReadonlySet<string>;
   get: ReadonlySet<string>;
   sparkMax: number;
+  pool: FreeAgentPool;
   onPartner: (rid: number) => void;
   onToggleGive: (id: string) => void;
   onToggleGet: (id: string) => void;
@@ -116,8 +119,9 @@ export function TradeAnalyzer({
       bestLineup(theirs, model.slots, NFL).total,
       model,
       NFL,
+      pool,
     );
-  }, [mine, theirs, give, get, model]);
+  }, [mine, theirs, give, get, model, pool]);
 
   const partnerName = partner?.name ?? "Partner";
   const read = !result
