@@ -1,0 +1,120 @@
+/*
+ * Theme tokens. Light by default; dark follows the system setting, or
+ * data-theme="dark" on <html>. Every text/background pair used by the
+ * components meets WCAG AA (checked by tests/contrast.test.ts). Color is never
+ * the only signal: gains, losses and verdicts also carry a sign, arrow or icon.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --surface-2: #e9edf2;
+  --ink: #0b1726;
+  --ink-2: #334559;
+  --muted: #56677a;
+  --line: #cfd8e2;
+  --line-strong: #0b1726;
+
+  /* Scoreboard band at the top of every page. */
+  --brand: #0b1f3f;
+  --brand-ink: #ffffff;
+  --brand-muted: #b9c6da;
+  --brand-stripe: #f2a900;
+
+  --accent: #0b5cd6;
+  --accent-ink: #ffffff;
+  --accent-soft: #e1ecfd;
+
+  --good: #0f7a3a;
+  --good-soft: #ddf3e5;
+  --warn: #8a5300;
+  --warn-soft: #fcefd2;
+  --bad: #b42318;
+  --bad-soft: #fde4e1;
+
+  --bar-give: #6f7f93;
+  --bar-get: #0b5cd6;
+
+  --qb: #b42346;
+  --rb: #0b6e5a;
+  --wr: #1f5fc4;
+  --te: #954f00;
+  --k: #6b46c1;
+  --def: #4d5b16;
+
+  --display: var(--font-display), "Arial Narrow", sans-serif;
+  --body: var(--font-body), "Segoe UI", system-ui, sans-serif;
+  --radius: 8px;
+  --radius-sm: 5px;
+  --shadow: 0 1px 2px rgb(11 23 38 / 6%), 0 2px 8px rgb(11 23 38 / 5%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a1120;
+    --surface: #111b2e;
+    --surface-2: #18253d;
+    --ink: #eaf0f7;
+    --ink-2: #bcc8d8;
+    --muted: #93a3b8;
+    --line: #26344d;
+    --line-strong: #93a3b8;
+    --brand: #07142a;
+    --brand-ink: #ffffff;
+    --brand-muted: #aebbd0;
+    --brand-stripe: #f2a900;
+    --accent: #6fa8ff;
+    --accent-ink: #0a1120;
+    --accent-soft: #16294a;
+    --good: #4cd08a;
+    --good-soft: #0f2e1e;
+    --warn: #f5c04e;
+    --warn-soft: #33270c;
+    --bad: #ff8a80;
+    --bad-soft: #3a1614;
+    --bar-give: #6c7c92;
+    --bar-get: #6fa8ff;
+    --qb: #ff8fa8;
+    --rb: #4fd6bd;
+    --wr: #8db5ff;
+    --te: #f2b266;
+    --k: #b9a2ff;
+    --def: #c4d17a;
+    --shadow: none;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a1120;
+  --surface: #111b2e;
+  --surface-2: #18253d;
+  --ink: #eaf0f7;
+  --ink-2: #bcc8d8;
+  --muted: #93a3b8;
+  --line: #26344d;
+  --line-strong: #93a3b8;
+  --brand: #07142a;
+  --brand-ink: #ffffff;
+  --brand-muted: #aebbd0;
+  --brand-stripe: #f2a900;
+  --accent: #6fa8ff;
+  --accent-ink: #0a1120;
+  --accent-soft: #16294a;
+  --good: #4cd08a;
+  --good-soft: #0f2e1e;
+  --warn: #f5c04e;
+  --warn-soft: #33270c;
+  --bad: #ff8a80;
+  --bad-soft: #3a1614;
+  --bar-give: #6c7c92;
+  --bar-get: #6fa8ff;
+  --qb: #ff8fa8;
+  --rb: #4fd6bd;
+  --wr: #8db5ff;
+  --te: #f2b266;
+  --k: #b9a2ff;
+  --def: #c4d17a;
+  --shadow: none;
+}

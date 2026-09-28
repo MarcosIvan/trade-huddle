@@ -1,0 +1,86 @@
+.list {
+  display: grid;
+  gap: 16px;
+}
+.card {
+  display: grid;
+  gap: 14px;
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.title {
+  font-size: 22px;
+}
+.tag {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.swap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+.side ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.side li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.playerName {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 600;
+}
+.impacts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 14px;
+}
+.foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.empty {
+  display: grid;
+  gap: 6px;
+}
+.searching {
+  color: var(--ink-2);
+}
+
+@media (max-width: 480px) {
+  .swap {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .foot .openBtn {
+    width: 100%;
+  }
+}

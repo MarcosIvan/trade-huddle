@@ -1,0 +1,93 @@
+.entry {
+  display: grid;
+  gap: 28px;
+  max-width: 720px;
+  padding-top: clamp(8px, 4vw, 40px);
+}
+.hero {
+  display: grid;
+  gap: 14px;
+}
+.title {
+  font-size: clamp(36px, 6vw, 56px);
+  line-height: 1;
+  text-transform: uppercase;
+}
+.lede {
+  font-size: 18px;
+  color: var(--ink-2);
+  max-width: 60ch;
+}
+.panel {
+  display: grid;
+  gap: 18px;
+  padding: clamp(18px, 3vw, 28px);
+  border-top: 4px solid var(--accent);
+}
+.form {
+  display: grid;
+}
+.inline {
+  display: flex;
+  gap: 10px;
+}
+.inline :global(.btn) {
+  flex: none;
+}
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.or::before,
+.or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.demo {
+  margin-top: -4px;
+}
+.alertSlot:empty {
+  display: none;
+}
+.error {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--bad);
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-weight: 600;
+}
+.leagues {
+  display: grid;
+  gap: 10px;
+}
+.leaguesTitle {
+  font-size: 20px;
+}
+.leagues ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.league {
+  width: 100%;
+  justify-content: space-between;
+  white-space: normal;
+  text-align: left;
+}
+
+@media (max-width: 520px) {
+  .inline {
+    flex-direction: column;
+  }
+}

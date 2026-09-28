@@ -16,6 +16,7 @@ client_secret*.json
 # --- Generated data --------------------------------------------------------
 # stats.json is rebuilt by GitHub Actions on every deploy; the demo files are committed.
 docs/data/stats.json
+web/public/data/*/stats.json
 .cache/
 
 # --- Python ----------------------------------------------------------------

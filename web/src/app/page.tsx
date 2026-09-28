@@ -1,3 +1,5 @@
+import { App } from "@/components/App";
+
 export default function Home() {
-  return <main>Trade Huddle</main>;
+  return <App />;
 }

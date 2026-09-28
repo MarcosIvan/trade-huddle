@@ -1,0 +1,99 @@
+.partner {
+  max-width: 360px;
+  margin-bottom: 16px;
+}
+.pickers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.picklist {
+  margin-top: 6px;
+  max-height: 380px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.pick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.pick:last-child {
+  border-bottom: none;
+}
+.pick:hover {
+  background: var(--surface-2);
+}
+.pick input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.on {
+  background: var(--accent-soft);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+.on:hover {
+  background: var(--accent-soft);
+}
+.value {
+  font-weight: 700;
+}
+
+.result {
+  margin-top: 24px;
+  display: grid;
+  gap: 16px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.stat {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.big {
+  font-family: var(--display);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+}
+.small {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.mix {
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.games {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .stats {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .stats > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .pickers,
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
