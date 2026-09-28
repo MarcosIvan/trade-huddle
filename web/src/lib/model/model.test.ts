@@ -201,6 +201,15 @@ describe("replacementLevels", () => {
     expect(repl.WR).toBe(8.5);
   });
 
+  it("keeps bench depth out of the free-agent pool", () => {
+    const pool = [30, 25, 20, 15, 12, 9, 6].map((v, i) => player(`rb${i}`, "RB", v));
+    const deep = { ...NFL, model: { ...NFL.model, benchDepth: { RB: 1 } } };
+    // Two teams start 30 and 25 and keep 20 and 15 on the bench: 12, 9, 6 are left.
+    expect(replacementLevels(pool, ["RB"], 2, deep).RB).toBeCloseTo((12 + 9 + 6) / 3);
+    // Without depth, 20, 15 and 12 would be free agents.
+    expect(replacementLevels(pool, ["RB"], 2, NFL).RB).toBeCloseTo((20 + 15 + 12) / 3);
+  });
+
   it("skips players who cannot be started", () => {
     const pool = [
       player("a", "TE", 10),

@@ -24,6 +24,10 @@ export interface StatsPlayer {
   w?: Readonly<Record<string, PackedStats>>;
   /** The team the player played for, by week number. */
   tw?: Readonly<Record<string, string>>;
+  /** Sleeper's preseason projection: season totals. */
+  proj?: PackedStats;
+  /** Average draft position in Sleeper drafts, by format (half, ppr, std, 2qb). */
+  adp?: Readonly<Record<string, number>>;
 }
 
 /** The league-independent stats file built by the data pipeline. */
@@ -36,6 +40,8 @@ export interface StatsFile {
   players: Readonly<Record<string, StatsPlayer>>;
   /** Stats summed per team and week in team_weeks (targets, carries, ...). */
   usage_keys?: readonly string[];
+  /** Games in a season, for turning projected totals into points per game. */
+  season_games?: number;
   /** Team totals of usage_keys, by team and week number. */
   team_weeks?: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>>;
   demo?: boolean;

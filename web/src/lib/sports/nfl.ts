@@ -28,6 +28,7 @@ export const PROTOTYPE_MODEL: ModelParams = {
   usageBlend: 0,
   usagePositions: ["RB", "WR", "TE"],
   noTeamMult: null,
+  benchDepth: {},
 
   minGainMe: 0.3,
   minGainThem: 0.1,
@@ -74,6 +75,8 @@ export const NFL: SportConfig = {
     usageBlend: 0.5,
     // No team: a quarter of the value (he may sign somewhere) and never started.
     noTeamMult: 0.25,
+    // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).
+    benchDepth: { QB: 0, RB: 1, WR: 1, TE: 0.25 },
   },
 };
 

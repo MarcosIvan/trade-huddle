@@ -41,6 +41,12 @@ export interface ModelParams {
   usagePositions: readonly string[];
   /** Value multiplier for players without a team (they cannot be started); null turns the rule off. */
   noTeamMult: number | null;
+  /**
+   * Extra players per team, by position, that leagues keep on the bench beyond
+   * the starters (for byes and injuries). They are taken out of the pool before
+   * replacement level is measured, so deep positions such as RB get scarcer.
+   */
+  benchDepth: Readonly<Record<string, number>>;
 
   /** Your starters must gain at least this many points per game. */
   minGainMe: number;

@@ -4,8 +4,9 @@ import type { ReplacementLevels, Valued } from "./types";
 
 /**
  * Replacement level per position: every team in the league fills its starting
- * slots (fixed positions first, then flex from narrowest to widest) and the
- * average of the best players left over is what a free agent is worth.
+ * slots (fixed positions first, then flex from narrowest to widest), keeps
+ * some bench depth, and the average of the best players left over is what a
+ * free agent is worth.
  */
 export function replacementLevels(
   players: readonly Valued[],
@@ -30,6 +31,18 @@ export function replacementLevels(
     for (const pl of sorted) {
       if (!need) break;
       if (!taken.has(pl.id) && pl.startable && pl.elig.some((e) => el.includes(e))) {
+        taken.add(pl.id);
+        need--;
+      }
+    }
+  }
+
+  // Bench depth: the best remaining players at each position are kept on benches.
+  for (const pos of sport.positions) {
+    let need = Math.round((sport.model.benchDepth[pos] ?? 0) * teams);
+    for (const pl of byPos[pos] ?? []) {
+      if (!need) break;
+      if (!taken.has(pl.id) && pl.startable) {
         taken.add(pl.id);
         need--;
       }
