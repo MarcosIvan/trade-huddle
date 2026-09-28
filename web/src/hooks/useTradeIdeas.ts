@@ -22,7 +22,8 @@ export function useTradeIdeas(
   myRid: number | null,
   tradeScores: ReadonlyMap<string, number>,
 ): TradeIdeasState {
-  const [state, setState] = useState<TradeIdeasState>({ ideas: [], searching: false });
+  // Starts as "searching" so the empty-state message never flashes before the first search.
+  const [state, setState] = useState<TradeIdeasState>({ ideas: [], searching: model !== null });
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
 
