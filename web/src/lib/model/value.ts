@@ -18,6 +18,24 @@ export interface ValueInputs {
   projPpg?: number | null;
 }
 
+function projection(pl: Pick<ValueInputs, "projPpg">, params: ModelParams): number | null {
+  return params.projWeight > 0 && pl.projPpg != null && pl.projPpg > 0
+    ? pl.projPpg * params.projScale
+    : null;
+}
+
+/** What we believe before this season's games: the projection, last season, or a blend. */
+export function priorPpg(
+  pl: Pick<ValueInputs, "projPpg" | "prevG" | "prevPpg">,
+  params: ModelParams,
+): number | null {
+  const proj = projection(pl, params);
+  const lastSeason = pl.prevG > 0 ? (pl.prevPpg ?? 0) : null;
+  if (proj === null) return lastSeason;
+  if (lastSeason === null) return proj;
+  return (1 - params.projWeight) * lastSeason + params.projWeight * proj;
+}
+
 export interface Estimate {
   value: number;
   startable: boolean;
@@ -41,17 +59,8 @@ export function estimate(
   let base = 0;
   // The prior: last season, blended with the preseason projection when there is one.
   // A projection counts as a full track record, so rookies are not pulled to replacement.
-  const proj =
-    params.projWeight > 0 && pl.projPpg != null && pl.projPpg > 0
-      ? pl.projPpg * params.projScale
-      : null;
-  const lastSeason = pl.prevG > 0 ? (pl.prevPpg ?? 0) : null;
-  const prevPpg =
-    proj === null
-      ? (lastSeason ?? 0)
-      : lastSeason === null
-        ? proj
-        : (1 - params.projWeight) * lastSeason + params.projWeight * proj;
+  const proj = projection(pl, params);
+  const prevPpg = priorPpg(pl, params) ?? 0;
   const prevG = proj === null ? pl.prevG : Math.max(pl.prevG, params.prevFullGames);
   const hasPrev = prevG > 0;
 

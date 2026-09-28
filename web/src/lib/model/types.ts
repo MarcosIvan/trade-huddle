@@ -98,6 +98,8 @@ export interface Player extends Valued {
   projPpg: number | null;
   injMult: number;
   weights: ValueWeights;
+  /** Set when the value accounts for a key teammate expected back from absence. */
+  context: { teammate: string; returnChance: number } | null;
 }
 
 export interface FreeAgent extends Valued {

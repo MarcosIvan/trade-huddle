@@ -55,6 +55,13 @@ export interface ModelParams {
   projWeight: number;
   /** Projections run conservative; they are multiplied by this before use. */
   projScale: number;
+  /**
+   * Chance that an absent key teammate plays the rest of the season (0 turns
+   * the teammate adjustment off). Longer absences (IR, PUP) get 60% of it.
+   */
+  teammateReturn: number;
+  /** A teammate counts as key when his prior is at least this many points per game. */
+  keyTeammatePpg: number;
 
   /** Your starters must gain at least this many points per game. */
   minGainMe: number;

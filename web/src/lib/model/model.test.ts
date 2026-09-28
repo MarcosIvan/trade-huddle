@@ -35,6 +35,7 @@ function player(id: string, pos: string, value: number, extra: Partial<Player> =
     projPpg: null,
     injMult: 1,
     weights: { prev: 0, season: 0, recent: 0, repl: 0 },
+    context: null,
     ...extra,
   };
 }

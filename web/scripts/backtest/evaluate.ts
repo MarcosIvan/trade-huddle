@@ -17,14 +17,25 @@ export interface Metrics {
   n: number;
 }
 
-/** The stats file as it looked after week N. */
+/**
+ * The stats file as it looked after week N. Past seasons have no injury
+ * report, so one is emulated: a player who missed week N but plays again
+ * later is listed as "Questionable" (expected back; no value penalty).
+ */
 export function truncate(stats: StatsFile, week: number): StatsFile {
   const players = Object.fromEntries(
     Object.entries(stats.players).map(([id, p]) => {
       const w = p.w
         ? Object.fromEntries(Object.entries(p.w).filter(([wk]) => Number(wk) <= week))
         : undefined;
-      return [id, { ...p, w }];
+      const tw = p.tw
+        ? Object.fromEntries(Object.entries(p.tw).filter(([wk]) => Number(wk) <= week))
+        : undefined;
+      const playedBefore = Object.keys(w ?? {}).length > 0;
+      const missedLast = !p.w?.[week];
+      const returnsLater = Object.keys(p.w ?? {}).some((wk) => Number(wk) > week);
+      const i = playedBefore && missedLast && returnsLater ? "Questionable" : p.i;
+      return [id, { ...p, w, tw, i }];
     }),
   );
   return { ...stats, weeks: stats.weeks.filter((w) => w <= week), players };

@@ -73,21 +73,15 @@ const REFERENCES: [string, ModelParams][] = [
   ["Only this season", { ...base, wPrevStart: 0, wPrevDecay: 0, wPrevMin: 0, recentShare: 0 }],
 ];
 
+/** A small neighborhood around the live settings: a regression check for model changes. */
 function* grid(): Generator<[string, ModelParams]> {
-  for (const projWeight of [0.75, 0.9, 1])
-    for (const projScale of [1.05, 1.1, 1.15])
-      for (const k of [8, 12, 16, 24])
-        for (const usage of [0.2, 0.3, 0.4]) {
-          if (projWeight === 0 && projScale !== 1) continue;
-          const params: ModelParams = {
-            ...NFL.model,
-            projWeight,
-            projScale,
-            prevReliabilityGames: k,
-            usageBlend: usage,
-          };
-          yield [`proj=${projWeight} scale=${projScale} k=${k} usage=${usage}`, params];
-        }
+  const live = NFL.model;
+  for (const k of [live.prevReliabilityGames - 2, live.prevReliabilityGames + 4])
+    yield [`prior reliability ${k}`, { ...live, prevReliabilityGames: k }];
+  for (const usage of [live.usageBlend - 0.1, live.usageBlend + 0.1])
+    yield [`usage ${usage.toFixed(2)}`, { ...live, usageBlend: usage }];
+  for (const scale of [1, 1.1]) yield [`projection scale ${scale}`, { ...live, projScale: scale }];
+  yield ["teammate return 0.5", { ...live, teammateReturn: 0.5 }];
 }
 
 const f = (x: number, d = 3) => x.toFixed(d);

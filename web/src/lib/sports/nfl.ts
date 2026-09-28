@@ -31,6 +31,8 @@ export const PROTOTYPE_MODEL: ModelParams = {
   benchDepth: {},
   projWeight: 0,
   projScale: 1,
+  teammateReturn: 0,
+  keyTeammatePpg: 10,
 
   minGainMe: 0.3,
   minGainThem: 0.1,
