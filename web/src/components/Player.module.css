@@ -1,0 +1,84 @@
+.name {
+  font-weight: 600;
+  line-height: 1.25;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.pos {
+  --c: var(--ink-2);
+  display: inline-block;
+  min-width: 34px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 14%, var(--surface));
+}
+.QB {
+  --c: var(--qb);
+}
+.RB {
+  --c: var(--rb);
+}
+.WR {
+  --c: var(--wr);
+}
+.TE {
+  --c: var(--te);
+}
+.K {
+  --c: var(--k);
+}
+.DEF {
+  --c: var(--def);
+}
+
+.injury {
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+.injurySoft {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.delta {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.arrow {
+  font-size: 0.75em;
+  margin-right: 2px;
+}
+
+.spark {
+  display: block;
+  overflow: visible;
+}
+.hit {
+  fill: var(--bar-get);
+}
+.miss {
+  fill: var(--muted);
+}

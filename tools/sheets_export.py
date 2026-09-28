@@ -12,7 +12,7 @@ credentials ever live in the repository:
     GOOGLE_CREDENTIALS_FILE  path to your service account JSON
                              (default: google-service-account.json, git-ignored)
 
-    pip install -r requirements-sheets.txt
+    pip install -r tools/requirements-sheets.txt
     python tools/sheets_export.py
 
 Two tabs are created or replaced:
@@ -51,10 +51,8 @@ FANTASY_POSITIONS = {"QB", "RB", "WR", "TE", "K", "DEF"}
 RECENT_GAMES = 3
 FREE_AGENT_LABEL = "Free agent"
 
-GOOGLE_SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
+# Least privilege: the sheet is opened by ID, so no Google Drive access is needed.
+GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 SLEEPER_API = "https://api.sleeper.app/v1"
 SLEEPER_STATS_API = "https://api.sleeper.com/stats/nfl"

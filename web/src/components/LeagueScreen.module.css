@@ -1,0 +1,76 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin-bottom: 24px;
+}
+.titleBlock {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: clamp(32px, 5vw, 48px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+.demoTag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.meta {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+.controls :global(.field) {
+  min-width: 220px;
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  align-items: start;
+  gap: 40px;
+}
+.analyzer {
+  margin-top: 48px;
+}
+
+@media (max-width: 960px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .controls,
+  .controls :global(.field),
+  .buttons {
+    width: 100%;
+  }
+  .buttons :global(.btn) {
+    flex: 1;
+  }
+}

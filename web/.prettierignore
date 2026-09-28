@@ -1,0 +1,5 @@
+.next/
+out/
+public/data/
+tests/reference/demo-reference.json
+package-lock.json
