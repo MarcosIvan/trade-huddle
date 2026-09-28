@@ -87,3 +87,30 @@
     width: 100%;
   }
 }
+
+.starred {
+  border-color: var(--brand-stripe);
+  box-shadow:
+    0 0 0 1px var(--brand-stripe),
+    var(--shadow);
+}
+.star {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.star span {
+  color: var(--brand-stripe);
+}
+.plus {
+  background: var(--good-soft);
+  color: var(--good);
+  font-weight: 600;
+}

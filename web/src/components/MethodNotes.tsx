@@ -1,5 +1,5 @@
 import { fmt, pct } from "@/lib/format";
-import { estimate, type ReplacementLevels, type StatsFile } from "@/lib/model";
+import { estimate, SCORE_WEIGHTS, type ReplacementLevels, type StatsFile } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import styles from "./MethodNotes.module.css";
 
@@ -77,10 +77,23 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
           agency.
         </p>
         <p>
-          <b>Trade ideas</b>: the site tests every 1- or 2-player swap with every team. It only
-          shows deals that raise your starters by at least {fmt(P.minGainMe)} pts/game, also raise
-          the partner&apos;s starters, and keep both sides close in value (the smaller side is worth
-          at least {pct(P.minFairness)} of the larger one).
+          <b>Player Score</b> (0 to 100, next to each name): {SCORE_WEIGHTS.level} points for trade
+          value, {SCORE_WEIGHTS.form} for recent form above replacement, and{" "}
+          {SCORE_WEIGHTS.importance} for how important he is to his fantasy team, plus up to{" "}
+          {SCORE_WEIGHTS.usage} bonus points for the three main weapons of each NFL offense (share
+          of the team&apos;s targets and carries; the first gets the most).
+        </p>
+        <p>
+          <b>Fairness</b> compares the Player Scores on each side without the team-importance part,
+          so a player is worth the same to both teams: green is a fair trade (90% or more), yellow
+          could work but does not look fair (75% to 89%), red means don&apos;t do it.
+        </p>
+        <p>
+          <b>Trade ideas</b>: the site tests every 1- or 2-player swap with every team and keeps
+          deals that raise your starters by at least {fmt(P.minGainMe)} pts/game, also raise the
+          partner&apos;s starters, and are never red. The three shown are the best matches: fair
+          first, then both lineups gaining alike, then sending players from your bench. A star marks
+          a true match (fair, and both teams gain comparably), or the closest one when none is.
         </p>
       </div>
     </details>

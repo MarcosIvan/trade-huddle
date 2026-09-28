@@ -2,6 +2,7 @@ import { fmt, signed, trend } from "@/lib/format";
 import type { Player } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import styles from "./Player.module.css";
+import { usePlayerScore } from "./ScoreContext";
 
 const KNOWN_POSITIONS = new Set(NFL.positions);
 
@@ -25,11 +26,31 @@ export function InjuryBadge({ status }: { status: string | null }) {
   );
 }
 
+/** Player Score (0-100) as a small pill; the tooltip explains the parts. */
+export function ScorePill({ id }: { id: string }) {
+  const s = usePlayerScore(id);
+  if (!s) return null;
+  const parts = [
+    `level ${Math.round(s.level * 50)}/50`,
+    `form ${Math.round(s.form * 30)}/30`,
+    `team importance ${Math.round(s.importance * 20)}/20`,
+  ];
+  if (s.usage > 0)
+    parts.push(`usage bonus +${s.usage.toFixed(1)} (weapon #${s.usageRank} of his offense)`);
+  return (
+    <span className={styles.score} title={`Player Score: ${parts.join(", ")}`}>
+      <span className="visually-hidden">Player Score </span>
+      {Math.round(s.total)}
+    </span>
+  );
+}
+
 export function PlayerCell({ player }: { player: Player }) {
   return (
     <div>
       <div className={styles.name}>
         {player.name}
+        <ScorePill id={player.id} />
         <InjuryBadge status={player.inj} />
       </div>
       <div className={styles.sub}>

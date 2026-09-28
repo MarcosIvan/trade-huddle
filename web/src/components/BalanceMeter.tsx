@@ -1,43 +1,59 @@
 import { fmt } from "@/lib/format";
-import { verdict, type Verdict } from "@/lib/model";
-import { NFL } from "@/lib/sports/nfl";
+import { fairnessLevel, type FairnessLevel } from "@/lib/model";
 import styles from "./BalanceMeter.module.css";
 
-const ICONS: Record<Verdict["cls"], string> = { fair: "✓", lean: "!", skew: "✕" };
+const LABELS: Record<FairnessLevel, { icon: string; text: string }> = {
+  green: { icon: "✓", text: "Fair trade" },
+  yellow: { icon: "!", text: "Could work, but not quite fair" },
+  red: { icon: "✕", text: "Don't do it" },
+};
 
-export function VerdictBadge({ result }: { result: Verdict }) {
+/** Traffic-light fairness: icon, words and percentage, so it reads without color. */
+export function FairnessBadge({ fairness, favors }: { fairness: number; favors: string | null }) {
+  const level = fairnessLevel(fairness);
+  const { icon, text } = LABELS[level];
   return (
-    <span className={`${styles.verdict} ${styles[result.cls]}`}>
+    <span className={`${styles.verdict} ${styles[level]}`}>
       <span className={styles.icon} aria-hidden="true">
-        {ICONS[result.cls]}
+        {icon}
       </span>
-      {result.text}
+      {text} · {Math.round(fairness * 100)}%
+      {level !== "green" && favors && <span className={styles.favors}>favors {favors}</span>}
     </span>
   );
 }
 
-/** Value above replacement sent versus received, with the balance verdict. */
-export function BalanceMeter({ vGive, vGet }: { vGive: number; vGet: number }) {
-  const total = vGive + vGet || 1;
-  const give = Math.max(2, (vGive / total) * 100);
-  const get = Math.max(2, (vGet / total) * 100);
+/** Player Score sent versus received (without team importance), with the fairness badge. */
+export function BalanceMeter({
+  sGive,
+  sGet,
+  fairness,
+}: {
+  sGive: number;
+  sGet: number;
+  fairness: number;
+}) {
+  const total = sGive + sGet || 1;
+  const give = Math.max(2, (sGive / total) * 100);
+  const get = Math.max(2, (sGet / total) * 100);
+  const favors = sGet > sGive ? "you" : sGive > sGet ? "them" : null;
   return (
     <div className={styles.meter}>
-      <VerdictBadge result={verdict({ vGive, vGet }, NFL.model)} />
+      <FairnessBadge fairness={fairness} favors={favors} />
       <div
         className={styles.bar}
         role="img"
-        aria-label={`Value above replacement: you send ${fmt(vGive)}, you get ${fmt(vGet)}`}
+        aria-label={`Trade score: you send ${fmt(sGive, 0)}, you get ${fmt(sGet, 0)}`}
       >
         <span className={styles.give} style={{ flexGrow: give }} />
         <span className={styles.get} style={{ flexGrow: get }} />
       </div>
       <div className={styles.row} aria-hidden="true">
         <span>
-          You send <b>{fmt(vGive)}</b>
+          Score you send <b>{fmt(sGive, 0)}</b>
         </span>
         <span>
-          You get <b>{fmt(vGet)}</b>
+          Score you get <b>{fmt(sGet, 0)}</b>
         </span>
       </div>
     </div>

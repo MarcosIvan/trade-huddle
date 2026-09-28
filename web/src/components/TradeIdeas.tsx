@@ -1,6 +1,12 @@
 import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
-import type { Player, TradeIdea, TradeResult, Valued } from "@/lib/model";
+import {
+  isTrueMatch,
+  type Player,
+  type TradeIdea,
+  type TradeResult,
+  type Valued,
+} from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
 import { Delta, PosBadge, TRADE_VALUE_HINT } from "./Player";
 import styles from "./TradeIdeas.module.css";
@@ -54,18 +60,29 @@ function IdeaCard({
   idea,
   index,
   partner,
+  star,
   onOpen,
 }: {
   idea: TradeIdea;
   index: number;
   partner: Team | undefined;
+  /** "match" for a true match, "closest" for the nearest one when none is. */
+  star: "match" | "closest" | null;
   onOpen: () => void;
 }) {
   const name = partner?.name ?? "Unknown team";
   const notes = rosterNotes(idea, name);
   const titleId = `idea-${index}-title`;
   return (
-    <article className={`card ${styles.card}`} aria-labelledby={titleId}>
+    <article
+      className={`card ${styles.card} ${star ? styles.starred : ""}`}
+      aria-labelledby={titleId}
+    >
+      {star && (
+        <p className={styles.star}>
+          <span aria-hidden="true">★</span> {star === "match" ? "Best match" : "Closest to a match"}
+        </p>
+      )}
       <div className={styles.head}>
         <h3 className={styles.title} id={titleId}>
           With {name}
@@ -87,8 +104,11 @@ function IdeaCard({
           Their starters <Delta value={idea.dThem} />
         </span>
         <span className="hint">pts per game</span>
+        {idea.benchShare >= 0.25 && (
+          <span className={`${styles.chip} ${styles.plus}`}>Sends a player from your bench</span>
+        )}
       </div>
-      <BalanceMeter vGive={idea.vGive} vGet={idea.vGet} />
+      <BalanceMeter sGive={idea.sGive} sGet={idea.sGet} fairness={idea.fairness} />
       {notes.length > 0 && <p className="hint">{notes.join(" ")}</p>}
       <div className={styles.foot}>
         <button type="button" className={`btn ${styles.openBtn}`} onClick={onOpen}>
@@ -117,7 +137,7 @@ export function TradeIdeas({
       ) : ideas.length === 0 ? (
         <div className={`card ${styles.empty}`}>
           <p>
-            <b>No trade improves both teams right now.</b>
+            <b>No fair trade improves both teams right now.</b>
           </p>
           <p className="hint">
             This happens when rosters don&apos;t complement each other, or when your starters are
@@ -129,6 +149,9 @@ export function TradeIdeas({
         <div className={styles.list}>
           {ideas.map((idea, i) => (
             <IdeaCard
+              star={
+                isTrueMatch(idea) ? "match" : i === 0 && !ideas.some(isTrueMatch) ? "closest" : null
+              }
               key={`${idea.partner}-${idea.give.map((p) => p.id).join()}-${idea.get.map((p) => p.id).join()}`}
               idea={idea}
               index={i}

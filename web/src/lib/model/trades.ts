@@ -21,6 +21,15 @@ export interface TradeResult {
   vGet: number;
   /** Smaller side / larger side, in value above replacement (1 = even). */
   fairness: number;
+  /** Trade score you send and get (Player Score without team importance), when scores are known. */
+  sGive: number;
+  sGet: number;
+  /** Share of the trade score you send that comes from players outside your starting lineup. */
+  benchShare: number;
+  /** How evenly the trade helps both lineups: smaller gain / larger gain (0 when either loses). */
+  balance: number;
+  /** Overall match quality, 0 to 1: fairness, balance of gains and bench players sent. */
+  match: number;
   /** Free agents you would add to fill your open spots. */
   myPickups: Valued[];
   /** Free agents the partner would add to fill theirs. */
@@ -108,6 +117,20 @@ export function withFreeAgents(
 
 const sumVorp = (list: readonly Valued[]) => list.reduce((s, p) => s + p.vorp, 0);
 
+/** Weights of the match quality: fairness first, then both teams gaining alike, then bench players sent. */
+export const MATCH = { fairness: 0.5, balance: 0.3, bench: 0.2 } as const;
+
+export type FairnessLevel = "green" | "yellow" | "red";
+
+/** Green: fair trade. Yellow: could work but does not look fair. Red: don't do it. */
+export function fairnessLevel(fairness: number): FairnessLevel {
+  return fairness >= 0.9 ? "green" : fairness >= 0.75 ? "yellow" : "red";
+}
+
+/** A true match: fair (green) and both lineups gain comparably. */
+export const isTrueMatch = (r: TradeResult) =>
+  fairnessLevel(r.fairness) === "green" && r.balance >= 0.5;
+
 /** Lineup impact for both teams and value balance of one trade. */
 export function evaluateTrade(
   myList: readonly Player[],
@@ -119,6 +142,7 @@ export function evaluateTrade(
   model: Model,
   sport: SportConfig,
   pool?: FreeAgentPool,
+  scores?: ReadonlyMap<string, number>,
 ): TradeResult {
   const giveIds = new Set(give.map((p) => p.id));
   const getIds = new Set(get.map((p) => p.id));
@@ -145,8 +169,23 @@ export function evaluateTrade(
   const themAfter = bestLineup(theirs, model.slots, sport).total;
   const vGive = sumVorp(give);
   const vGet = sumVorp(get);
-  const hi = Math.max(vGive, vGet);
-  const lo = Math.min(vGive, vGet);
+  // Fairness compares trade scores when known, otherwise value above replacement.
+  const sumScore = (list: readonly Player[]) =>
+    list.reduce((s, p) => s + (scores?.get(p.id) ?? 0), 0);
+  const sGive = scores ? sumScore(give) : vGive;
+  const sGet = scores ? sumScore(get) : vGet;
+  const hi = Math.max(sGive, sGet);
+  const lo = Math.min(sGive, sGet);
+  const fairness = hi > 0 ? lo / hi : 1;
+  const dMe = meAfter - myBase;
+  const dThem = themAfter - theirBase;
+  const balance = dMe > 0 && dThem > 0 ? Math.min(dMe, dThem) / Math.max(dMe, dThem) : 0;
+  let benchShare = 0;
+  if (scores && sGive > 0) {
+    const starters = bestLineup(myList, model.slots, sport).used;
+    benchShare = sumScore(give.filter((p) => !starters.has(p.id))) / sGive;
+  }
+  const match = MATCH.fairness * fairness + MATCH.balance * balance + MATCH.bench * benchShare;
   return {
     give,
     get,
@@ -154,13 +193,18 @@ export function evaluateTrade(
     theirOpen,
     meBefore: myBase,
     meAfter,
-    dMe: meAfter - myBase,
+    dMe,
     themBefore: theirBase,
     themAfter,
-    dThem: themAfter - theirBase,
+    dThem,
     vGive,
     vGet,
-    fairness: hi > 0 ? lo / hi : 1,
+    fairness,
+    sGive,
+    sGet,
+    benchShare,
+    balance,
+    match,
     myPickups,
     theirPickups,
   };
@@ -193,6 +237,7 @@ export function suggestTrades(
   model: Model,
   sport: SportConfig,
   pool?: FreeAgentPool,
+  scores?: ReadonlyMap<string, number>,
 ): TradeIdea[] {
   const p = sport.model;
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
@@ -207,7 +252,18 @@ export function suggestTrades(
     const theirCombos = combos(tradeCandidates(theirs, sport));
     for (const give of myCombos) {
       for (const get of theirCombos) {
-        const r = evaluateTrade(mine, theirs, give, get, myBase, theirBase, model, sport, pool);
+        const r = evaluateTrade(
+          mine,
+          theirs,
+          give,
+          get,
+          myBase,
+          theirBase,
+          model,
+          sport,
+          pool,
+          scores,
+        );
         if (r.dMe < p.minGainMe || r.dThem < p.minGainThem || r.fairness < p.minFairness) {
           continue;
         }
@@ -220,7 +276,13 @@ export function suggestTrades(
       }
     }
   }
-  found.sort((a, b) => b.score - a.score);
+  if (scores) {
+    // With scores, rank by match quality: green first, then the best match, then your gain.
+    const green = (r: TradeIdea) => (fairnessLevel(r.fairness) === "green" ? 1 : 0);
+    found.sort((a, b) => green(b) - green(a) || b.match - a.match || b.dMe - a.dMe);
+  } else {
+    found.sort((a, b) => b.score - a.score);
+  }
   return pickDiverse(found, p.maxSuggestions);
 }
 
