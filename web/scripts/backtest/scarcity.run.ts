@@ -122,6 +122,7 @@ it("scarcity", { timeout: 60 * 60 * 1000 }, () => {
   results.sort((a, b) => b.rho - a.rho);
 
   const none = evaluate({});
+  const live = evaluate({ ...NFL.model.benchDepth });
   const lines = [
     "# Scarcity calibration against ADP",
     "",
@@ -130,6 +131,7 @@ it("scarcity", { timeout: 60 * 60 * 1000 }, () => {
     "",
     "| Bench depth per team | Correlation | Top-36 mix (ours, per season) |",
     "|---|---|---|",
+    `| live settings: ${POSITIONS.map((p) => `${p} ${live.depth[p] ?? 0}`).join(", ")} | ${live.rho.toFixed(3)} | ${live.fits.map(([s, f]) => `${s}: ${fmtMix(f.mix)}`).join("; ")} |`,
     `| none | ${none.rho.toFixed(3)} | ${none.fits.map(([s, f]) => `${s}: ${fmtMix(f.mix)}`).join("; ")} |`,
     ...results
       .slice(0, 10)

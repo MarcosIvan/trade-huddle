@@ -75,14 +75,14 @@ export const NFL: SportConfig = {
     wPrevStart: 1,
     wPrevMin: 0,
     prevReliabilityGames: 8,
-    recentShare: 0.3,
+    recentShare: 0.25,
     recentAfterWindow: true,
     // 30% of each game's points come from what its targets and carries usually produce.
     usageBlend: 0.3,
     // No team: a quarter of the value (he may sign somewhere) and never started.
     noTeamMult: 0.25,
     // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).
-    benchDepth: { QB: 0, RB: 1, WR: 1, TE: 0.25 },
+    benchDepth: { QB: 0, RB: 1.5, WR: 1, TE: 0.25 },
   },
 };
 

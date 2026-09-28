@@ -71,3 +71,22 @@ players without a track record start. The rest-of-season backtest
   the free agent to pick up after an uneven trade).
 - Superflex and 2-QB leagues get quarterback scarcity from their extra
   quarterback slots, not from bench depth.
+
+## Addendum (2026-09-28): more running-back depth, less recent weight
+
+After using the site, the product owner found trade values too spread out
+between similar running backs (a 23-point back worth 2.6 times a 14-point
+back) and running backs undervalued against receivers of similar output
+(a starting back below a team's second receiver).
+
+Trade value is points above replacement, so a higher running-back
+replacement level stretches the ratios between backs. Raising running-back
+bench depth from 1 to 1.5 per team lowers that level (7.9 to 5.7 points per
+game in the real league), which raises every back by the same amount and
+narrows the ratios (2.6 to 2.1 in that example). The recent-games share of
+the current-season weight also goes from 0.30 to 0.25.
+
+This is a deliberate product choice that leans further toward running backs
+than the draft market: correlation with ADP is 0.845 (0.876 before), and
+running backs fill 22 to 24 of our top 36 against 12 to 17 in ADP. The
+rest-of-season backtest is unchanged (MAE 3.34, rank correlation 0.47).
