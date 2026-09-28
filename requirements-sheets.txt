@@ -1,4 +1,4 @@
 # Only for the optional Google Sheets export (tools/sheets_export.py).
 -r requirements.txt
-gspread>=6.1,<7
+gspread>=6.2.1,<7
 google-auth>=2.30,<3
