@@ -1,4 +1,5 @@
 import styles from "./SiteChrome.module.css";
+import { ThemeToggle } from "./ThemeToggle";
 
 /** Link to the source code, set at build time (e.g. https://github.com/<owner>/<repo>). */
 const REPO_URL = process.env.NEXT_PUBLIC_REPO_URL ?? "";
@@ -36,7 +37,10 @@ export function SiteHeader({ onHome }: { onHome?: () => void }) {
           <Logo />
           Trade Huddle
         </a>
-        <span className={styles.tagline}>Fair trades for Sleeper leagues</span>
+        <div className={styles.right}>
+          <span className={styles.tagline}>Fair trades for Sleeper leagues</span>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

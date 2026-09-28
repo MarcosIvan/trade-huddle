@@ -32,6 +32,11 @@
   fill: none;
   stroke: var(--brand);
 }
+.right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
 .tagline {
   font-size: 14px;
   color: var(--brand-muted);
@@ -51,6 +56,11 @@
 }
 
 @media (max-width: 560px) {
+  .right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
   .tagline {
     display: none;
   }
