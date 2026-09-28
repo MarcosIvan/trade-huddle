@@ -1,0 +1,32 @@
+.matchup {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.opp {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.good {
+  background: var(--good-soft);
+  color: var(--good);
+}
+.tough {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+.neutral {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}

@@ -73,28 +73,15 @@ const REFERENCES: [string, ModelParams][] = [
   ["Only this season", { ...base, wPrevStart: 0, wPrevDecay: 0, wPrevMin: 0, recentShare: 0 }],
 ];
 
+/** A small neighborhood around the live settings: a regression check for model changes. */
 function* grid(): Generator<[string, ModelParams]> {
-  for (const k of [2, 3, 4, 6])
-    for (const start of [0.8, 1])
-      for (const cap of [0])
-        for (const usage of [0.4, 0.5, 0.6, 0.7, 0.85])
-          for (const recentShare of [0.15, 0.3, 0.45])
-            for (const recentAfterWindow of [true, false]) {
-              const params: ModelParams = {
-                ...base,
-                prevReliabilityGames: k,
-                wPrevStart: start,
-                wPrevMin: 0,
-                outlierCap: cap,
-                usageBlend: usage,
-                recentShare,
-                recentAfterWindow,
-              };
-              yield [
-                `k=${k} start=${start} usage=${usage} recent=${recentShare}${recentAfterWindow ? "" : " (recent always)"}`,
-                params,
-              ];
-            }
+  const live = NFL.model;
+  for (const k of [live.prevReliabilityGames - 2, live.prevReliabilityGames + 4])
+    yield [`prior reliability ${k}`, { ...live, prevReliabilityGames: k }];
+  for (const usage of [live.usageBlend - 0.1, live.usageBlend + 0.1])
+    yield [`usage ${usage.toFixed(2)}`, { ...live, usageBlend: usage }];
+  for (const scale of [1, 1.1]) yield [`projection scale ${scale}`, { ...live, projScale: scale }];
+  yield ["teammate return 0.5", { ...live, teammateReturn: 0.5 }];
 }
 
 const f = (x: number, d = 3) => x.toFixed(d);

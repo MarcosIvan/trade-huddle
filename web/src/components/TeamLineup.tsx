@@ -3,7 +3,7 @@ import { fmt, ordinal } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import { bestLineup, rosterPlayers, type Model, type Player } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
-import { FormValue, PlayerCell, Sparkline } from "./Player";
+import { FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT } from "./Player";
 import styles from "./TeamLineup.module.css";
 
 const RECENT = NFL.model.recentGames;
@@ -27,7 +27,8 @@ function Row({
           <td>
             <PlayerCell player={player} />
           </td>
-          <td className={`num ${styles.value}`}>{fmt(player.value)}</td>
+          <td className={`num ${styles.value}`}>{fmt(player.vorp)}</td>
+          <td className={`num ${styles.ppg}`}>{fmt(player.value)}</td>
           <td className="num">
             <FormValue player={player} />
           </td>
@@ -36,7 +37,7 @@ function Row({
           </td>
         </>
       ) : (
-        <td className={styles.empty} colSpan={4}>
+        <td className={styles.empty} colSpan={5}>
           No eligible player
         </td>
       )}
@@ -47,7 +48,7 @@ function Row({
 function Group({ label }: { label: string }) {
   return (
     <tr className={styles.group}>
-      <td colSpan={5}>{label}</td>
+      <td colSpan={6}>{label}</td>
     </tr>
   );
 }
@@ -101,8 +102,11 @@ export function TeamLineup({
             <tr>
               <th scope="col">Slot</th>
               <th scope="col">Player</th>
-              <th scope="col" className="num" title="Expected points per game">
-                Value
+              <th scope="col" className="num" title={TRADE_VALUE_HINT}>
+                Trade value
+              </th>
+              <th scope="col" className={`num ${styles.ppg}`} title="Expected points per game">
+                Pts/g
               </th>
               <th scope="col" className="num" title={`Average of the last ${RECENT} games`}>
                 Last {RECENT}

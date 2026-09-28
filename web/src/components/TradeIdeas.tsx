@@ -1,20 +1,29 @@
 import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
-import type { Player, TradeIdea, TradeResult } from "@/lib/model";
+import type { Player, TradeIdea, TradeResult, Valued } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, PosBadge } from "./Player";
+import { Delta, PosBadge, TRADE_VALUE_HINT } from "./Player";
 import styles from "./TradeIdeas.module.css";
 
+function pickupText(p: Valued): string {
+  if ("freeAgent" in p) return `a free agent at ${p.pos}`;
+  const team = "team" in p && typeof p.team === "string" && p.team ? `, ${p.team}` : "";
+  return `${p.name} (${p.pos}${team}, ${fmt(p.value)} pts/g)`;
+}
+
+const list = (players: Valued[]) => players.map(pickupText).join(" and ");
+
+/** What happens to roster spots in an uneven trade, naming the free agents to add. */
 export function rosterNotes(r: TradeResult, partnerName: string): string[] {
   const notes: string[] = [];
   if (r.myOpen) {
     notes.push(
-      `You open ${r.myOpen} roster spot(s); the numbers assume you add the best available free agent.`,
+      `You open ${r.myOpen} roster spot${r.myOpen > 1 ? "s" : ""}. Best free agent to add: ${list(r.myPickups)}. The numbers include him.`,
     );
   }
   if (r.theirOpen) {
     notes.push(
-      `You get more players than you send, so you'll need to drop ${r.theirOpen}. ${partnerName} opens ${r.theirOpen} spot(s) for a free agent.`,
+      `You get more players than you send, so you'll need to drop ${r.theirOpen}. ${partnerName} opens ${r.theirOpen} spot${r.theirOpen > 1 ? "s" : ""} and would add ${list(r.theirPickups)}.`,
     );
   }
   return notes;
@@ -31,8 +40,8 @@ function Side({ label, players }: { label: string; players: Player[] }) {
               <PosBadge pos={p.pos} />
               {p.name}
             </span>
-            <span className="muted" title="Expected points per game">
-              {fmt(p.value)}
+            <span className={styles.tradeValue} title={TRADE_VALUE_HINT}>
+              {fmt(p.vorp)}
             </span>
           </li>
         ))}

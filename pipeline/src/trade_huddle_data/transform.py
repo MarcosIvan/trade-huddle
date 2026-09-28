@@ -137,6 +137,24 @@ def team_usage(entries: Iterable[Entry], usage_keys: tuple[str, ...]) -> dict[st
     return {team: [round(v, 2) for v in row] for team, row in sorted(totals.items())}
 
 
+def compact_schedule(games: Iterable[Mapping[str, Any]]) -> dict[str, list[list[str]]]:
+    """Games by week as [away, home] pairs."""
+    weeks: dict[str, list[list[str]]] = {}
+    for g in games:
+        week, home, away = g.get("week"), g.get("home"), g.get("away")
+        if isinstance(week, int) and isinstance(home, str) and isinstance(away, str):
+            weeks.setdefault(str(week), []).append([away, home])
+    return {w: sorted(weeks[w]) for w in sorted(weeks, key=int)}
+
+
+def lineup_week(games: Iterable[Mapping[str, Any]]) -> int | None:
+    """The first week with a game not played yet: the week to set a lineup for."""
+    open_weeks = [
+        g["week"] for g in games if isinstance(g.get("week"), int) and g.get("status") != "complete"
+    ]
+    return min(open_weeks) if open_weeks else None
+
+
 def build_stats(
     *,
     sport: SportConfig,
@@ -146,12 +164,16 @@ def build_stats(
     season: str,
     prev_season: str,
     generated_at: str,
+    projections: Mapping[str, Stats] | None = None,
+    schedule: Iterable[Mapping[str, Any]] | None = None,
+    week_projections: Mapping[int, Mapping[str, Stats]] | None = None,
     current: bool = True,
 ) -> dict[str, Any]:
     """
     The compact stats file.
 
-    ``current=False`` builds a past season for backtests: players keep only
+    ``projections`` are Sleeper's preseason projections for ``season`` (stat
+    totals plus ADP). ``current=False`` builds a past season for backtests: players keep only
     what is true for that season (no current team, age or injury), and the
     team shown is the last team they played for that season.
     """
@@ -199,8 +221,38 @@ def build_stats(
             for team, row in team_usage(entries, sport.usage_keys).items():
                 team_weeks.setdefault(team, {})[str(week)] = row
 
+    # Preseason projections (season totals) and draft-market ADP, for players
+    # already in the file or drafted in a typical league.
+    for pid, stats in (projections or {}).items():
+        adp = {
+            short: round(float(stats[key]), 1)
+            for key, short in sport.adp_keys
+            if is_number(stats.get(key)) and 0 < stats[key] <= sport.adp_max
+        }
+        if pid not in players and not adp:
+            continue
+        if not is_fantasy_player(directory.get(pid) or {}, sport):
+            continue
+        player = ensure(pid)
+        packed = keys.pack(stats)
+        if packed:
+            player["proj"] = packed
+        if adp:
+            player["adp"] = adp
+
+    # Weekly projections (they already account for the opponent), by week.
+    for week, by_player in sorted((week_projections or {}).items()):
+        for pid, stats in by_player.items():
+            if pid in players:
+                packed = keys.pack(stats)
+                if packed:
+                    players[pid].setdefault("wp", {})[str(week)] = packed
+
+    schedule_games = list(schedule or [])
     kept = {
-        pid: p for pid, p in players.items() if p["fp"] and (p.get("prev") or p.get("w") or p["t"])
+        pid: p
+        for pid, p in players.items()
+        if p["fp"] and (p.get("prev") or p.get("w") or p["t"] or p.get("adp"))
     }
     return {
         "generated_at": generated_at,
@@ -210,6 +262,9 @@ def build_stats(
         "weeks": weeks_with_games,
         "keys": keys.keys,
         "usage_keys": list(sport.usage_keys),
+        "season_games": sport.season_games,
+        "schedule": compact_schedule(schedule_games),
+        "lineup_week": lineup_week(schedule_games) if current else None,
         "team_weeks": dict(sorted(team_weeks.items())),
         "players": kept,
     }

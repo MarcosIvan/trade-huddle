@@ -18,7 +18,7 @@ import requests
 
 from .sleeper import SleeperClient
 from .sports import SPORTS, SportConfig
-from .transform import build_stats, season_window
+from .transform import build_stats, lineup_week, season_window
 
 
 def build_current(client: SleeperClient, sport: SportConfig, now: datetime) -> dict[str, Any]:
@@ -28,6 +28,14 @@ def build_current(client: SleeperClient, sport: SportConfig, now: datetime) -> d
     directory = client.directory(sport)
     print(f"Last season ({prev_season})...")
     prev_totals = client.season_totals(sport, prev_season)
+    print(f"Projections ({season})...")
+    projections = client.projections(sport, season)
+    schedule = client.schedule(sport, season)
+    week_projections = {}
+    next_week = lineup_week(schedule)
+    if next_week:
+        print(f"Week {next_week} projections...")
+        week_projections[next_week] = client.week_projections(sport, season, next_week)
     weeks = {}
     for week in range(1, last_week + 1):
         print(f"Week {week}...")
@@ -40,6 +48,9 @@ def build_current(client: SleeperClient, sport: SportConfig, now: datetime) -> d
         season=season,
         prev_season=prev_season,
         generated_at=now.isoformat(timespec="seconds"),
+        projections=projections,
+        schedule=schedule,
+        week_projections=week_projections,
     )
 
 
@@ -51,10 +62,14 @@ def build_past(
     print(f"Past season {season} (history: {prev_season})")
     directory = client.directory(sport)
     prev_totals = client.season_totals(sport, prev_season)
+    projections = client.projections(sport, season)
+    schedule = client.schedule(sport, season)
     weeks = {}
+    week_projections = {}
     for week in range(1, sport.regular_season_weeks + 1):
         print(f"Week {week}...")
         weeks[week] = client.week(sport, season, week)
+        week_projections[week] = client.week_projections(sport, season, week)
     return build_stats(
         sport=sport,
         directory=directory,
@@ -63,6 +78,9 @@ def build_past(
         season=season,
         prev_season=prev_season,
         generated_at=now.isoformat(timespec="seconds"),
+        projections=projections,
+        schedule=schedule,
+        week_projections=week_projections,
         current=False,
     )
 

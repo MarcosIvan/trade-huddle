@@ -3,7 +3,17 @@ import { replacementLevels } from "./replacement";
 import { average, makeScorer } from "./scoring";
 import type { LeagueSettings, Model, PackedStats, Player, StatsFile } from "./types";
 import { expectedPoints, fitPointsPerOpportunity, USAGE_KEYS, type UsageSample } from "./usage";
-import { estimate } from "./value";
+import {
+  absentKeyTeammate,
+  formWithReturn,
+  lastTeamWeek,
+  OFFENSE,
+  type RosterView,
+} from "./teammates";
+import { estimate, priorPpg } from "./value";
+
+/** Games in an NFL regular season, when the stats file does not say. */
+const DEFAULT_SEASON_GAMES = 17;
 
 /** The league's lineup slots that the model can fill (bench, IR and IDP slots are dropped). */
 export function modelSlots(league: LeagueSettings, sport: SportConfig): string[] {
@@ -33,6 +43,7 @@ function median(values: readonly number[]): number | null {
 interface Games {
   pts: number[];
   opportunities: number[][];
+  weeks: number[];
 }
 
 /**
@@ -75,13 +86,14 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
     const pos = supported(p.p) ? p.p : elig[0];
     if (!pos) continue;
 
-    const played: Games = { pts: [], opportunities: [] };
+    const played: Games = { pts: [], opportunities: [], weeks: [] };
     const weekly = stats.weeks.map((week) => {
       const packed = p.w?.[week];
       if (!packed) return { week, pts: null };
       const pts = score(packed);
       played.pts.push(pts);
       played.opportunities.push(readOpportunities(packed));
+      played.weeks.push(week);
       return { week, pts };
     });
     games.set(id, played);
@@ -102,11 +114,13 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
       lastAvg: average(played.pts.slice(-params.recentGames)),
       prevG,
       prevPpg: prevG && p.prev ? score(p.prev.s) / prevG : null,
+      projPpg: p.proj ? score(p.proj) / (stats.season_games ?? DEFAULT_SEASON_GAMES) : null,
       value: 0,
       vorp: 0,
       startable: true,
       injMult: 1,
       weights: { prev: 0, season: 0, recent: 0, repl: 0 },
+      context: null,
     };
   }
 
@@ -126,20 +140,54 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
     }
   }
 
+  // Offense by current team, to find key teammates who are out.
+  const views = new Map<string, RosterView>();
+  const byTeam = new Map<string, RosterView[]>();
+  if (params.teammateReturn > 0) {
+    for (const pl of list) {
+      if (!(OFFENSE as readonly string[]).includes(pl.pos) || !pl.team) continue;
+      const view: RosterView = {
+        id: pl.id,
+        name: pl.name,
+        pos: pl.pos,
+        team: pl.team,
+        inj: pl.inj,
+        prior: priorPpg(pl, params),
+        teamByWeek: stats.players[pl.id]?.tw ?? {},
+      };
+      views.set(pl.id, view);
+      byTeam.set(pl.team, [...(byTeam.get(pl.team) ?? []), view]);
+    }
+  }
+  const lastWeekByTeam = lastTeamWeek([...views.values()]);
+
   // Inputs to the value estimate: form averages built from adjusted games.
   const inputs = new Map(
     list.map((pl) => {
-      const form = formGames(
-        games.get(pl.id)!,
-        pl.prevPpg,
-        pl.prevG,
-        coefByPos.get(pl.pos) ?? null,
-        params,
-      );
-      return [
-        pl.id,
-        { ...pl, seasonAvg: average(form), lastAvg: average(form.slice(-params.recentGames)) },
-      ] as const;
+      const g = games.get(pl.id)!;
+      const form = formGames(g, pl.prevPpg, pl.prevG, coefByPos.get(pl.pos) ?? null, params);
+      let seasonAvg = average(form);
+      let lastAvg = average(form.slice(-params.recentGames));
+      const view = views.get(pl.id);
+      const absent = view
+        ? absentKeyTeammate(view, byTeam.get(pl.team) ?? [], lastWeekByTeam.get(pl.team), params)
+        : null;
+      if (absent && form.length) {
+        const mixed = formWithReturn(
+          form,
+          g.weeks,
+          views.get(absent.id)!,
+          pl.team,
+          absent.returnChance,
+          priorPpg(pl, params),
+          params.recentGames,
+        );
+        if (mixed) {
+          ({ seasonAvg, lastAvg } = mixed);
+          pl.context = { teammate: absent.name, returnChance: absent.returnChance };
+        }
+      }
+      return [pl.id, { ...pl, seasonAvg, lastAvg }] as const;
     }),
   );
 

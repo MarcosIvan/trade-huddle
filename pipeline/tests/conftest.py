@@ -43,6 +43,8 @@ DIRECTORY: dict[str, dict[str, Any]] = {
         "fantasy_positions": ["WR"],
         "status": "Inactive",
     },
+    "600": {"full_name": "Zeta Rookie", "position": "WR", "fantasy_positions": ["WR"]},
+    "700": {"full_name": "Eta Deep", "position": "WR", "fantasy_positions": ["WR"]},
     "AAA": {"position": "DEF", "fantasy_positions": ["DEF"], "team": "AAA", "last_name": "Defense"},
 }
 
@@ -76,6 +78,24 @@ PREV_TOTALS: dict[str, dict[str, Any]] = {
 }
 
 
+PROJECTIONS: dict[str, dict[str, Any]] = {
+    "100": {
+        "rec": 90,
+        "rec_yd": 1100,
+        "gp": 18,
+        "adp_half_ppr": 12.4,
+        "adp_ppr": 10.1,
+        "adp_2qb": 999,
+    },
+    # Drafted but not in the file yet (no team listing, no games): added for the ADP.
+    "600": {"rec": 40, "adp_half_ppr": 140.0},
+    # Neither in the file nor drafted: ignored.
+    "700": {"rec": 1},
+    # Not fantasy-relevant: ignored even with an ADP.
+    "400": {"rec": 1, "adp_half_ppr": 200.0},
+}
+
+
 @pytest.fixture
 def directory() -> dict[str, dict[str, Any]]:
     return DIRECTORY
@@ -89,3 +109,30 @@ def weeks() -> dict[int, list[dict[str, Any]]]:
 @pytest.fixture
 def prev_totals() -> dict[str, dict[str, Any]]:
     return PREV_TOTALS
+
+
+@pytest.fixture
+def projections() -> dict[str, dict[str, Any]]:
+    return PROJECTIONS
+
+
+SCHEDULE: list[dict[str, Any]] = [
+    {"week": 1, "home": "AAA", "away": "BBB", "status": "complete"},
+    {"week": 2, "home": "BBB", "away": "AAA", "status": "complete"},
+    {"week": 3, "home": "AAA", "away": "CCC", "status": "pre_game"},
+    {"week": 3, "home": "DDD", "away": "BBB", "status": "pre_game"},
+]
+
+WEEK_PROJECTIONS: dict[int, dict[str, dict[str, Any]]] = {
+    3: {"100": {"rec": 6, "rec_yd": 75, "pts_ppr": 13.5}, "700": {"rec": 1}},
+}
+
+
+@pytest.fixture
+def schedule() -> list[dict[str, Any]]:
+    return SCHEDULE
+
+
+@pytest.fixture
+def week_projections() -> dict[int, dict[str, dict[str, Any]]]:
+    return WEEK_PROJECTIONS

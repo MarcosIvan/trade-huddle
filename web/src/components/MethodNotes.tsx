@@ -12,7 +12,7 @@ function exampleWeights(games: number): string {
     null,
     P,
   ).weights;
-  const parts = [`${pct(w.prev)} last season`, `${pct(w.season)} season average`];
+  const parts = [`${pct(w.prev)} outlook`, `${pct(w.season)} season average`];
   if (w.recent > 0) parts.push(`${pct(w.recent)} last ${P.recentGames}`);
   return `after ${games} game${games > 1 ? "s" : ""}: ${parts.join(", ")}`;
 }
@@ -28,13 +28,15 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
           game.
         </p>
         <p>
-          <b>Value</b> is the expected points per game from here on. It blends three things:
+          <b>Pts/g</b> is the expected points per game from here on. It blends three things:
         </p>
         <ul>
           <li>
-            <b>Last season ({stats.prev_season})</b>: what the player has already proven. It keeps a
-            lot of weight early and fades as games are played this season, so one big game does not
-            erase a track record.
+            <b>The outlook</b>: Sleeper&apos;s preseason projection for {stats.season}, which
+            already weighs last season, age, role changes and rookies
+            {P.projWeight < 1 && <> (blended with {stats.prev_season})</>}. Players without a
+            projection use last season ({stats.prev_season}). It keeps a lot of weight early and
+            fades as games are played, so one big game does not erase a track record.
           </li>
           <li>
             <b>This season ({stats.season})</b>: every game so far.
@@ -68,9 +70,11 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
           {NFL.positions.map((pos) => `${pos} ${fmt(repl[pos])}`).join(", ")} pts/game.
         </p>
         <p>
-          <b>Above replacement</b> is value minus the replacement level of the player&apos;s
-          position. It is the currency used for trade balance: a 14-point RB is worth more than a
-          9-point kicker because the RB is much harder to replace.
+          <b>Trade value</b> is Pts/g minus the replacement level of the player&apos;s position: how
+          much better he is than what you could pick up for free. It is the main number on this site
+          and the currency of trade balance. Scarce positions are worth more, so a 23-point running
+          back is worth far more than a 24-point quarterback when good quarterbacks sit in free
+          agency.
         </p>
         <p>
           <b>Trade ideas</b>: the site tests every 1- or 2-player swap with every team. It only

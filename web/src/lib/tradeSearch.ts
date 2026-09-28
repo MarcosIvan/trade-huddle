@@ -2,7 +2,14 @@
  * The trade search, in a form that can cross a Web Worker boundary: players
  * travel as IDs and are looked up again on the other side.
  */
-import { rosterPlayers, suggestTrades, type Model, type Player, type TradeIdea } from "./model";
+import {
+  freeAgentPool,
+  rosterPlayers,
+  suggestTrades,
+  type Model,
+  type Player,
+  type TradeIdea,
+} from "./model";
 import { NFL } from "./sports/nfl";
 
 export interface SearchRequest {
@@ -21,7 +28,8 @@ export interface SearchResponse {
 
 export function runSearch({ requestId, model, rosters, myRid }: SearchRequest): SearchResponse {
   const teams = rosters.map((r) => ({ rid: r.rid, players: rosterPlayers(model, r.playerIds) }));
-  const ideas = suggestTrades(myRid, teams, model, NFL);
+  const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
+  const ideas = suggestTrades(myRid, teams, model, NFL, pool);
   return {
     requestId,
     ideas: ideas.map((r) => ({ ...r, give: r.give.map((p) => p.id), get: r.get.map((p) => p.id) })),

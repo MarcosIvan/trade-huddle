@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import { BASE_PATH } from "@/lib/stats";
 import "@/styles/globals.css";
 
 // Barlow and Barlow Condensed (SIL Open Font License), served from this site:
@@ -45,7 +46,17 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${body.variable} ${display.variable}`}>
+    <html
+      lang="en"
+      className={`${body.variable} ${display.variable}`}
+      // theme-init.js may set data-theme before React loads.
+      suppressHydrationWarning
+    >
+      <head>
+        {/* Blocking on purpose: applies the saved theme before the first paint. */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src={`${BASE_PATH}/theme-init.js`} />
+      </head>
       <body>{children}</body>
     </html>
   );

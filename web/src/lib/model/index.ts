@@ -5,6 +5,8 @@ export { average, makeScorer } from "./scoring";
 export {
   evaluateTrade,
   freeAgent,
+  freeAgentPool,
+  type FreeAgentPool,
   suggestTrades,
   type TeamRoster,
   type TradeIdea,
@@ -13,3 +15,4 @@ export {
 export type * from "./types";
 export { estimate, type Estimate } from "./value";
 export { verdict, type Verdict } from "./verdict";
+export { weeklyOutlook, type WeeklyOutlook } from "./weekly";

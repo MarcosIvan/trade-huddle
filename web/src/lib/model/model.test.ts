@@ -5,7 +5,15 @@ import { buildModel, modelSlots } from "./build";
 import { bestLineup } from "./lineup";
 import { replacementLevels } from "./replacement";
 import { average, makeScorer } from "./scoring";
-import { combos, evaluateTrade, pickDiverse, suggestTrades, type TradeIdea } from "./trades";
+import {
+  combos,
+  evaluateTrade,
+  freeAgentPool,
+  pickDiverse,
+  suggestTrades,
+  withFreeAgents,
+  type TradeIdea,
+} from "./trades";
 import type { Model, Player } from "./types";
 import { estimate, type ValueInputs } from "./value";
 import { verdict } from "./verdict";
@@ -32,8 +40,10 @@ function player(id: string, pos: string, value: number, extra: Partial<Player> =
     lastAvg: null,
     prevG: 0,
     prevPpg: null,
+    projPpg: null,
     injMult: 1,
     weights: { prev: 0, season: 0, recent: 0, repl: 0 },
+    context: null,
     ...extra,
   };
 }
@@ -199,6 +209,15 @@ describe("replacementLevels", () => {
     const repl = replacementLevels(pool, ["RB", "WR", "FLEX"], 1, NFL);
     expect(repl.RB).toBe(10);
     expect(repl.WR).toBe(8.5);
+  });
+
+  it("keeps bench depth out of the free-agent pool", () => {
+    const pool = [30, 25, 20, 15, 12, 9, 6].map((v, i) => player(`rb${i}`, "RB", v));
+    const deep = { ...NFL, model: { ...NFL.model, benchDepth: { RB: 1 } } };
+    // Two teams start 30 and 25 and keep 20 and 15 on the bench: 12, 9, 6 are left.
+    expect(replacementLevels(pool, ["RB"], 2, deep).RB).toBeCloseTo((12 + 9 + 6) / 3);
+    // Without depth, 20, 15 and 12 would be free agents.
+    expect(replacementLevels(pool, ["RB"], 2, NFL).RB).toBeCloseTo((20 + 15 + 12) / 3);
   });
 
   it("skips players who cannot be started", () => {
@@ -385,10 +404,11 @@ describe("estimate with the calibrated settings", () => {
   const vet = (g: number, extra: Partial<ValueInputs> = {}) =>
     inputs({ g, seasonAvg: 12, lastAvg: 12, prevG: 16, prevPpg: 10, ...extra });
 
-  it("fades last season by reliability, 3 / (3 + games)", () => {
-    expect(estimate(vet(1), null, C).weights.prev).toBeCloseTo(0.75);
-    expect(estimate(vet(3), null, C).weights.prev).toBeCloseTo(0.5);
-    expect(estimate(vet(9), null, C).weights.prev).toBeCloseTo(0.25);
+  it("fades the prior by reliability, k / (k + games)", () => {
+    const k = C.prevReliabilityGames;
+    for (const g of [1, 3, 9]) {
+      expect(estimate(vet(g), null, C).weights.prev).toBeCloseTo(k / (k + g));
+    }
   });
 
   it("counts recent form only after more games than the window", () => {
@@ -408,5 +428,75 @@ describe("estimate with the calibrated settings", () => {
       value: 10,
       startable: true,
     });
+  });
+});
+
+describe("the preseason outlook", () => {
+  const C = NFL_LIVE.model;
+
+  it("replaces last season as the prior when there is a projection", () => {
+    const e = estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, C);
+    expect(e.value).toBeCloseTo(14 * C.projScale);
+  });
+
+  it("gives rookies a full prior instead of replacement level", () => {
+    const repl = { WR: 8 };
+    const rookie = estimate(inputs({ projPpg: 12 }), repl, C);
+    expect(rookie.weights.repl).toBe(0);
+    expect(rookie.value).toBeCloseTo(12 * C.projScale);
+    // Without a projection the same rookie is valued at replacement level.
+    expect(estimate(inputs({}), repl, C).value).toBe(8);
+  });
+
+  it("blends last season and the projection when projWeight is below 1", () => {
+    const half = { ...C, projWeight: 0.5, projScale: 1 };
+    expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, half).value).toBeCloseTo(
+      12,
+    );
+  });
+
+  it("is ignored by the prototype settings", () => {
+    expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, P).value).toBe(10);
+  });
+});
+
+describe("real free agents", () => {
+  const sport: SportConfig = { ...NFL, freeAgentPositions: ["RB", "WR"] };
+  const fa = (id: string, pos: string, value: number, extra: Partial<Player> = {}) =>
+    player(id, pos, value, { team: "AAA", g: 3, ...extra });
+  const players = {
+    wrFree: fa("wrFree", "WR", 9),
+    wrFree2: fa("wrFree2", "WR", 8),
+    rbFree: fa("rbFree", "RB", 6),
+    rostered: fa("rostered", "WR", 15),
+    noTeam: fa("noTeam", "WR", 14, { team: "", noTeam: true }),
+    noEvidence: fa("noEvidence", "WR", 13, { g: 0, prevG: 0, projPpg: null }),
+  };
+  const model: Model = { players, repl: { RB: 5, WR: 4 }, slots: ["RB", "WR"], teams: 2 };
+  const pool = freeAgentPool(model, new Set(["rostered"]));
+
+  it("lists players on no roster who could help, best first", () => {
+    expect(pool.get("WR")?.map((p) => p.id)).toEqual(["wrFree", "wrFree2"]);
+    expect(pool.get("RB")?.map((p) => p.id)).toEqual(["rbFree"]);
+  });
+
+  it("names the free agent to add after sending two for one", () => {
+    const mine = [player("rb", "RB", 12, { vorp: 7 }), player("wr", "WR", 11, { vorp: 7 })];
+    const theirs = [player("star", "RB", 20, { vorp: 15 })];
+    const r = evaluateTrade(mine, theirs, mine, theirs, 23, 20, model, sport, pool);
+    // I lose my WR and my RB, get the star RB, and the best free agent fills the WR slot.
+    expect(r.myPickups.map((p) => p.id)).toEqual(["wrFree"]);
+    expect(r.meAfter).toBe(20 + 9);
+  });
+
+  it("never gives both teams the same free agent", () => {
+    const taken = new Set<string>(["wrFree"]);
+    const { added } = withFreeAgents([player("rb", "RB", 12)], 1, model, sport, pool, taken);
+    expect(added.map((p) => p.id)).toEqual(["wrFree2"]);
+  });
+
+  it("falls back to distinct placeholders without a pool", () => {
+    const { added } = withFreeAgents([], 2, model, sport);
+    expect(new Set(added.map((p) => p.id)).size).toBe(2);
   });
 });

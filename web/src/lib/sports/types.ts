@@ -41,6 +41,38 @@ export interface ModelParams {
   usagePositions: readonly string[];
   /** Value multiplier for players without a team (they cannot be started); null turns the rule off. */
   noTeamMult: number | null;
+  /**
+   * Extra players per team, by position, that leagues keep on the bench beyond
+   * the starters (for byes and injuries). They are taken out of the pool before
+   * replacement level is measured, so deep positions such as RB get scarcer.
+   */
+  benchDepth: Readonly<Record<string, number>>;
+  /**
+   * Weight of Sleeper's preseason projection in the prior (the rest is last
+   * season). The projection carries what the market knows: age, role changes,
+   * rookies. 0 ignores projections.
+   */
+  projWeight: number;
+  /** Projections run conservative; they are multiplied by this before use. */
+  projScale: number;
+  /**
+   * Chance that an absent key teammate plays the rest of the season (0 turns
+   * the teammate adjustment off). Longer absences (IR, PUP) get 60% of it.
+   */
+  teammateReturn: number;
+  /** A teammate counts as key when his prior is at least this many points per game. */
+  keyTeammatePpg: number;
+
+  /** Weekly lineup: exponent on the opponent's points-allowed factor (0 ignores matchups). */
+  matchupWeight: number;
+  /** Weekly lineup: games of "average defense" mixed into each defense's factor. */
+  matchupShrinkGames: number;
+  /** Weekly lineup: exponent on the player's results against similar defenses. */
+  similarWeight: number;
+  /** Weekly lineup: weight of Sleeper's weekly projection in the final number. */
+  weekProjWeight: number;
+  /** Weekly lineup: chance of playing this week, by injury status (missing means 1). */
+  weekAvailability: Readonly<Record<string, number>>;
 
   /** Your starters must gain at least this many points per game. */
   minGainMe: number;

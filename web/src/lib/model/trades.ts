@@ -21,6 +21,10 @@ export interface TradeResult {
   vGet: number;
   /** Smaller side / larger side, in value above replacement (1 = even). */
   fairness: number;
+  /** Free agents you would add to fill your open spots. */
+  myPickups: Valued[];
+  /** Free agents the partner would add to fill theirs. */
+  theirPickups: Valued[];
 }
 
 export interface TradeIdea extends TradeResult {
@@ -34,10 +38,10 @@ export interface TeamRoster {
   players: readonly Player[];
 }
 
-/** A replacement-level placeholder for an open roster spot. */
-export function freeAgent(model: Model, pos: string): FreeAgent {
+/** A replacement-level placeholder for an open roster spot, when no real free agent is known. */
+export function freeAgent(model: Model, pos: string, n = 1): FreeAgent {
   return {
-    id: `fa-${pos}`,
+    id: n > 1 ? `fa-${pos}-${n}` : `fa-${pos}`,
     name: `Free agent (${pos})`,
     pos,
     elig: [pos],
@@ -48,28 +52,58 @@ export function freeAgent(model: Model, pos: string): FreeAgent {
   };
 }
 
-/** Fills open roster spots with the free agent that helps the lineup most. */
+/** The league's real free agents by position, best first. */
+export type FreeAgentPool = ReadonlyMap<string, readonly Player[]>;
+
+/**
+ * Players on no roster in the league who could actually help: on an NFL team,
+ * able to play, and with some evidence (games, last season or a projection).
+ */
+export function freeAgentPool(model: Model, rostered: ReadonlySet<string>): FreeAgentPool {
+  const pool = new Map<string, Player[]>();
+  for (const p of Object.values(model.players)) {
+    if (rostered.has(p.id) || !p.startable || p.noTeam || p.value <= 0) continue;
+    if (p.g === 0 && p.prevG === 0 && p.projPpg === null) continue;
+    pool.set(p.pos, [...(pool.get(p.pos) ?? []), p]);
+  }
+  for (const list of pool.values()) list.sort((a, b) => b.value - a.value);
+  return pool;
+}
+
+/**
+ * Fills open roster spots with the free agent that helps the lineup most: the
+ * best real free agent at each position when a pool is given, otherwise a
+ * replacement-level placeholder. `taken` keeps both teams from adding the same
+ * player.
+ */
 export function withFreeAgents(
   list: readonly Valued[],
   open: number,
   model: Model,
   sport: SportConfig,
-): readonly Valued[] {
+  pool?: FreeAgentPool,
+  taken: Set<string> = new Set(),
+): { list: readonly Valued[]; added: Valued[] } {
   let current = list;
-  for (let n = 0; n < open; n++) {
-    let best = current;
+  const added: Valued[] = [];
+  for (let n = 1; n <= open; n++) {
+    let best: Valued | null = null;
     let bestTotal = -1;
     for (const pos of sport.freeAgentPositions) {
-      const candidate = current.concat(freeAgent(model, pos));
-      const total = bestLineup(candidate, model.slots, sport).total;
+      const real = pool?.get(pos)?.find((p) => !taken.has(p.id));
+      const candidate = real ?? freeAgent(model, pos, n);
+      const total = bestLineup(current.concat(candidate), model.slots, sport).total;
       if (total > bestTotal) {
         bestTotal = total;
         best = candidate;
       }
     }
-    current = best;
+    if (!best) break;
+    taken.add(best.id);
+    added.push(best);
+    current = current.concat(best);
   }
-  return current;
+  return { list: current, added };
 }
 
 const sumVorp = (list: readonly Valued[]) => list.reduce((s, p) => s + p.vorp, 0);
@@ -84,6 +118,7 @@ export function evaluateTrade(
   theirBase: number,
   model: Model,
   sport: SportConfig,
+  pool?: FreeAgentPool,
 ): TradeResult {
   const giveIds = new Set(give.map((p) => p.id));
   const getIds = new Set(get.map((p) => p.id));
@@ -91,8 +126,21 @@ export function evaluateTrade(
   let theirs: readonly Valued[] = theirList.filter((p) => !getIds.has(p.id)).concat(give);
   const myOpen = Math.max(0, give.length - get.length);
   const theirOpen = Math.max(0, get.length - give.length);
-  if (myOpen) mine = withFreeAgents(mine, myOpen, model, sport);
-  if (theirOpen) theirs = withFreeAgents(theirs, theirOpen, model, sport);
+  const taken = new Set<string>();
+  let myPickups: Valued[] = [];
+  let theirPickups: Valued[] = [];
+  if (myOpen)
+    ({ list: mine, added: myPickups } = withFreeAgents(mine, myOpen, model, sport, pool, taken));
+  if (theirOpen) {
+    ({ list: theirs, added: theirPickups } = withFreeAgents(
+      theirs,
+      theirOpen,
+      model,
+      sport,
+      pool,
+      taken,
+    ));
+  }
   const meAfter = bestLineup(mine, model.slots, sport).total;
   const themAfter = bestLineup(theirs, model.slots, sport).total;
   const vGive = sumVorp(give);
@@ -113,6 +161,8 @@ export function evaluateTrade(
     vGive,
     vGet,
     fairness: hi > 0 ? lo / hi : 1,
+    myPickups,
+    theirPickups,
   };
 }
 
@@ -142,6 +192,7 @@ export function suggestTrades(
   rosters: readonly TeamRoster[],
   model: Model,
   sport: SportConfig,
+  pool?: FreeAgentPool,
 ): TradeIdea[] {
   const p = sport.model;
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
@@ -156,7 +207,7 @@ export function suggestTrades(
     const theirCombos = combos(tradeCandidates(theirs, sport));
     for (const give of myCombos) {
       for (const get of theirCombos) {
-        const r = evaluateTrade(mine, theirs, give, get, myBase, theirBase, model, sport);
+        const r = evaluateTrade(mine, theirs, give, get, myBase, theirBase, model, sport, pool);
         if (r.dMe < p.minGainMe || r.dThem < p.minGainThem || r.fairness < p.minFairness) {
           continue;
         }

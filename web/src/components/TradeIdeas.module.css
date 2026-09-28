@@ -49,6 +49,9 @@
   min-width: 0;
   font-weight: 600;
 }
+.tradeValue {
+  font-weight: 700;
+}
 .impacts {
   display: flex;
   flex-wrap: wrap;

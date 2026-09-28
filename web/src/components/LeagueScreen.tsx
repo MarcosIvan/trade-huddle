@@ -4,7 +4,10 @@ import { useId, useMemo, useState } from "react";
 import type { LeagueView } from "@/hooks/useLeague";
 import { useTradeIdeas } from "@/hooks/useTradeIdeas";
 import { shortDate } from "@/lib/format";
-import { rosterPlayers, type TradeIdea } from "@/lib/model";
+import { freeAgentPool, rosterPlayers, weeklyOutlook, type TradeIdea } from "@/lib/model";
+import { NFL } from "@/lib/sports/nfl";
+import { LineupTabs } from "./LineupTabs";
+import { WeeklyLineup } from "./WeeklyLineup";
 import { MethodNotes } from "./MethodNotes";
 import { Notices } from "./Notices";
 import { Section } from "./Section";
@@ -66,6 +69,19 @@ export function LeagueScreen({
     }
     return max;
   }, [model, teams]);
+
+  // This week's projections, when the season has a week left to play.
+  const week = stats.lineup_week ?? null;
+  const outlook = useMemo(
+    () => (week ? weeklyOutlook(model, stats, league, week, NFL.model) : null),
+    [model, stats, league, week],
+  );
+
+  // Players on no roster in this league: who you could pick up after an uneven trade.
+  const pool = useMemo(
+    () => freeAgentPool(model, new Set(teams.flatMap((t) => t.playerIds))),
+    [model, teams],
+  );
 
   const sortedTeams = useMemo(
     () => [...teams].sort((a, b) => a.name.localeCompare(b.name)),
@@ -130,8 +146,40 @@ export function LeagueScreen({
       <Notices kinds={notices} />
 
       <div className={styles.grid}>
-        <Section id="team" title="Your team" subtitle="Best lineup by current value">
-          <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+        <Section
+          id="team"
+          title="Your team"
+          subtitle="Best lineup for this week and for the season"
+        >
+          {week && outlook ? (
+            <LineupTabs
+              label="Lineup view"
+              tabs={[
+                {
+                  id: "week",
+                  label: `This week (${week})`,
+                  content: (
+                    <WeeklyLineup
+                      model={model}
+                      teams={teams}
+                      myRid={myRid}
+                      week={week}
+                      outlook={outlook}
+                    />
+                  ),
+                },
+                {
+                  id: "season",
+                  label: "Rest of season",
+                  content: (
+                    <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+                  ),
+                },
+              ]}
+            />
+          ) : (
+            <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+          )}
         </Section>
         <Section
           id="ideas"
@@ -157,6 +205,7 @@ export function LeagueScreen({
           give={current.give}
           get={partnerRid === current.partnerRid ? current.get : new Set()}
           sparkMax={sparkMax}
+          pool={pool}
           onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
           onToggleGive={(id) =>
             setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })

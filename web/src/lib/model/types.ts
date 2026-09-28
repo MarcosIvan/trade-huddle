@@ -24,6 +24,12 @@ export interface StatsPlayer {
   w?: Readonly<Record<string, PackedStats>>;
   /** The team the player played for, by week number. */
   tw?: Readonly<Record<string, string>>;
+  /** Sleeper's preseason projection: season totals. */
+  proj?: PackedStats;
+  /** Average draft position in Sleeper drafts, by format (half, ppr, std, 2qb). */
+  adp?: Readonly<Record<string, number>>;
+  /** Sleeper's projection for single weeks (it accounts for the opponent), by week. */
+  wp?: Readonly<Record<string, PackedStats>>;
 }
 
 /** The league-independent stats file built by the data pipeline. */
@@ -36,6 +42,12 @@ export interface StatsFile {
   players: Readonly<Record<string, StatsPlayer>>;
   /** Stats summed per team and week in team_weeks (targets, carries, ...). */
   usage_keys?: readonly string[];
+  /** Regular-season games by week, as [away, home]. */
+  schedule?: Readonly<Record<string, readonly (readonly string[])[]>>;
+  /** The week to set a lineup for (first week not finished); null after the season. */
+  lineup_week?: number | null;
+  /** Games in a season, for turning projected totals into points per game. */
+  season_games?: number;
   /** Team totals of usage_keys, by team and week number. */
   team_weeks?: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>>;
   demo?: boolean;
@@ -88,8 +100,12 @@ export interface Player extends Valued {
   /** Games played last season. */
   prevG: number;
   prevPpg: number | null;
+  /** Sleeper's preseason projection, points per game under the league's scoring. */
+  projPpg: number | null;
   injMult: number;
   weights: ValueWeights;
+  /** Set when the value accounts for a key teammate expected back from absence. */
+  context: { teammate: string; returnChance: number } | null;
 }
 
 export interface FreeAgent extends Valued {

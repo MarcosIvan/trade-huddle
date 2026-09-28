@@ -5,13 +5,14 @@ import {
   bestLineup,
   evaluateTrade,
   rosterPlayers,
+  type FreeAgentPool,
   type Model,
   type Player,
   type StatsFile,
 } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, FormValue, PlayerCell, Sparkline } from "./Player";
+import { Delta, FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT } from "./Player";
 import styles from "./TradeAnalyzer.module.css";
 import { rosterNotes } from "./TradeIdeas";
 
@@ -29,7 +30,7 @@ function PickList({
   onToggle: (id: string) => void;
 }) {
   const labelId = useId();
-  const sorted = [...players].sort((a, b) => b.value - a.value);
+  const sorted = [...players].sort((a, b) => b.vorp - a.vorp || b.value - a.value);
   return (
     <div>
       <span className="label" id={labelId}>
@@ -43,8 +44,8 @@ function PickList({
             <label key={p.id} className={`${styles.pick} ${on ? styles.on : ""}`}>
               <input type="checkbox" checked={on} onChange={() => onToggle(p.id)} />
               <PlayerCell player={p} />
-              <span className={`num ${styles.value}`} title="Expected points per game">
-                {fmt(p.value)}
+              <span className={`num ${styles.value}`} title={TRADE_VALUE_HINT}>
+                {fmt(p.vorp)}
               </span>
             </label>
           );
@@ -57,7 +58,10 @@ function PickList({
 function valueMix(p: Player, prevSeason: string): string {
   const w = p.weights;
   const parts: string[] = [];
-  if (w.prev > 0.005) parts.push(`${pct(w.prev)} ${prevSeason}`);
+  if (w.prev > 0.005) {
+    const outlook = p.projPpg !== null && NFL.model.projWeight > 0;
+    parts.push(`${pct(w.prev)} ${outlook ? "outlook" : prevSeason}`);
+  }
   if (w.season > 0.005) parts.push(`${pct(w.season)} season`);
   if (w.recent > 0.005) parts.push(`${pct(w.recent)} last ${RECENT}`);
   if (w.repl > 0.005) parts.push(`${pct(w.repl)} replacement`);
@@ -73,6 +77,7 @@ export function TradeAnalyzer({
   give,
   get,
   sparkMax,
+  pool,
   onPartner,
   onToggleGive,
   onToggleGet,
@@ -85,6 +90,7 @@ export function TradeAnalyzer({
   give: ReadonlySet<string>;
   get: ReadonlySet<string>;
   sparkMax: number;
+  pool: FreeAgentPool;
   onPartner: (rid: number) => void;
   onToggleGive: (id: string) => void;
   onToggleGet: (id: string) => void;
@@ -113,8 +119,9 @@ export function TradeAnalyzer({
       bestLineup(theirs, model.slots, NFL).total,
       model,
       NFL,
+      pool,
     );
-  }, [mine, theirs, give, get, model]);
+  }, [mine, theirs, give, get, model, pool]);
 
   const partnerName = partner?.name ?? "Partner";
   const read = !result
@@ -208,13 +215,13 @@ export function TradeAnalyzer({
                       Last {RECENT}
                     </th>
                     <th scope="col">Weeks</th>
-                    <th scope="col" className="num">
-                      Value
+                    <th scope="col" className="num" title="Expected points per game">
+                      Pts/g
                     </th>
-                    <th scope="col" className="num" title="Points per game above replacement level">
-                      Above repl.
+                    <th scope="col" className="num" title={TRADE_VALUE_HINT}>
+                      Trade value
                     </th>
-                    <th scope="col">Value mix</th>
+                    <th scope="col">Pts/g mix</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -241,13 +248,15 @@ export function TradeAnalyzer({
                       <td>
                         <Sparkline player={p} max={sparkMax} />
                       </td>
-                      <td className={`num ${styles.value}`}>
+                      <td className="num">
                         {fmt(p.value)}
                         {p.injMult < 1 && (
-                          <span className={styles.games}>injury −{pct(1 - p.injMult)}</span>
+                          <span className={styles.games}>
+                            {p.noTeam ? "no team" : "injury"} −{pct(1 - p.injMult)}
+                          </span>
                         )}
                       </td>
-                      <td className="num">{fmt(p.vorp)}</td>
+                      <td className={`num ${styles.value}`}>{fmt(p.vorp)}</td>
                       <td className={styles.mix}>{valueMix(p, stats.prev_season)}</td>
                     </tr>
                   ))}
