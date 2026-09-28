@@ -2,7 +2,7 @@ import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import type { Player, TradeIdea, TradeResult } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, PosBadge } from "./Player";
+import { Delta, PosBadge, TRADE_VALUE_HINT } from "./Player";
 import styles from "./TradeIdeas.module.css";
 
 export function rosterNotes(r: TradeResult, partnerName: string): string[] {
@@ -31,8 +31,8 @@ function Side({ label, players }: { label: string; players: Player[] }) {
               <PosBadge pos={p.pos} />
               {p.name}
             </span>
-            <span className="muted" title="Expected points per game">
-              {fmt(p.value)}
+            <span className={styles.tradeValue} title={TRADE_VALUE_HINT}>
+              {fmt(p.vorp)}
             </span>
           </li>
         ))}

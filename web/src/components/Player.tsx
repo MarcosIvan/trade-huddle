@@ -5,6 +5,10 @@ import styles from "./Player.module.css";
 
 const KNOWN_POSITIONS = new Set(NFL.positions);
 
+/** What "trade value" means, for tooltips and captions. */
+export const TRADE_VALUE_HINT =
+  "Points per game above what a free agent at the same position would score. Scarce positions are worth more.";
+
 export function PosBadge({ pos }: { pos: string }) {
   const cls = KNOWN_POSITIONS.has(pos) ? styles[pos as keyof typeof styles] : undefined;
   return <span className={`${styles.pos} ${cls ?? ""}`}>{pos}</span>;

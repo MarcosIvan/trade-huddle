@@ -37,6 +37,9 @@
 .value {
   font-weight: 700;
 }
+.ppg {
+  color: var(--ink-2);
+}
 .group td {
   padding-top: 18px;
   border-bottom: 2px solid var(--line);
