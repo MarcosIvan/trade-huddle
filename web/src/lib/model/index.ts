@@ -15,3 +15,4 @@ export {
 export type * from "./types";
 export { estimate, type Estimate } from "./value";
 export { verdict, type Verdict } from "./verdict";
+export { weeklyOutlook, type WeeklyOutlook } from "./weekly";

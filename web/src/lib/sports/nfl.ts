@@ -33,6 +33,19 @@ export const PROTOTYPE_MODEL: ModelParams = {
   projScale: 1,
   teammateReturn: 0,
   keyTeammatePpg: 10,
+  matchupWeight: 0,
+  matchupShrinkGames: 4,
+  similarWeight: 0,
+  weekProjWeight: 0,
+  weekAvailability: {
+    Questionable: 0.85,
+    Doubtful: 0.25,
+    Out: 0,
+    IR: 0,
+    PUP: 0,
+    Sus: 0,
+    NA: 0,
+  },
 
   minGainMe: 0.3,
   minGainThem: 0.1,
@@ -83,6 +96,11 @@ export const NFL: SportConfig = {
     usageBlend: 0.3,
     // No team: a quarter of the value (he may sign somewhere) and never started.
     noTeamMult: 0.25,
+    // Weekly lineup (docs/adr/0005-weekly-lineup.md): 75% Sleeper's weekly projection,
+    // 25% our value adjusted for what the opponent allows to the position.
+    weekProjWeight: 0.75,
+    matchupWeight: 0.5,
+    matchupShrinkGames: 2,
     // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).
     benchDepth: { QB: 0, RB: 1.5, WR: 1, TE: 0.25 },
   },

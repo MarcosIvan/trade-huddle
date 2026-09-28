@@ -66,6 +66,7 @@ const TEXT: [string, string][] = [
   ["ink", "warn-soft"],
   ["ink-2", "bg"],
   ["ink-2", "surface"],
+  ["ink-2", "surface-2"],
   ["muted", "bg"],
   ["muted", "surface"],
   ["muted", "surface-2"],

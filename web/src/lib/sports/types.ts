@@ -63,6 +63,17 @@ export interface ModelParams {
   /** A teammate counts as key when his prior is at least this many points per game. */
   keyTeammatePpg: number;
 
+  /** Weekly lineup: exponent on the opponent's points-allowed factor (0 ignores matchups). */
+  matchupWeight: number;
+  /** Weekly lineup: games of "average defense" mixed into each defense's factor. */
+  matchupShrinkGames: number;
+  /** Weekly lineup: exponent on the player's results against similar defenses. */
+  similarWeight: number;
+  /** Weekly lineup: weight of Sleeper's weekly projection in the final number. */
+  weekProjWeight: number;
+  /** Weekly lineup: chance of playing this week, by injury status (missing means 1). */
+  weekAvailability: Readonly<Record<string, number>>;
+
   /** Your starters must gain at least this many points per game. */
   minGainMe: number;
   /** The partner's starters must gain at least this many points per game. */
