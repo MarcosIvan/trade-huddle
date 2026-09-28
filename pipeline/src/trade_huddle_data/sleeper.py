@@ -16,6 +16,7 @@ from .transform import Entry, sum_weeks, to_entries
 
 API = "https://api.sleeper.app/v1"
 STATS_API = "https://api.sleeper.com/stats"
+PROJECTIONS_API = "https://api.sleeper.com/projections"
 USER_AGENT = "trade-huddle-data-builder"
 #: Sleeper asks for the player directory to be downloaded at most once a day.
 DIRECTORY_MAX_AGE_SECONDS = 24 * 3600
@@ -36,7 +37,7 @@ class SleeperClient:
         self.sleep = sleep
         self.cache_dir = cache_dir
 
-    def get(self, url: str, params: dict[str, str] | None = None) -> Any:
+    def get(self, url: str, params: dict[str, str] | list[tuple[str, str]] | None = None) -> Any:
         for attempt in range(self.retries):
             try:
                 response = self.session.get(url, params=params, timeout=90)
@@ -74,6 +75,14 @@ class SleeperClient:
         return to_entries(
             self.get(f"{STATS_API}/{sport.id}/{season}/{week}", {"season_type": "regular"})
         )
+
+    def projections(self, sport: SportConfig, season: str) -> dict[str, dict[str, Any]]:
+        """Sleeper's preseason projections for the season, with draft-market ADP."""
+        params = [("season_type", "regular")] + [
+            ("position[]", pos) for pos in sorted(sport.fantasy_positions)
+        ]
+        entries = to_entries(self.get(f"{PROJECTIONS_API}/{sport.id}/{season}", params))
+        return {str(e["player_id"]): e.get("stats") or {} for e in entries}
 
     def season_totals(self, sport: SportConfig, season: str) -> dict[str, dict[str, Any]]:
         """Full-season totals: the season endpoint, or the sum of every week as a fallback."""

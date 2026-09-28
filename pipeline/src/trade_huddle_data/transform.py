@@ -146,12 +146,14 @@ def build_stats(
     season: str,
     prev_season: str,
     generated_at: str,
+    projections: Mapping[str, Stats] | None = None,
     current: bool = True,
 ) -> dict[str, Any]:
     """
     The compact stats file.
 
-    ``current=False`` builds a past season for backtests: players keep only
+    ``projections`` are Sleeper's preseason projections for ``season`` (stat
+    totals plus ADP). ``current=False`` builds a past season for backtests: players keep only
     what is true for that season (no current team, age or injury), and the
     team shown is the last team they played for that season.
     """
@@ -199,8 +201,29 @@ def build_stats(
             for team, row in team_usage(entries, sport.usage_keys).items():
                 team_weeks.setdefault(team, {})[str(week)] = row
 
+    # Preseason projections (season totals) and draft-market ADP, for players
+    # already in the file or drafted in a typical league.
+    for pid, stats in (projections or {}).items():
+        adp = {
+            short: round(float(stats[key]), 1)
+            for key, short in sport.adp_keys
+            if is_number(stats.get(key)) and 0 < stats[key] <= sport.adp_max
+        }
+        if pid not in players and not adp:
+            continue
+        if not is_fantasy_player(directory.get(pid) or {}, sport):
+            continue
+        player = ensure(pid)
+        packed = keys.pack(stats)
+        if packed:
+            player["proj"] = packed
+        if adp:
+            player["adp"] = adp
+
     kept = {
-        pid: p for pid, p in players.items() if p["fp"] and (p.get("prev") or p.get("w") or p["t"])
+        pid: p
+        for pid, p in players.items()
+        if p["fp"] and (p.get("prev") or p.get("w") or p["t"] or p.get("adp"))
     }
     return {
         "generated_at": generated_at,
@@ -210,6 +233,7 @@ def build_stats(
         "weeks": weeks_with_games,
         "keys": keys.keys,
         "usage_keys": list(sport.usage_keys),
+        "season_games": sport.season_games,
         "team_weeks": dict(sorted(team_weeks.items())),
         "players": kept,
     }

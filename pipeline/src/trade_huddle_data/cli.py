@@ -28,6 +28,8 @@ def build_current(client: SleeperClient, sport: SportConfig, now: datetime) -> d
     directory = client.directory(sport)
     print(f"Last season ({prev_season})...")
     prev_totals = client.season_totals(sport, prev_season)
+    print(f"Projections ({season})...")
+    projections = client.projections(sport, season)
     weeks = {}
     for week in range(1, last_week + 1):
         print(f"Week {week}...")
@@ -40,6 +42,7 @@ def build_current(client: SleeperClient, sport: SportConfig, now: datetime) -> d
         season=season,
         prev_season=prev_season,
         generated_at=now.isoformat(timespec="seconds"),
+        projections=projections,
     )
 
 
@@ -51,6 +54,7 @@ def build_past(
     print(f"Past season {season} (history: {prev_season})")
     directory = client.directory(sport)
     prev_totals = client.season_totals(sport, prev_season)
+    projections = client.projections(sport, season)
     weeks = {}
     for week in range(1, sport.regular_season_weeks + 1):
         print(f"Week {week}...")
@@ -63,6 +67,7 @@ def build_past(
         season=season,
         prev_season=prev_season,
         generated_at=now.isoformat(timespec="seconds"),
+        projections=projections,
         current=False,
     )
 

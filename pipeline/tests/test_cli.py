@@ -8,7 +8,7 @@ import requests
 from trade_huddle_data.cli import main
 from trade_huddle_data.sleeper import SleeperClient
 
-from .conftest import DIRECTORY, PREV_TOTALS, WEEKS
+from .conftest import DIRECTORY, PREV_TOTALS, PROJECTIONS, WEEKS
 
 
 class FakeSession(requests.Session):
@@ -31,6 +31,8 @@ class FakeSession(requests.Session):
             }
         elif url.endswith("/players/nfl"):
             body = DIRECTORY
+        elif "/projections/nfl/" in url:
+            body = [{"player_id": pid, "stats": s} for pid, s in PROJECTIONS.items()]
         elif url.endswith("/stats/nfl/2025"):
             if not self.season_endpoint_works:
                 return response(500, {})
@@ -66,6 +68,7 @@ def test_builds_the_current_season(tmp_path: Path) -> None:
     assert data["season"] == "2026"
     assert data["weeks"] == [1, 2]
     assert data["players"]["100"]["prev"]["g"] == 16
+    assert data["players"]["100"]["adp"]["half"] == 12.4
 
 
 def test_falls_back_to_summing_weeks(tmp_path: Path) -> None:

@@ -20,8 +20,16 @@ def unpack(data: dict[str, Any], packed: list[float]) -> dict[str, float]:
     return {data["keys"][int(packed[i])]: packed[i + 1] for i in range(0, len(packed), 2)}
 
 
-def build(directory: Any, prev_totals: Any, weeks: Any, *, current: bool = True) -> dict[str, Any]:
+def build(
+    directory: Any,
+    prev_totals: Any,
+    weeks: Any,
+    *,
+    current: bool = True,
+    projections: Any = None,
+) -> dict[str, Any]:
     return build_stats(
+        projections=projections,
         sport=NFL,
         directory=directory,
         prev_totals=prev_totals,
@@ -186,3 +194,22 @@ class TestBuildStats:
 
     def test_output_is_deterministic(self, directory: Any, prev_totals: Any, weeks: Any) -> None:
         assert build(directory, prev_totals, weeks) == build(directory, prev_totals, weeks)
+
+
+class TestProjections:
+    def test_keeps_projected_totals_and_valid_adp(
+        self, directory: Any, prev_totals: Any, weeks: Any, projections: Any
+    ) -> None:
+        data = build(directory, prev_totals, weeks, projections=projections)
+        alpha = data["players"]["100"]
+        assert unpack(data, alpha["proj"]) == {"rec": 90, "rec_yd": 1100}
+        assert alpha["adp"] == {"half": 12.4, "ppr": 10.1}  # 450 and 999: nobody drafts him there
+        assert data["season_games"] == 17
+
+    def test_adds_drafted_players_only(
+        self, directory: Any, prev_totals: Any, weeks: Any, projections: Any
+    ) -> None:
+        players = build(directory, prev_totals, weeks, projections=projections)["players"]
+        assert players["600"]["adp"] == {"half": 140.0}
+        assert "700" not in players
+        assert "400" not in players
