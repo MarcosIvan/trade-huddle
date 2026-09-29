@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
 import type { SportConfig } from "../sports/types";
 import { bestLineup } from "./lineup";
-import { playerScores, SCORE_WEIGHTS, usageShares } from "./score";
+import { playerScores, SCORE_WEIGHTS, TRADE_VALUE_MAX, usageShares } from "./score";
 import {
   evaluateTrade,
   fairnessLevel,
@@ -68,13 +68,14 @@ describe("playerScores", () => {
   const model: Model = { players, repl: { RB: 8 }, slots: ["RB"], teams: 2 };
   const scores = playerScores(model, emptyStats, [{ playerIds: ["star", "mid"] }], NFL);
 
-  it("gives every player a trade value between 1 and 100, the league's best 100", () => {
+  it("gives every player a trade value between 1 and 40 (one decimal), the league's best 40", () => {
     for (const s of scores.values()) {
       expect(s.trade).toBeGreaterThanOrEqual(1);
-      expect(s.trade).toBeLessThanOrEqual(100);
+      expect(s.trade).toBeLessThanOrEqual(TRADE_VALUE_MAX);
+      expect(Math.round(s.trade * 10) / 10).toBe(s.trade);
       expect(s.total).toBeLessThanOrEqual(100);
     }
-    expect(scores.get("star")!.trade).toBe(100);
+    expect(scores.get("star")!.trade).toBe(TRADE_VALUE_MAX);
     // At replacement level or below, a player is still worth something.
     expect(scores.get("rep")!.trade).toBeGreaterThan(scores.get("scrub")!.trade);
   });
@@ -88,7 +89,7 @@ describe("playerScores", () => {
   it("adds team importance to the Player Score but not to the trade value", () => {
     const star = scores.get("star")!;
     expect(star.importance).toBe(1);
-    expect(star.total - SCORE_WEIGHTS.trade * star.trade).toBeCloseTo(SCORE_WEIGHTS.importance);
+    expect(star.total).toBeCloseTo(SCORE_WEIGHTS.trade + SCORE_WEIGHTS.importance);
     expect(scores.get("rep")!.importance).toBe(0); // not on a roster
   });
 });

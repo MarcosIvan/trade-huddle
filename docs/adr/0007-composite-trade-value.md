@@ -30,7 +30,8 @@ his team.
 
 ## Decision
 
-**Trade value** (`score.ts`), 1 to 100. Each part is on a 0-1 scale that is
+**Trade value** (`score.ts`), 1 to 40 with one decimal (players can tie).
+Each part is on a 0-1 scale that is
 comparable across positions (production is measured against the average of
 the position's top 3, raised to 1.5 so gaps still count):
 
@@ -59,10 +60,11 @@ The sum is multiplied by:
   takes away (IR: 70%, Out: 94%), because he comes back; a player without a
   team keeps 25%.
 
-Values are relative to the league's best player (100), and nobody goes
-below 1. Team importance on the fantasy roster stays out of trade value
+Values are relative to the league's best player (40), and nobody goes
+below 1. The scale was 1-100 at first; the owner preferred smaller numbers.
+Team importance on the fantasy roster stays out of trade value
 because it changes with the owner; it is 20 of the 100 points of the
-**Player Score** (80% trade value + 20 × importance).
+**Player Score** (80 × trade value / 40 + 20 × importance).
 
 **Fairness** compares trade value on each side. The best player of a side
 counts in full, the second 85% and the third 70% (`SIDE_DEPTH`), so two good
@@ -97,11 +99,12 @@ sound. The trade analyzer shows the same position warnings in words.
 The weights were set against the owner's own reading of week 3 of 2026 and
 checked against the market:
 
-- Tuten (RB) 48 > Adams 47 > Washington 45 > Egbuka 44: three receivers
-  close together, the running back above them;
-- London 53 > Adams, Tyreek Hill (no team) 2;
+- Tuten (RB) 19.3 > Adams 18.9 > Washington 17.9 > Egbuka 17.6: three
+  receivers close together, the running back above them;
+- Gibbs 40, Bijan Robinson 39.2, Olave 24.1, London 21.1 > Adams, Tyreek Hill
+  (no team) 1.0;
 - rank correlation with half-PPR ADP among rostered players: 0.78 with
-  VORP, 0.86 with the composite value; no rostered player at 0 (minimum 2.9).
+  VORP, 0.86 with the composite value; no rostered player at 0.
 
 ## Consequences
 

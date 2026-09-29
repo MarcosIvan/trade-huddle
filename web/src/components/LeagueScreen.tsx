@@ -54,7 +54,7 @@ export function LeagueScreen({
 }) {
   const teamFieldId = useId();
   const { stats, league, teams, model, demo, notices } = view;
-  // Player Scores (0-100); the owner-independent trade value (1-100) drives fairness.
+  // Player Scores (0-100); the owner-independent trade value (1-40) drives fairness.
   const scores = useMemo(() => playerScores(model, stats, teams, NFL), [model, stats, teams]);
   const tradeScores = useMemo(
     () => new Map([...scores].map(([id, s]) => [id, s.trade] as const)),

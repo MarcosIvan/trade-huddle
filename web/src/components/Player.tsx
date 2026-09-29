@@ -1,6 +1,6 @@
 import { fmt, signed, trend } from "@/lib/format";
 import type { Player, PlayerScore } from "@/lib/model";
-import { SCORE_WEIGHTS } from "@/lib/model";
+import { SCORE_WEIGHTS, TRADE_VALUE_MAX } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import styles from "./Player.module.css";
 import { usePlayerScore } from "./ScoreContext";
@@ -9,7 +9,7 @@ const KNOWN_POSITIONS = new Set(NFL.positions);
 
 /** What "trade value" means, for tooltips and captions. */
 export const TRADE_VALUE_HINT =
-  "Trade value, 1 to 100: proven base, draft market, expected points, this season, last 3 games, edge over his position, NFL usage and positional scarcity.";
+  "Trade value, 1 to 40: proven base, draft market, expected points, this season, last 3 games, edge over his position, NFL usage and positional scarcity.";
 
 const PART_LABELS: Record<keyof PlayerScore["parts"], string> = {
   base: "base",
@@ -22,7 +22,7 @@ const PART_LABELS: Record<keyof PlayerScore["parts"], string> = {
   usage: "usage",
 };
 
-/** Trade value (1-100) with its parts in the tooltip; value above replacement until scores load. */
+/** Trade value (1-40, one decimal) with its parts in the tooltip; value above replacement until scores load. */
 export function TradeValue({ player }: { player: Player }) {
   const s = usePlayerScore(player.id);
   if (!s) return <>{fmt(player.vorp)}</>;
@@ -30,11 +30,7 @@ export function TradeValue({ player }: { player: Player }) {
     .map((k) => `${PART_LABELS[k]} ${Math.round(s.parts[k] * 100)}`)
     .join(", ");
   const extra = s.availability < 1 ? `, availability ${Math.round(s.availability * 100)}%` : "";
-  return (
-    <span title={`Trade value ${Math.round(s.trade)}: ${parts}${extra}`}>
-      {Math.round(s.trade)}
-    </span>
-  );
+  return <span title={`Trade value ${fmt(s.trade)}: ${parts}${extra}`}>{fmt(s.trade)}</span>;
 }
 
 export function PosBadge({ pos }: { pos: string }) {
@@ -58,7 +54,7 @@ export function ScorePill({ id }: { id: string }) {
   const s = usePlayerScore(id);
   if (!s) return null;
   const parts = [
-    `trade value ${Math.round(s.trade)} × ${SCORE_WEIGHTS.trade}`,
+    `trade value ${fmt(s.trade)} of ${TRADE_VALUE_MAX} → ${Math.round((SCORE_WEIGHTS.trade * s.trade) / TRADE_VALUE_MAX)}/${SCORE_WEIGHTS.trade}`,
     `team importance ${Math.round(s.importance * SCORE_WEIGHTS.importance)}/${SCORE_WEIGHTS.importance}`,
   ];
   if (s.usageRank) parts.push(`weapon #${s.usageRank} of his offense`);

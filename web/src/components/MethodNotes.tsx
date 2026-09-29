@@ -4,6 +4,7 @@ import {
   MAX_VALUE_LOSS,
   MIN_IDEA_FAIRNESS,
   SCORE_WEIGHTS,
+  TRADE_VALUE_MAX,
   TRADE_VALUE_WEIGHTS,
   type ReplacementLevels,
   type StatsFile,
@@ -78,7 +79,7 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
           {NFL.positions.map((pos) => `${pos} ${fmt(repl[pos])}`).join(", ")} pts/game.
         </p>
         <p>
-          <b>Trade value</b> (1 to 100) is the main number on this site and the currency of trade
+          <b>Trade value</b> (1 to 40) is the main number on this site and the currency of trade
           fairness. It combines several measures, each compared across the league:{" "}
           {TRADE_VALUE_WEIGHTS.base} points for his proven base (preseason projection or last
           season), {TRADE_VALUE_WEIGHTS.market} for where drafters took him (fading as games are
@@ -92,9 +93,9 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
           players lose part of their value (they come back), and nobody is worth less than 1.
         </p>
         <p>
-          <b>Player Score</b> (0 to 100, next to each name) is {pct(SCORE_WEIGHTS.trade)} of the
-          trade value plus up to {SCORE_WEIGHTS.importance} points for how important he is to his
-          fantasy team.
+          <b>Player Score</b> (0 to 100, next to each name) gives up to {SCORE_WEIGHTS.trade} points
+          for trade value (a {TRADE_VALUE_MAX} earns all {SCORE_WEIGHTS.trade}) plus up to{" "}
+          {SCORE_WEIGHTS.importance} points for how important he is to his fantasy team.
         </p>
         <p>
           <b>Fairness</b> compares the trade value on each side, so a player is worth the same to

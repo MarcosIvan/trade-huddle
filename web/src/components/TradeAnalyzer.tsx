@@ -284,7 +284,7 @@ export function TradeAnalyzer({
             ))}
             <p className="hint">
               Points are per game under your league&apos;s scoring. Fairness compares the trade
-              value (1 to 100) on each side; a side&apos;s second and third players count 85% and
+              value (1 to 40) on each side; a side&apos;s second and third players count 85% and
               70%.
             </p>
           </>

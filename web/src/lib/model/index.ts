@@ -4,6 +4,7 @@ export { replacementLevels } from "./replacement";
 export {
   playerScores,
   SCORE_WEIGHTS,
+  TRADE_VALUE_MAX,
   TRADE_VALUE_WEIGHTS,
   type PlayerScore,
   type TradeValueParts,
