@@ -11,8 +11,18 @@ export {
 } from "./score";
 export { average, makeScorer } from "./scoring";
 export {
+  benchDepth,
+  DEPTH_WEIGHT,
+  MAX_STARTER_DIP,
   evaluateTrade,
+  FINDER_SHAPES,
+  findTrades,
+  type FinderIdea,
+  type FinderMode,
+  type FinderResult,
+  ideaProblems,
   fairnessLevel,
+  hasEdge,
   isTrueMatch,
   MATCH,
   MAX_VALUE_LOSS,

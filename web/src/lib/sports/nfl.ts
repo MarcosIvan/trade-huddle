@@ -78,6 +78,7 @@ export const NFL: SportConfig = {
   slotLabels: { FLEX: "FLEX", WRRB_FLEX: "W/R", REC_FLEX: "W/T", SUPER_FLEX: "SFLEX" },
   unsupportedSlots: ["DL", "LB", "DB", "IDP_FLEX"],
   freeAgentPositions: ["QB", "RB", "WR", "TE"],
+  tradePositions: ["QB", "RB", "WR", "TE"],
   defaultTeams: 12,
   model: {
     ...PROTOTYPE_MODEL,

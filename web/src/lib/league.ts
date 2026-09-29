@@ -4,6 +4,8 @@ import type { SleeperLeague, SleeperLeagueUser, SleeperRoster } from "./sleeper/
 export interface Team {
   rid: number;
   name: string;
+  /** The owner's Sleeper username, when the team has its own name (null when the name is the username). */
+  handle: string | null;
   ownerId: string | null;
   coOwners: string[];
   playerIds: string[];
@@ -12,16 +14,25 @@ export interface Team {
 
 /** Rosters with display names: team name, then display name, then "Team N". */
 export function buildTeams(rosters: SleeperRoster[], users: SleeperLeagueUser[]): Team[] {
-  const names = new Map(users.map((u) => [u.user_id, u.team_name || u.display_name]));
-  return rosters.map((r) => ({
-    rid: r.roster_id,
-    name: (r.owner_id && names.get(r.owner_id)) || `Team ${r.roster_id}`,
-    ownerId: r.owner_id,
-    coOwners: r.co_owners,
-    playerIds: r.players,
-    record: `${r.wins}-${r.losses}${r.ties ? `-${r.ties}` : ""}`,
-  }));
+  const byId = new Map(users.map((u) => [u.user_id, u]));
+  return rosters.map((r) => {
+    const owner = r.owner_id ? byId.get(r.owner_id) : undefined;
+    const name = owner?.team_name || owner?.display_name || `Team ${r.roster_id}`;
+    return {
+      rid: r.roster_id,
+      name,
+      handle: owner?.display_name && owner.display_name !== name ? owner.display_name : null,
+      ownerId: r.owner_id,
+      coOwners: r.co_owners,
+      playerIds: r.players,
+      record: `${r.wins}-${r.losses}${r.ties ? `-${r.ties}` : ""}`,
+    };
+  });
 }
+
+/** "Team name (@username)" for lists and labels; just the name when there is no handle. */
+export const teamLabel = (t: Pick<Team, "name" | "handle">): string =>
+  t.handle ? `${t.name} (@${t.handle})` : t.name;
 
 /** The visitor's team: an explicit choice, then their user ID, then the first team. */
 export function pickMyTeam(

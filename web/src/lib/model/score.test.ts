@@ -6,12 +6,22 @@ import { playerScores, SCORE_WEIGHTS, TRADE_VALUE_MAX, usageShares } from "./sco
 import {
   evaluateTrade,
   fairnessLevel,
+  FINDER_SHAPES,
+  findTrades,
+  hasEdge,
+  ideaProblems,
+  type FinderMode,
+  type TradeIdea,
+  type TradeResult,
   isTrueMatch,
   positionCheck,
   positionNeeds,
   sideValue,
   suggestTrades,
   teamNeeds,
+  withFreeAgents,
+  benchDepth,
+  DEPTH_WEIGHT,
 } from "./trades";
 import type { Model, Player, StatsFile } from "./types";
 
@@ -324,6 +334,19 @@ describe("position balance", () => {
     expect(r.fit).toBe(0); // the running back was not replaced
   });
 
+  it("accepts thinning a position when a good free agent can back it up", () => {
+    const out = roster.filter((p) => p.id === "rb1");
+    const get = [player("wr4", "WR", 16, 6)];
+    const after = roster.filter((p) => p.id !== "rb1").concat(get);
+    const fa = player("faRb", "RB", 9, 1);
+    const r = positionCheck(roster, after, out, get, needs, "you", (pos) =>
+      pos === "RB" ? fa : null,
+    );
+    // Covered, but a free agent refills less well than a player coming back in the trade.
+    expect(r).toMatchObject({ ok: true, covered: true, fit: 0.4, warnings: [] });
+    expect(r.backups.map((p) => p.id)).toEqual(["faRb"]);
+  });
+
   it("accepts a swap at the same position", () => {
     const r = trade(["rb2"], [player("rb4", "RB", 13, 5)]);
     expect(r).toMatchObject({ ok: true, fit: 1, warnings: [] });
@@ -461,5 +484,238 @@ describe("trade ideas that fit both sides' needs", () => {
     expect(r.theirNeedFit).toBe(1);
     expect(r.myNeedPos).toBe("WR");
     expect(r.theirNeedPos).toBe("RB");
+  });
+});
+
+describe("trade finder", () => {
+  const slots = ["RB", "WR"];
+  const sport: SportConfig = { ...NFL, freeAgentPositions: [] };
+  const mine = [
+    player("myRb1", "RB", 16, 8),
+    player("myRb2", "RB", 15, 7),
+    player("myRb3", "RB", 10, 2),
+    player("myWr1", "WR", 9, 0),
+    player("myWr2", "WR", 8, 0),
+  ];
+  const theirs = [
+    player("tRb1", "RB", 9, 1),
+    player("tRb2", "RB", 8, 0),
+    player("tWr1", "WR", 17, 8),
+    player("tWr2", "WR", 15, 6),
+    player("tWr3", "WR", 10, 1),
+  ];
+  const others = [
+    player("oRb", "RB", 9, 1),
+    player("oRb2", "RB", 8, 0),
+    player("oWr", "WR", 15, 6),
+    player("oWr2", "WR", 12, 3),
+  ];
+  const all = Object.fromEntries([...mine, ...theirs, ...others].map((p) => [p.id, p]));
+  const model: Model = { players: all, repl: { RB: 8, WR: 9 }, slots, teams: 3 };
+  const rosters = [
+    { rid: 1, players: mine },
+    { rid: 2, players: theirs },
+    { rid: 3, players: others },
+  ];
+  const values = new Map(Object.values(all).map((p) => [p.id, p.value * 2] as const));
+  const find = (mode: FinderMode, id: string) =>
+    findTrades(mode, id, 1, rosters, model, sport, undefined, values);
+  const shape = (r: TradeIdea) => [r.give.length, r.get.length];
+
+  it("sells a chosen player to different teams, always including him", () => {
+    const { ideas, closest } = find("sell", "myRb2");
+    expect(ideas.length).toBeGreaterThan(1);
+    expect(closest).toBeNull();
+    for (const r of ideas) expect(r.give.map((p) => p.id)).toContain("myRb2");
+    expect(new Set(ideas.map((r) => r.partner)).size).toBeGreaterThan(1);
+  });
+
+  it("gets a chosen player from his team, always including him", () => {
+    const { ideas } = find("get", "tWr2");
+    expect(ideas.length).toBeGreaterThan(0);
+    for (const r of ideas) {
+      expect(r.partner).toBe(2);
+      expect(r.get.map((p) => p.id)).toContain("tWr2");
+    }
+  });
+
+  it("only tries 1-1, 2-1, 1-2, 2-2, 3-2 and 2-3 deals", () => {
+    const allowed = FINDER_SHAPES.map((s) => s.join());
+    for (const mode of ["sell", "get"] as const) {
+      const id = mode === "sell" ? "myRb2" : "tWr2";
+      for (const r of find(mode, id).ideas) expect(allowed).toContain(shape(r).join());
+    }
+    expect(allowed).not.toContain("3,1");
+    expect(allowed).not.toContain("1,3");
+  });
+
+  it("shows the closest deal and what it misses when none passes", () => {
+    // Their best receiver priced far above anything I could send: no fair package exists.
+    const pricey = new Map(values).set("tWr1", 200);
+    const { ideas, closest } = findTrades(
+      "get",
+      "tWr1",
+      1,
+      rosters,
+      model,
+      sport,
+      undefined,
+      pricey,
+    );
+    expect(ideas).toEqual([]);
+    expect(closest).not.toBeNull();
+    expect(closest!.get.map((p) => p.id)).toContain("tWr1");
+    expect(closest!.problems.join()).toMatch(/more trade value from you would make it fair/);
+  });
+
+  it("always shows three trade ideas: passing ones first, near misses with what they miss", () => {
+    const ideas = suggestTrades(1, rosters, model, sport, undefined, values);
+    expect(ideas).toHaveLength(3);
+    const firstNear = ideas.findIndex((r) => r.problems);
+    if (firstNear >= 0) {
+      for (const r of ideas.slice(firstNear)) expect(r.problems!.length).toBeGreaterThan(0);
+    }
+    // Among fair ideas that pass, the ones where your starters gain more come first.
+    const passing = ideas.filter((r) => !r.problems && fairnessLevel(r.fairness) === "green");
+    const edges = passing.map(hasEdge);
+    expect(edges).toEqual([...edges].sort((a, b) => Number(b) - Number(a)));
+  });
+
+  it("returns nothing for a player on the wrong side", () => {
+    expect(find("sell", "tWr1")).toEqual({ ideas: [], closest: null });
+    expect(find("get", "myRb1")).toEqual({ ideas: [], closest: null });
+  });
+});
+
+describe("idea problems", () => {
+  const base = {
+    dMe: 1,
+    dThem: 1,
+    gainMe: 1,
+    gainThem: 1,
+    fairness: 1,
+    sGive: 20,
+    sGet: 20,
+    warnings: [] as string[],
+    theirWarnings: [] as string[],
+    positionsOk: true,
+    positionFit: 1,
+    positionsCovered: true,
+  } as unknown as TradeResult;
+
+  it("passes a clean deal", () => {
+    expect(ideaProblems(base, NFL, true)).toEqual([]);
+  });
+
+  it("asks for a real gain for both teams", () => {
+    const flat = { ...base, gainMe: 0, gainThem: 0 };
+    expect(ideaProblems(flat, NFL, true)).toEqual([
+      "Does not improve your team enough",
+      "Does not improve their team, so they may say no",
+    ]);
+  });
+
+  it("says how much value is missing, and names roster problems", () => {
+    const r = {
+      ...base,
+      sGive: 10,
+      sGet: 20,
+      fairness: 0.5,
+      theirWarnings: ["They would carry 3 QBs (2 is plenty)"],
+    };
+    const problems = ideaProblems(r, NFL, true);
+    expect(problems[0]).toMatch(/About 7\.0 more trade value from you/);
+    expect(problems).toContain("They would carry 3 QBs (2 is plenty)");
+    const losing = ideaProblems({ ...base, sGive: 20, sGet: 10, fairness: 0.5 }, NFL, true);
+    expect(losing[0]).toMatch(/send about 10\.0 more trade value/);
+  });
+});
+
+describe("refilling a valuable player's position", () => {
+  const slots = ["RB", "RB", "WR", "WR", "FLEX"];
+  const sport: SportConfig = { ...NFL, freeAgentPositions: ["RB", "WR"] };
+  // I have exactly three running backs and weak receivers; they have running backs to spare.
+  const mine = [
+    player("kyren", "RB", 16, 8),
+    player("myRb2", "RB", 13, 5),
+    player("myRb3", "RB", 11, 3),
+    player("myWr1", "WR", 10, 1),
+    player("myWr2", "WR", 9, 0),
+    player("myWr3", "WR", 8, 0),
+  ];
+  const theirs = [
+    player("wrStar", "WR", 17, 8),
+    player("tWr2", "WR", 13, 4),
+    player("tWr3", "WR", 9, 0),
+    player("etienne", "RB", 12, 4),
+    player("jones", "RB", 11, 3),
+    player("pollard", "RB", 10, 2),
+  ];
+  const faRb = player("faRb", "RB", 8, 0);
+  const all = Object.fromEntries([...mine, ...theirs, faRb].map((p) => [p.id, p]));
+  const model: Model = { players: all, repl: { RB: 8, WR: 9 }, slots, teams: 2 };
+  const pool = new Map([["RB", [faRb]]]);
+  const values = new Map(Object.values(all).map((p) => [p.id, p.value] as const));
+  const base = (list: Player[]) => bestLineup(list, model.slots, sport).total;
+  const trade = (get: Player[]) =>
+    evaluateTrade(
+      mine,
+      theirs,
+      [all.kyren!],
+      get,
+      base(mine),
+      base(theirs),
+      model,
+      sport,
+      pool,
+      values,
+    );
+
+  it("counts the backup running back you get back as depth", () => {
+    // A backup running back 3 points above a free agent adds 20% of those 3 points.
+    const withBackup = [...mine, player("spareRb", "RB", 11, 3)];
+    expect(benchDepth(withBackup, model, sport) - benchDepth(mine, model, sport)).toBeCloseTo(
+      DEPTH_WEIGHT * 3,
+    );
+    const r = trade([all.tWr2!, all.pollard!]);
+    expect(r.gainMe).toBeCloseTo(r.dMe + r.depthMe);
+    // Without trade values (the prototype), depth does not count.
+    const legacy = evaluateTrade(mine, theirs, [all.kyren!], [all.wrStar!], 0, 0, model, sport);
+    expect(legacy.depthMe).toBe(0);
+    expect(legacy.gainMe).toBe(legacy.dMe);
+  });
+
+  it("prefers getting one of their spare running backs back over a free agent", () => {
+    const direct = trade([all.wrStar!]);
+    const withRb = trade([all.tWr2!, all.pollard!]);
+    expect(direct.positionsCovered).toBe(true); // a free agent can back up
+    expect(direct.myBackups.map((p) => p.id)).toEqual(["faRb"]);
+    expect(direct.positionFit).toBeCloseTo(0.4);
+    expect(withRb.positionFit).toBe(1);
+    expect(withRb.myBackups).toEqual([]);
+  });
+});
+
+describe("free agent for an open roster spot", () => {
+  it("never adds a third QB and fills the thinnest position on a tie", () => {
+    const slots = ["QB", "RB", "RB", "WR", "WR", "FLEX"];
+    const roster = [
+      player("qb1", "QB", 20, 3),
+      player("qb2", "QB", 16, 0),
+      player("rb1", "RB", 15, 7),
+      player("rb2", "RB", 14, 6),
+      player("wr1", "WR", 14, 5),
+      player("wr2", "WR", 13, 4),
+      player("wr3", "WR", 12, 3),
+    ];
+    const model: Model = {
+      players: Object.fromEntries(roster.map((p) => [p.id, p])),
+      repl: { QB: 17, RB: 5, WR: 6, TE: 4 },
+      slots,
+      teams: 2,
+    };
+    // No free agent improves the lineup, so the pick is about depth.
+    const { added } = withFreeAgents(roster, 1, model, NFL, undefined, new Set(), true);
+    expect(added[0]!.pos).toBe("RB");
   });
 });

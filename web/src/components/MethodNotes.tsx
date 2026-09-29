@@ -1,6 +1,8 @@
 import { fmt, pct } from "@/lib/format";
 import {
   estimate,
+  DEPTH_WEIGHT,
+  MAX_STARTER_DIP,
   MAX_VALUE_LOSS,
   MIN_IDEA_FAIRNESS,
   SCORE_WEIGHTS,
@@ -105,16 +107,32 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
         </p>
         <p>
           <b>Trade ideas</b>: the site tests every 1- or 2-player swap with every team and keeps
-          deals that raise your starters by at least {fmt(P.minGainMe)} pts/game, also raise the
-          partner&apos;s starters, and are at least {pct(MIN_IDEA_FAIRNESS)} fair, so neither side
-          loses. Value comes first: an idea never costs you more than {pct(MAX_VALUE_LOSS)} of the
-          trade value you send. Positions must stay sound on both rosters: every position you give
-          away is refilled (or you have a spare), nobody is left short of starters, and nobody piles
-          up a position (such as a third QB in a one-QB league). The three shown are the best
-          matches: fair first, then both lineups gaining alike, then each side getting the best
-          player at a position where its lineup is weak (and sending from where it is strong), then
+          deals that make your team better by at least {fmt(P.minGainMe)} pts/game, also make the
+          partner&apos;s team better, and are at least {pct(MIN_IDEA_FAIRNESS)} fair, so neither
+          side loses. Value comes first: an idea never costs you more than {pct(MAX_VALUE_LOSS)} of
+          the trade value you send. Positions must stay sound on both rosters: every position you
+          give away is refilled by a player you get back or a spare you already have (a free agent
+          alone is not enough), nobody is left short of starters, and nobody piles up a position
+          (such as a third QB in a one-QB league). Kickers and defenses are not traded. The three
+          shown are fair first, then the ones where your starters gain more than the partner&apos;s,
+          then the best matches: both lineups gaining alike, then each side getting the best player
+          at a position where its lineup is weak (and sending from where it is strong), then
           refilled positions and players sent from your bench. A star marks a true match (fair, and
-          both teams gain comparably), or the closest one when none is.
+          both teams gain comparably), or the closest one when none is. There are always three: when
+          fewer deals pass every rule, the nearest ones fill the list and say what they are missing.
+        </p>
+        <p>
+          <b>Team gain</b> counts the starters plus bench depth: {pct(DEPTH_WEIGHT)} of what the
+          best backup at each position scores above a free agent (about how often a starter misses a
+          week). So getting a spare running back back in a trade counts, and a trade that leaves you
+          thin costs something. Starters may dip at most {fmt(MAX_STARTER_DIP)} pts/game, and only
+          when depth makes up for it.
+        </p>
+        <p>
+          <b>Trade finder</b>: pick one of your players to sell, or a player from another team to
+          get. The site tries 1-for-1, 2-for-1, 2-for-2 and 3-for-2 deals around him (never 3-for-1)
+          with the same rules, and shows up to three, starring the best match. When no deal passes
+          every rule, it shows the closest one and what it is missing.
         </p>
       </div>
     </details>

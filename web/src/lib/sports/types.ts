@@ -109,6 +109,8 @@ export interface SportConfig {
   unsupportedSlots: readonly string[];
   /** Positions a team may sign from free agency to fill an open roster spot in a trade. */
   freeAgentPositions: readonly string[];
+  /** Positions offered or asked for in trade ideas and the trade finder (all when missing). */
+  tradePositions?: readonly string[];
   /** Number of teams assumed when a league does not say. */
   defaultTeams: number;
   model: ModelParams;

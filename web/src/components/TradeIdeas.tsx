@@ -32,6 +32,14 @@ export function rosterNotes(r: TradeResult, partnerName: string): string[] {
       `You get more players than you send, so you'll need to drop ${r.theirOpen}. ${partnerName} opens ${r.theirOpen} spot${r.theirOpen > 1 ? "s" : ""} and would add ${list(r.theirPickups)}.`,
     );
   }
+  if (r.myBackups.length) {
+    notes.push(
+      `To keep your depth, add ${list(r.myBackups)} from free agency (drop your weakest bench player).`,
+    );
+  }
+  if (r.theirBackups.length) {
+    notes.push(`${partnerName} would add ${list(r.theirBackups)} from free agency for depth.`);
+  }
   return notes;
 }
 
@@ -56,11 +64,13 @@ function Side({ label, players }: { label: string; players: Player[] }) {
   );
 }
 
-function IdeaCard({
+export function IdeaCard({
   idea,
   index,
   partner,
   star,
+  problems,
+  idPrefix = "idea",
   onOpen,
 }: {
   idea: TradeIdea;
@@ -68,11 +78,15 @@ function IdeaCard({
   partner: Team | undefined;
   /** "match" for a true match, "closest" for the nearest one when none is. */
   star: "match" | "closest" | null;
+  /** What keeps the deal from being suggested, when it is shown anyway. */
+  problems?: string[];
+  /** Keeps heading ids unique when several lists of cards share the page. */
+  idPrefix?: string;
   onOpen: () => void;
 }) {
   const name = partner?.name ?? "Unknown team";
   const notes = rosterNotes(idea, name);
-  const titleId = `idea-${index}-title`;
+  const titleId = `${idPrefix}-${index}-title`;
   return (
     <article
       className={`card ${styles.card} ${star ? styles.starred : ""}`}
@@ -85,12 +99,10 @@ function IdeaCard({
       )}
       <div className={styles.head}>
         <h3 className={styles.title} id={titleId}>
-          With {name}
+          {name}
+          {partner?.handle && <span className={styles.handle}>@{partner.handle}</span>}
         </h3>
-        <span className={styles.tag}>
-          Idea {index + 1}
-          {partner?.record ? ` · ${partner.record}` : ""}
-        </span>
+        <span className={styles.tag}>Idea {index + 1}</span>
       </div>
       <div className={styles.swap}>
         <Side label="You send" players={idea.give} />
@@ -103,6 +115,11 @@ function IdeaCard({
         <span className={styles.chip}>
           Their starters <Delta value={idea.dThem} />
         </span>
+        {Math.abs(idea.depthMe) >= 0.1 && (
+          <span className={styles.chip} title="Change in your best backups (20% of their points)">
+            Your bench <Delta value={idea.depthMe} />
+          </span>
+        )}
         <span className="hint">pts per game</span>
         {idea.myNeedPos && (
           <span className={`${styles.chip} ${styles.plus}`}>
@@ -119,6 +136,16 @@ function IdeaCard({
         )}
       </div>
       <BalanceMeter sGive={idea.sGive} sGet={idea.sGet} fairness={idea.fairness} />
+      {problems && problems.length > 0 && (
+        <div className={styles.problems}>
+          <span className="label">What is missing</span>
+          <ul>
+            {problems.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       {notes.length > 0 && <p className="hint">{notes.join(" ")}</p>}
       <div className={styles.foot}>
         <button type="button" className={`btn ${styles.openBtn}`} onClick={onOpen}>
@@ -160,8 +187,13 @@ export function TradeIdeas({
           {ideas.map((idea, i) => (
             <IdeaCard
               star={
-                isTrueMatch(idea) ? "match" : i === 0 && !ideas.some(isTrueMatch) ? "closest" : null
+                !idea.problems && isTrueMatch(idea)
+                  ? "match"
+                  : i === 0 && !ideas.some((r) => !r.problems && isTrueMatch(r))
+                    ? "closest"
+                    : null
               }
+              problems={idea.problems}
               key={`${idea.partner}-${idea.give.map((p) => p.id).join()}-${idea.get.map((p) => p.id).join()}`}
               idea={idea}
               index={i}

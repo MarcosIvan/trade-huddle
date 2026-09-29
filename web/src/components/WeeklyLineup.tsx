@@ -57,7 +57,7 @@ function Row({ slot, r }: { slot: string; r: Rated | null }) {
       {r ? (
         <>
           <td>
-            <PlayerCell player={r.player} />
+            <PlayerCell player={r.player} showScore={false} />
           </td>
           <td>
             <Matchup o={r.outlook} pos={r.player.pos} noTeam={r.player.noTeam} />

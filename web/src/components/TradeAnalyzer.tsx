@@ -1,6 +1,6 @@
 import { useContext, useId, useMemo } from "react";
 import { fmt, pct } from "@/lib/format";
-import type { Team } from "@/lib/league";
+import { teamLabel, type Team } from "@/lib/league";
 import {
   bestLineup,
   evaluateTrade,
@@ -150,7 +150,7 @@ export function TradeAnalyzer({
         >
           {others.map((t) => (
             <option key={t.rid} value={t.rid}>
-              {t.name}
+              {teamLabel(t)}
             </option>
           ))}
         </select>

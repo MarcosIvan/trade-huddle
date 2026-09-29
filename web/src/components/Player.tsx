@@ -38,13 +38,21 @@ export function PosBadge({ pos }: { pos: string }) {
   return <span className={`${styles.pos} ${cls ?? ""}`}>{pos}</span>;
 }
 
+/** Short labels, so long statuses stay on the name's line. */
+const INJURY_LABELS: Record<string, string> = { Questionable: "QUEST", Doubtful: "DOUBT" };
+
 export function InjuryBadge({ status }: { status: string | null }) {
   if (!status) return null;
   const rule = NFL.model.injury[status];
   const serious = (rule && !rule.startable) || status === "Out";
+  const label = INJURY_LABELS[status] ?? status.toUpperCase();
   return (
-    <span className={`${styles.injury} ${serious ? "" : styles.injurySoft}`} title="Injury status">
-      {status}
+    <span
+      className={`${styles.injury} ${serious ? "" : styles.injurySoft}`}
+      title={`Injury status: ${status}`}
+    >
+      <span aria-hidden="true">{label}</span>
+      <span className="visually-hidden">{status}</span>
     </span>
   );
 }
@@ -66,13 +74,27 @@ export function ScorePill({ id }: { id: string }) {
   );
 }
 
-export function PlayerCell({ player }: { player: Player }) {
+export function PlayerCell({
+  player,
+  showScore = true,
+}: {
+  player: Player;
+  /** The Player Score pill next to the name. */
+  showScore?: boolean;
+}) {
+  const words = player.name.split(" ");
+  const last = words.pop();
+  const first = words.join(" ");
   return (
     <div>
       <div className={styles.name}>
-        {player.name}
-        <ScorePill id={player.id} />
-        <InjuryBadge status={player.inj} />
+        {first && `${first} `}
+        {/* The badges stick to the last word, so they never drop to a line of their own. */}
+        <span className={styles.nowrap}>
+          {last}
+          {showScore && <ScorePill id={player.id} />}
+          <InjuryBadge status={player.inj} />
+        </span>
       </div>
       <div className={styles.sub}>
         <PosBadge pos={player.pos} />
