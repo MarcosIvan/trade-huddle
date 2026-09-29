@@ -43,17 +43,17 @@ export function BalanceMeter({
       <div
         className={styles.bar}
         role="img"
-        aria-label={`Trade value: you send ${fmt(sGive, 0)}, you get ${fmt(sGet, 0)}`}
+        aria-label={`Trade value: you send ${fmt(sGive)}, you get ${fmt(sGet)}`}
       >
         <span className={styles.give} style={{ flexGrow: give }} />
         <span className={styles.get} style={{ flexGrow: get }} />
       </div>
       <div className={styles.row} aria-hidden="true">
         <span>
-          Value you send <b>{fmt(sGive, 0)}</b>
+          Value you send <b>{fmt(sGive)}</b>
         </span>
         <span>
-          Value you get <b>{fmt(sGet, 0)}</b>
+          Value you get <b>{fmt(sGet)}</b>
         </span>
       </div>
     </div>

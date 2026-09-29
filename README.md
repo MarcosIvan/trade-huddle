@@ -1,19 +1,26 @@
 # Trade Huddle
 
-Trade ideas and a trade analyzer for **Sleeper redraft fantasy football leagues**.
+Trade ideas, a trade finder and a trade analyzer for **Sleeper redraft fantasy
+football leagues**.
 
-Enter your Sleeper username, pick a league, and Trade Huddle:
+**Use it:** open **https://marcosivan.github.io/trade-huddle/**, type your
+Sleeper username (or paste a league ID) and pick a league. No sign-up, no
+download. Want to look around first? Open the
+[demo league](https://marcosivan.github.io/trade-huddle/?demo) (fictional data).
 
-1. **Builds your team**: your current Sleeper roster, arranged into the best
-   starting lineup for your league's slots.
-2. **Suggests up to three trades** that raise the expected points of *your*
-   starters **and** your trade partner's starters, so they have a real chance of
-   being accepted.
-3. **Analyzes the balance** of any trade you build, player by player.
+For your league, Trade Huddle:
 
-Player value blends what a player has **already proven** (last season) with
-what he is doing **right now** (this season and his last three games), under
-your league's own scoring rules. See [How value works](#how-value-works).
+1. **Builds your team**: your current roster, arranged into the best starting
+   lineup for your league's slots, plus a **"This week"** lineup that uses each
+   player's opponent.
+2. **Suggests three trades** that make _your_ team and the partner's team
+   better, stay fair for both sides and keep both rosters' positions balanced.
+3. **Finds deals around one player** (trade finder): pick one of your players
+   to sell, or one from another team to get, and see the best deals around him.
+4. **Analyzes any trade you build**, player by player, with a fairness
+   traffic light.
+
+Every number is computed under **your league's own scoring rules**.
 
 > Independent open-source project. Not affiliated with or endorsed by Sleeper.
 
@@ -22,78 +29,129 @@ your league's own scoring rules. See [How value works](#how-value-works).
 ## How it works
 
 ```
-Every Tuesday (GitHub Actions)                       In the visitor's browser
-────────────────────────────                         ───────────────────────────
-build_data.py                                        docs/index.html + app.js
-  └─ Sleeper public API                                ├─ data/stats.json
-       ├─ player directory                             ├─ Sleeper API (live):
-       ├─ last season's totals                         │    user → leagues → league,
-       └─ this season, week by week                    │    rosters, users
-          ↓                                            ├─ score games with the
-     docs/data/stats.json  ──── deployed to ────────►  │  league's scoring rules
-     (raw stats, no league data)   GitHub Pages        ├─ value players, build lineups
-                                                       └─ search and rate trades
+Every day at 10:00 UTC (GitHub Actions)             In the visitor's browser
+───────────────────────────────────────             ─────────────────────────────
+pipeline/ (Python)                                  web/ (Next.js static export)
+  └─ Sleeper public API                               ├─ data/nfl/stats.json
+       ├─ player directory                            ├─ Sleeper API (live):
+       ├─ last season's totals, preseason             │    user → leagues → league,
+       │  projections and draft ADP                   │    rosters, users
+       ├─ this season, week by week                   ├─ score games with the
+       └─ schedule and weekly projections             │  league's scoring rules
+          ↓                                           ├─ value players, build lineups
+     web/public/data/nfl/stats.json ── deployed ──►   └─ search and rate trades
+     (raw stats, no league data)       to GitHub Pages     (in a Web Worker)
 ```
 
-- The weekly job only builds a **league-independent** stats file.
+- The daily job only builds a **league-independent** stats file.
 - Everything league-specific runs in the browser, straight against Sleeper's
-  public API, so rosters are always current (even trades made mid-week).
+  public API, so rosters are always current. A **Refresh rosters** button
+  re-reads them after a trade.
 - There is no server, no database, no login and **no API key**.
 
 ## How value works
 
-**Value** = expected points per game from here on, under your league's scoring.
+Two numbers matter, and the design decisions behind them are recorded in
+[`docs/adr/`](docs/adr).
 
-| Ingredient | Weight |
-|---|---|
-| Last season's points per game | 60% at the start of the season, minus 8 points per game played this season, never below 10% |
-| This season's average | 45% of the remaining weight |
-| Last 3 games | 55% of the remaining weight |
+**Points per game (Pts/g)**: expected points per game from here on, under your
+league's scoring. It starts from Sleeper's preseason projection (or last
+season) and moves toward this season's games as they pile up: the prior keeps
+`8 / (8 + games)` of the weight, so 73% after 3 games and 50% after 8. Part of
+each game's points comes from the targets and carries behind them, so a lucky
+touchdown counts less. Calibrated with a backtest on 2024 and 2025
+([ADR 0001](docs/adr/0001-value-model-calibration.md),
+[ADR 0003](docs/adr/0003-market-prior.md)).
 
-Examples: after 1 game, 52% / 22% / 26%; after 3 games, 36% / 29% / 35%;
-after 8 games, 10% / 40% / 50%.
+**Trade value (1 to 40, one decimal)**: what a player is worth in a trade. It
+combines several measures, each compared across the league
+([ADR 0007](docs/adr/0007-composite-trade-value.md)):
 
-- Rookies and players with little history start near **replacement level** and
-  move away from it as they play.
-- Players on IR count at half value and are never started. Players listed as
-  Out lose 10%.
-- **Replacement level** is what the best free agent would score after every
-  team in the league fills its starting slots.
-- **Above replacement** (value minus replacement level) is the currency for
-  trade balance, so scarce positions are worth more.
-- **Trade ideas** test every 1-for-1, 2-for-1, 1-for-2 and 2-for-2 deal with
-  every team. A deal is shown only if it raises your starters by at least
-  0.3 pts/game, also raises the partner's starters, and keeps both sides within
-  25% of each other in value.
+| Part                                              | Weight |
+| ------------------------------------------------- | ------ |
+| Proven base (preseason projection or last season) | 15     |
+| Draft market (ADP; fades as games are played)     | 15     |
+| Expected points per game                          | 15     |
+| This season                                       | 10     |
+| Last 3 games                                      | 10     |
+| Edge over the average starter at his position     | 10     |
+| Points above a free agent (scarcity)              | 10     |
+| Share of his NFL offense's targets and carries    | 15     |
 
-All weights live at the top of [`docs/app.js`](docs/app.js) in the `CFG` object.
+Scarce positions are scaled up (running backs, and quarterbacks in superflex),
+injured players keep part of their value, and nobody goes below 1. The
+**Player Score** (0-100, next to each name) adds how important the player is
+to his fantasy team.
 
-## Deploy your own copy
+**Fairness** compares trade value on each side; a side's second and third
+players count 85% and 70%, so two good players do not add up to a star.
+Green is fair (90% or more), yellow could work (75-89%), red means don't.
 
-1. **Create the repository** on GitHub (public) and push this code to `main`.
-2. **Turn on Pages:** *Settings → Pages → Build and deployment → Source:*
-   **GitHub Actions**.
-3. **Run the first deploy:** *Actions → Build and deploy → Run workflow*.
-   After that it runs by itself every Tuesday at 12:00 UTC and on every push
-   to `main`.
-4. Open `https://<your-user>.github.io/<repo-name>/`.
+## Trade ideas and the trade finder
 
-Nothing else to configure: the workflow needs no secrets.
+A deal is suggested only if:
 
-## Run it locally
+- **both teams get better**: starters plus bench depth (20% of what the best
+  backup at each position scores above a free agent); starters may dip at most
+  0.5 pts/game, and only when depth makes up for it;
+- it is **at least 85% fair** and never costs you more than 10% of the trade
+  value you send;
+- **positions stay sound on both rosters**: every position you send comes
+  back in the deal or is covered by a spare you already have, nobody is left
+  short of starters, and nobody piles up a position (no third QB in a one-QB
+  league). Kickers and defenses are not traded.
+
+Trade ideas show **three** deals: fair first, then those where your starters
+gain more than the partner's, then the best matches (each side getting the
+best player at a position where it is weak). When fewer than three deals pass,
+the nearest ones fill the list and say what they are missing. The **trade
+finder** applies the same rules around one player, in 1-for-1, 2-for-1,
+2-for-2 and 3-for-2 shapes ([ADR 0008](docs/adr/0008-trade-finder.md)).
+
+## For developers
+
+### Run it locally
+
+Requirements: Python 3.12 and Node 22.
 
 ```bash
-pip install -r requirements.txt
-python build_data.py                  # writes docs/data/stats.json
-python -m http.server 8000 -d docs    # open http://localhost:8000
+# 1. Build the stats file (writes web/public/data/nfl/stats.json)
+python -m venv .venv
+.venv/bin/pip install -r pipeline/requirements.txt
+.venv/bin/pip install --no-deps -e pipeline
+.venv/bin/python -m trade_huddle_data build
+
+# 2. Run the site
+cd web
+npm ci
+npm run dev                       # http://localhost:3000
 ```
 
-Want to try it without calling Sleeper? The demo league is already in the repo:
-open `http://localhost:8000/?demo`. To regenerate it: `python tools/make_demo.py`.
+The demo league works without the stats build: open
+`http://localhost:3000/?demo`. To regenerate it: `python tools/make_demo.py`.
 
-## Optional: export to Google Sheets
+Checks, from `web/`: `npm run lint`, `npm run typecheck`, `npm test`,
+`npm run format:check`, `npm run build`. The value model's backtests run with
+`npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
+`backtest:weekly`) after building the past seasons they use with
+`python -m trade_huddle_data build --season 2024` (and `2025`). The pipeline's own checks
+are in [`pipeline/README.md`](pipeline/README.md).
 
-`tools/sheets_export.py` writes your league's weekly stats and a per-player
+### Deploy your own copy
+
+Not needed to use the site. If you want your own:
+
+1. Fork the repository.
+2. _Settings → Pages → Build and deployment → Source:_ **GitHub Actions**.
+3. _Actions → Build and deploy → Run workflow_. After that it runs every day at
+   10:00 UTC and on every push to `main`.
+4. Open `https://<your-user>.github.io/<repo-name>/`.
+
+The workflow needs no secrets.
+
+### Optional: export to Google Sheets
+
+`tools/sheets_export.py` writes a league's weekly stats and a per-player
 summary to a Google Sheet. The website does not need it.
 
 1. In Google Cloud, enable the **Google Sheets API** and **Google Drive API**,
@@ -101,10 +159,10 @@ summary to a Google Sheet. The website does not need it.
 2. Save the key next to the project as `google-service-account.json`.
    It is git-ignored. **Never commit it.**
 3. Share your sheet with the service account's `client_email` as an Editor.
-4. Run:
+4. Run (see [`.env.example`](.env.example)):
 
 ```bash
-pip install -r requirements-sheets.txt
+pip install -r tools/requirements-sheets.txt
 export SLEEPER_LEAGUE_ID=your_league_id
 export SPREADSHEET_ID=your_sheet_id
 python tools/sheets_export.py
@@ -115,38 +173,27 @@ On Windows PowerShell use `$env:SLEEPER_LEAGUE_ID="..."` instead of `export`.
 ## Security
 
 This repository is public on purpose, so it is built to contain nothing
-sensitive. Details in [SECURITY.md](SECURITY.md). In short:
-
-- No secrets anywhere; `.gitignore` blocks credential files and `.env`.
-- Strict Content Security Policy, escaped output, validated input.
-- The workflow runs with a read-only token and never on pull requests from forks.
-
-Recommended repository settings (*Settings → Code security* and *Settings → Actions*):
-
-- [ ] **Secret scanning** and **Push protection**: blocks pushes that contain keys.
-- [ ] **Dependabot alerts** and **security updates**.
-- [ ] **Private vulnerability reporting**.
-- [ ] **Branch protection** on `main`: require a pull request before merging.
-- [ ] *Actions → General → Workflow permissions:* **Read repository contents**.
-- [ ] *Actions → General → Fork pull request workflows:* **Require approval for all outside collaborators**.
+sensitive. Details in [SECURITY.md](SECURITY.md).
 
 ## Limitations
 
 - Built for **redraft** leagues. Dynasty and keeper leagues work, but age,
   future outlook and draft picks are ignored (the site shows a notice).
 - **IDP** positions are not valued yet.
-- Value comes from production only; it does not use projections, bye weeks or
-  schedule strength.
+- Trade value weights are product choices checked against the market and real
+  examples; only the points-per-game model is backtested.
 
 ## Project layout
 
 ```
-build_data.py              weekly stats builder (run by GitHub Actions)
-docs/                      the website (served by GitHub Pages)
-  index.html, styles.css, app.js
-  data/demo_*.json         fictional demo league
-tools/make_demo.py         regenerates the demo league
-tools/sheets_export.py     optional Google Sheets export
+web/                       the website (Next.js, React, TypeScript; static export)
+  src/lib/model/           value model, lineups, trade search (plain TypeScript, tested)
+  src/components/          React components
+  scripts/backtest/        backtests of the value model
+pipeline/                  stats builder (Python package, run by GitHub Actions)
+tools/                     demo league generator, optional Google Sheets export
+docs/adr/                  architecture decision records
+docs/                      the original prototype (HTML/CSS/JS), kept as reference
 .github/workflows/         build and deploy workflow
 ```
 

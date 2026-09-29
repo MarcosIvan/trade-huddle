@@ -1,6 +1,6 @@
 import { useContext, useId, useMemo } from "react";
 import { fmt, pct } from "@/lib/format";
-import type { Team } from "@/lib/league";
+import { teamLabel, type Team } from "@/lib/league";
 import {
   bestLineup,
   evaluateTrade,
@@ -150,7 +150,7 @@ export function TradeAnalyzer({
         >
           {others.map((t) => (
             <option key={t.rid} value={t.rid}>
-              {t.name}
+              {teamLabel(t)}
             </option>
           ))}
         </select>
@@ -284,7 +284,7 @@ export function TradeAnalyzer({
             ))}
             <p className="hint">
               Points are per game under your league&apos;s scoring. Fairness compares the trade
-              value (1 to 100) on each side; a side&apos;s second and third players count 85% and
+              value (1 to 40) on each side; a side&apos;s second and third players count 85% and
               70%.
             </p>
           </>

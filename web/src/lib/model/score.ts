@@ -1,7 +1,7 @@
 /**
  * Trade value and Player Score.
  *
- * Trade value, 1 to 100: what a player is worth in a trade, built from
+ * Trade value, 1 to 40 (one decimal): what a player is worth in a trade, built from
  * several measures, each on a 0-1 scale that is comparable across positions:
  *
  *   base       15  what he has proven: preseason projection, or last season
@@ -18,11 +18,11 @@
  * goes to base, so three games cannot swing the value alone.
  * The sum is scaled by how scarce his position is in this league (mildly, so
  * positions stay comparable) and by his availability (injury or no team),
- * relative to the best player in the league. Every
+ * relative to the best player in the league (40). Every
  * player keeps at least 1: nobody is worth nothing in a trade.
  *
  * Player Score, 0 to 100, adds his importance to his fantasy team:
- *   80% trade value + 20 points × his value / the best value on his roster.
+ *   80 points × trade value / 40 + 20 points × his value / the best value on his roster.
  * Team importance stays out of trade value because it changes with the owner:
  * a player must be worth the same on both sides of a trade.
  */
@@ -44,7 +44,7 @@ export interface TradeValueParts {
 
 export interface PlayerScore {
   total: number;
-  /** Trade value, 1-100: owner-independent, used for trade fairness. */
+  /** Trade value, 1-40 with one decimal: owner-independent, used for trade fairness. */
   trade: number;
   /** Each measure of the trade value, 0 to 1. */
   parts: TradeValueParts;
@@ -69,8 +69,11 @@ export const TRADE_VALUE_WEIGHTS = {
   usage: 15,
 } as const;
 
-/** Player Score = TRADE_SHARE × trade value + IMPORTANCE_POINTS × team importance. */
-export const SCORE_WEIGHTS = { trade: 0.8, importance: 20 } as const;
+/** Top of the trade value scale (the league's best player). */
+export const TRADE_VALUE_MAX = 40;
+
+/** Player Score = `trade` points × trade value / TRADE_VALUE_MAX + `importance` points × team importance. */
+export const SCORE_WEIGHTS = { trade: 80, importance: 20 } as const;
 
 /** Share of team targets + carries that makes a lead player at each position. */
 const LEAD_SHARE: Record<string, number> = { RB: 0.35, WR: 0.18, TE: 0.14 };
@@ -148,7 +151,7 @@ function availability(p: Player, sport: SportConfig): number {
   return injury * noTeam;
 }
 
-/** Trade value (1-100) and Player Score for every player. `rosters` gives each fantasy team's players. */
+/** Trade value (1-40) and Player Score for every player. `rosters` gives each fantasy team's players. */
 export function playerScores(
   model: Model,
   stats: StatsFile,
@@ -255,10 +258,14 @@ export function playerScores(
   const out = new Map<string, PlayerScore>();
   for (const p of players) {
     const r = raw.get(p.id)!;
-    const trade = Math.max(1, (100 * r.value) / best);
+    // One decimal: players can tie, and nobody goes below 1.
+    const trade = Math.max(1, Math.round((10 * TRADE_VALUE_MAX * r.value) / best) / 10);
     const imp = importance.get(p.id) ?? 0;
     out.set(p.id, {
-      total: Math.min(100, SCORE_WEIGHTS.trade * trade + SCORE_WEIGHTS.importance * imp),
+      total: Math.min(
+        100,
+        (SCORE_WEIGHTS.trade * trade) / TRADE_VALUE_MAX + SCORE_WEIGHTS.importance * imp,
+      ),
       trade,
       parts: r.parts,
       posScale: posScale(p.pos),

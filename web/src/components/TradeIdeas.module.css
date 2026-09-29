@@ -16,6 +16,15 @@
 .title {
   font-size: 22px;
 }
+.handle {
+  margin-left: 8px;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
 .tag {
   font-family: var(--display);
   font-weight: 600;
@@ -113,4 +122,15 @@
   background: var(--good-soft);
   color: var(--good);
   font-weight: 600;
+}
+
+.problems {
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.problems ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTeams, leagueNotices, pickMyTeam } from "./league";
+import { buildTeams, leagueNotices, pickMyTeam, teamLabel } from "./league";
 import { NFL } from "./sports/nfl";
 import type { SleeperLeague, SleeperRoster } from "./sleeper/validate";
 
@@ -32,6 +32,18 @@ describe("buildTeams", () => {
       ["bob", "0-0-1"],
       ["Team 3", "0-0"],
     ]);
+  });
+
+  it("keeps the owner's username as a handle when the team has its own name", () => {
+    const teams = buildTeams(
+      [roster(1, "a"), roster(2, "b")],
+      [
+        { user_id: "a", display_name: "alice", team_name: "Sharks" },
+        { user_id: "b", display_name: "bob", team_name: undefined },
+      ],
+    );
+    expect(teams.map((t) => t.handle)).toEqual(["alice", null]);
+    expect(teams.map(teamLabel)).toEqual(["Sharks (@alice)", "bob"]);
   });
 });
 

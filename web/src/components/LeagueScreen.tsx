@@ -9,6 +9,7 @@ import {
   playerScores,
   rosterPlayers,
   weeklyOutlook,
+  type FinderMode,
   type TradeIdea,
 } from "@/lib/model";
 import { ScoreContext } from "./ScoreContext";
@@ -19,6 +20,7 @@ import { Notices } from "./Notices";
 import { Section } from "./Section";
 import { TeamLineup } from "./TeamLineup";
 import { TradeAnalyzer } from "./TradeAnalyzer";
+import { TradeFinder } from "./TradeFinder";
 import { TradeIdeas } from "./TradeIdeas";
 import styles from "./LeagueScreen.module.css";
 
@@ -54,13 +56,20 @@ export function LeagueScreen({
 }) {
   const teamFieldId = useId();
   const { stats, league, teams, model, demo, notices } = view;
-  // Player Scores (0-100); the owner-independent trade value (1-100) drives fairness.
+  // Player Scores (0-100); the owner-independent trade value (1-40) drives fairness.
   const scores = useMemo(() => playerScores(model, stats, teams, NFL), [model, stats, teams]);
   const tradeScores = useMemo(
     () => new Map([...scores].map(([id, s]) => [id, s.trade] as const)),
     [scores],
   );
   const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores);
+
+  // Trade finder: sell one of your players or get one from another team.
+  const [finder, setFinder] = useState<{
+    forRid: number;
+    mode: FinderMode;
+    playerId: string | null;
+  }>({ forRid: myRid, mode: "sell", playerId: null });
 
   // The analyzer starts on the first idea's partner; the user can change it.
   const [analyzer, setAnalyzer] = useState<AnalyzerState & { forRid: number }>({
@@ -181,11 +190,29 @@ export function LeagueScreen({
           <Section
             id="ideas"
             title="Trade ideas"
-            subtitle="Only deals that improve both starting lineups"
+            subtitle="The three best deals for your team, fair to both sides"
           >
             <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
           </Section>
         </div>
+
+        <Section
+          id="finder"
+          title="Trade finder"
+          subtitle="Pick one player to sell or to get, and see the best deals around him"
+        >
+          <TradeFinder
+            model={model}
+            teams={teams}
+            myRid={myRid}
+            tradeScores={tradeScores}
+            mode={finder.mode}
+            playerId={finder.forRid === myRid ? finder.playerId : null}
+            onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
+            onPlayer={(playerId) => setFinder({ ...finder, forRid: myRid, playerId })}
+            onOpen={openIdea}
+          />
+        </Section>
 
         <Section
           id="analyzer"

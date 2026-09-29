@@ -15,6 +15,15 @@ export interface TradeResult {
   themBefore: number;
   themAfter: number;
   dThem: number;
+  /**
+   * Change in bench depth: DEPTH_WEIGHT × the best backup at each position.
+   * 0 without trade values (the prototype counted starters only).
+   */
+  depthMe: number;
+  depthThem: number;
+  /** What each side really gains: starters plus depth. Filters and ranking use these. */
+  gainMe: number;
+  gainThem: number;
   /** Value above replacement you send. */
   vGive: number;
   /** Value above replacement you get. */
@@ -32,10 +41,21 @@ export interface TradeResult {
   positionsOk: boolean;
   /** The partner's roster positions still work. */
   theirPositionsOk: boolean;
-  /** Share of the players you send whose position you refill or have spare, 0 to 1. */
+  /**
+   * How well the positions you send are refilled, 0 to 1, weighted by value: a
+   * player back at the same position or a spare counts 1, a free agent less.
+   */
   positionFit: number;
+  /** Every position you send is refilled somehow (player back, spare or free agent). */
+  positionsCovered: boolean;
   /** What the trade leaves wrong on your roster, in words (empty when fine). */
   warnings: string[];
+  /** What the trade leaves wrong on the partner's roster, in words. */
+  theirWarnings: string[];
+  /** Free agents you would add as depth at a position the trade thins out. */
+  myBackups: Valued[];
+  /** Free agents the partner would add as depth. */
+  theirBackups: Valued[];
   /**
    * How well the deal fits each side's needs, 0 to 1: the best player you get
    * plays where you are weak, the best player you send plays where you are
@@ -62,6 +82,8 @@ export interface TradeResult {
 export interface TradeIdea extends TradeResult {
   partner: number;
   score: number;
+  /** Set when the idea only fills a spot because too few deals pass every rule. */
+  problems?: string[];
 }
 
 /** A team's roster, as model players. */
@@ -115,18 +137,27 @@ export function withFreeAgents(
   sport: SportConfig,
   pool?: FreeAgentPool,
   taken: Set<string> = new Set(),
+  /** Keep positions balanced (the prototype did not). */
+  balanced = false,
 ): { list: readonly Valued[]; added: Valued[] } {
   let current = list;
   const added: Valued[] = [];
+  const { min, cap } = positionNeeds(model.slots, sport);
+  const count = (pos: string) => current.filter((p) => p.pos === pos).length;
   for (let n = 1; n <= open; n++) {
     let best: Valued | null = null;
     let bestTotal = -1;
+    let bestShort = -Infinity;
     for (const pos of sport.freeAgentPositions) {
+      // Never pile up a position (no third QB); on a tie, fill the thinnest position.
+      if (balanced && count(pos) >= (cap[pos] ?? Infinity)) continue;
       const real = pool?.get(pos)?.find((p) => !taken.has(p.id));
       const candidate = real ?? freeAgent(model, pos, n);
       const total = bestLineup(current.concat(candidate), model.slots, sport).total;
-      if (total > bestTotal) {
+      const short = balanced ? (min[pos] ?? 0) - count(pos) : 0;
+      if (total > bestTotal + 1e-9 || (Math.abs(total - bestTotal) <= 1e-9 && short > bestShort)) {
         bestTotal = total;
+        bestShort = short;
         best = candidate;
       }
     }
@@ -154,7 +185,7 @@ export function sideValue(values: readonly number[]): number {
  * Weights of the match quality: fairness first, then both teams gaining alike,
  * each side getting what it needs, positions refilled, bench players sent.
  */
-export const MATCH = { fairness: 0.35, balance: 0.2, need: 0.2, fit: 0.1, bench: 0.15 } as const;
+export const MATCH = { fairness: 0.35, balance: 0.2, need: 0.2, fit: 0.15, bench: 0.1 } as const;
 
 /** Need per position, 0 (the league's strongest there) to 1 (the weakest). */
 export type TeamNeeds = Readonly<Record<string, number>>;
@@ -228,6 +259,34 @@ export const MAX_VALUE_LOSS = 0.1;
 /** With trade values, ideas must be at least this fair, so the partner does not lose either. */
 export const MIN_IDEA_FAIRNESS = 0.85;
 
+/**
+ * Weight of a position's best backup in a team's strength: about how often a
+ * starter misses a week (byes and injuries).
+ */
+export const DEPTH_WEIGHT = 0.2;
+
+/** Starters may lose at most this many points per game when bench depth makes up for it. */
+export const MAX_STARTER_DIP = 0.5;
+
+/**
+ * DEPTH_WEIGHT × what the best healthy backup at each tradable position scores
+ * above a free agent there: a deep bench matters where free agents are weak.
+ */
+export function benchDepth(list: readonly Valued[], model: Model, sport: SportConfig): number {
+  const starters = bestLineup(list, model.slots, sport).used;
+  let total = 0;
+  for (const pos of sport.tradePositions ?? sport.positions) {
+    const backup = list
+      .filter((p) => p.pos === pos && p.startable && !starters.has(p.id))
+      .reduce((best, p) => Math.max(best, p.value), 0);
+    total += DEPTH_WEIGHT * Math.max(0, backup - (model.repl[pos] ?? 0));
+  }
+  return total;
+}
+
+/** How well a free agent refills a position you send, next to a player you get back (1). */
+export const FREE_AGENT_REFILL = 0.4;
+
 /** How many players of each position a roster needs (min) and can use (cap). */
 export interface PositionNeeds {
   min: Readonly<Record<string, number>>;
@@ -270,30 +329,62 @@ export function positionCheck(
   give: readonly Valued[],
   get: readonly Valued[],
   needs: PositionNeeds,
-): { ok: boolean; fit: number; warnings: string[] } {
+  side: "you" | "they" = "you",
+  findBackup?: (pos: string) => Valued | null,
+  worth: (p: Valued) => number = (p) => p.value,
+): { ok: boolean; fit: number; covered: boolean; warnings: string[]; backups: Valued[] } {
+  const [subject, object] = side === "you" ? ["You", "you"] : ["They", "them"];
   const readyBefore = countByPos(before, true);
   const readyAfter = countByPos(after, true);
   const allBefore = countByPos(before, false);
   const allAfter = countByPos(after, false);
   const warnings: string[] = [];
+  // Spares before any free agent is added: players beyond what the lineup needs.
+  const spare = (pos: string) => (readyAfter[pos] ?? 0) >= (needs.min[pos] ?? 0) + 1;
+  const spareBefore = new Set(give.map((p) => p.pos).filter(spare));
+  // A position left short can be backed up by a free agent worth starting in a pinch.
+  const backups: Valued[] = [];
   for (const [pos, need] of Object.entries(needs.min)) {
+    const target = Math.min(need, readyBefore[pos] ?? 0);
+    while ((readyAfter[pos] ?? 0) < target && findBackup) {
+      const fa = findBackup(pos);
+      if (!fa) break;
+      backups.push(fa);
+      readyAfter[pos] = (readyAfter[pos] ?? 0) + 1;
+    }
     const now = readyAfter[pos] ?? 0;
-    if (now < Math.min(need, readyBefore[pos] ?? 0)) {
-      warnings.push(`Leaves you ${now} healthy ${pos}${now === 1 ? "" : "s"} (you need ${need})`);
+    if (now < target) {
+      warnings.push(
+        `Leaves ${object} ${now} healthy ${pos}${now === 1 ? "" : "s"} (${subject.toLowerCase()} need ${need})`,
+      );
     }
   }
   for (const [pos, cap] of Object.entries(needs.cap)) {
     const now = allAfter[pos] ?? 0;
     if (now > cap && now > (allBefore[pos] ?? 0)) {
-      warnings.push(`You would carry ${now} ${pos}s (${cap} is plenty)`);
+      warnings.push(`${subject} would carry ${now} ${pos}s (${cap} is plenty)`);
     }
   }
-  // Each player sent should be refilled at his position, unless there is a spare.
-  const refilled = give.filter(
-    (p) =>
-      get.some((g) => g.pos === p.pos) || (readyAfter[p.pos] ?? 0) >= (needs.min[p.pos] ?? 0) + 1,
-  ).length;
-  return { ok: warnings.length === 0, fit: give.length ? refilled / give.length : 1, warnings };
+  // How well each player sent is refilled at his position: best by a player coming back
+  // in the trade or a spare already on the roster, less well by a free agent. Weighted by
+  // value, so the more a player is worth, the more his refill matters.
+  const refill = (p: Valued) =>
+    get.some((g) => g.pos === p.pos) || spareBefore.has(p.pos)
+      ? 1
+      : backups.some((b) => b.pos === p.pos)
+        ? FREE_AGENT_REFILL
+        : 0;
+  const total = give.reduce((s, p) => s + Math.max(worth(p), 1e-9), 0);
+  const fit = give.length
+    ? give.reduce((s, p) => s + Math.max(worth(p), 1e-9) * refill(p), 0) / total
+    : 1;
+  return {
+    ok: warnings.length === 0,
+    fit,
+    covered: give.every((p) => refill(p) > 0),
+    warnings,
+    backups,
+  };
 }
 
 export type FairnessLevel = "green" | "yellow" | "red";
@@ -331,7 +422,15 @@ export function evaluateTrade(
   let myPickups: Valued[] = [];
   let theirPickups: Valued[] = [];
   if (myOpen)
-    ({ list: mine, added: myPickups } = withFreeAgents(mine, myOpen, model, sport, pool, taken));
+    ({ list: mine, added: myPickups } = withFreeAgents(
+      mine,
+      myOpen,
+      model,
+      sport,
+      pool,
+      taken,
+      Boolean(scores),
+    ));
   if (theirOpen) {
     ({ list: theirs, added: theirPickups } = withFreeAgents(
       theirs,
@@ -340,6 +439,7 @@ export function evaluateTrade(
       sport,
       pool,
       taken,
+      Boolean(scores),
     ));
   }
   const meAfter = bestLineup(mine, model.slots, sport).total;
@@ -356,7 +456,15 @@ export function evaluateTrade(
   const fairness = hi > 0 ? lo / hi : 1;
   const dMe = meAfter - myBase;
   const dThem = themAfter - theirBase;
-  const balance = dMe > 0 && dThem > 0 ? Math.min(dMe, dThem) / Math.max(dMe, dThem) : 0;
+  // With trade values, backups count too: a trade that leaves you thin costs something.
+  const depth = (before: readonly Valued[], after: readonly Valued[]) =>
+    scores ? benchDepth(after, model, sport) - benchDepth(before, model, sport) : 0;
+  const depthMe = depth(myList, mine);
+  const depthThem = depth(theirList, theirs);
+  const gainMe = dMe + depthMe;
+  const gainThem = dThem + depthThem;
+  const balance =
+    gainMe > 0 && gainThem > 0 ? Math.min(gainMe, gainThem) / Math.max(gainMe, gainThem) : 0;
   let benchShare = 0;
   const sentTotal = sumScore(give);
   if (scores && sentTotal > 0) {
@@ -364,9 +472,15 @@ export function evaluateTrade(
     benchShare = sumScore(give.filter((p) => !starters.has(p.id))) / sentTotal;
   }
   const needs = positionNeeds(model.slots, sport);
-  const myCheck = positionCheck(myList, mine, give, get, needs);
-  const theirCheck = positionCheck(theirList, theirs, get, give, needs);
-  const worth = (p: Player) => (scores ? valueOf(p) : p.vorp);
+  // Real free agents at least at replacement level can back up a position a trade thins out.
+  const findBackup = (pos: string) => {
+    const fa = pool?.get(pos)?.find((p) => !taken.has(p.id) && p.value >= (model.repl[pos] ?? 0));
+    if (fa) taken.add(fa.id);
+    return fa ?? null;
+  };
+  const worth = (p: Valued) => (scores ? (scores.get(p.id) ?? 0) : p.vorp);
+  const myCheck = positionCheck(myList, mine, give, get, needs, "you", findBackup, worth);
+  const theirCheck = positionCheck(theirList, theirs, get, give, needs, "they", findBackup, worth);
   const mineFit = needFit(sideNeeds?.mine, get, give, worth);
   const theirFit = needFit(sideNeeds?.theirs, give, get, worth);
   const match =
@@ -386,6 +500,10 @@ export function evaluateTrade(
     themBefore: theirBase,
     themAfter,
     dThem,
+    depthMe,
+    depthThem,
+    gainMe,
+    gainThem,
     vGive,
     vGet,
     fairness,
@@ -394,7 +512,11 @@ export function evaluateTrade(
     positionsOk: myCheck.ok,
     theirPositionsOk: theirCheck.ok,
     positionFit: myCheck.fit,
+    positionsCovered: myCheck.covered,
     warnings: myCheck.warnings,
+    theirWarnings: theirCheck.warnings,
+    myBackups: myCheck.backups,
+    theirBackups: theirCheck.backups,
     myNeedFit: mineFit.fit,
     theirNeedFit: theirFit.fit,
     myNeedPos: mineFit.pos,
@@ -406,6 +528,10 @@ export function evaluateTrade(
     theirPickups,
   };
 }
+
+/** Positions worth trading for (kickers and defenses are streamed, not traded). */
+const tradable = (p: Player, sport: SportConfig) =>
+  (sport.tradePositions ?? sport.positions).includes(p.pos);
 
 /** Every single player and every pair, singles first. */
 export function combos<T>(list: readonly T[]): T[][] {
@@ -441,15 +567,20 @@ export function suggestTrades(
   const p = sport.model;
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
   const myBase = bestLineup(mine, model.slots, sport).total;
-  const myCombos = combos(tradeCandidates(mine, sport));
+  // With trade values, kickers and defenses are left out: they are streamed, not traded.
+  const offered = (list: readonly Player[]) =>
+    scores ? list.filter((p) => tradable(p, sport)) : list;
+  const myCombos = combos(tradeCandidates(offered(mine), sport));
   const needs = scores ? teamNeeds(rosters, model, sport) : null;
 
   const found: TradeIdea[] = [];
+  // With trade values, near misses fill the list when fewer than three deals pass.
+  const near: TradeIdea[] = [];
   for (const team of rosters) {
     if (team.rid === myRid) continue;
     const theirs = team.players;
     const theirBase = bestLineup(theirs, model.slots, sport).total;
-    const theirCombos = combos(tradeCandidates(theirs, sport));
+    const theirCombos = combos(tradeCandidates(offered(theirs), sport));
     for (const give of myCombos) {
       for (const get of theirCombos) {
         const r = evaluateTrade(
@@ -465,38 +596,256 @@ export function suggestTrades(
           scores,
           needs ? { mine: needs.get(myRid), theirs: needs.get(team.rid) } : undefined,
         );
-        if (r.dMe < p.minGainMe || r.dThem < p.minGainThem || r.fairness < p.minFairness) {
-          continue;
-        }
-        // With trade values: fair for both, never lose value, keep both rosters' positions sound,
-        // and refill every position you give away.
-        if (
-          scores &&
-          (r.fairness < MIN_IDEA_FAIRNESS ||
-            r.sGet < (1 - MAX_VALUE_LOSS) * r.sGive ||
-            !r.positionsOk ||
-            !r.theirPositionsOk ||
-            r.positionFit < 1)
-        ) {
-          continue;
-        }
-        // Favor your gain, reward the partner's gain, prefer simpler deals.
-        const score =
-          r.dMe +
-          p.partnerGainWeight * r.dThem -
-          p.extraPlayerPenalty * (give.length + get.length - 2);
-        found.push({ ...r, partner: team.rid, score });
+        const problems = ideaProblems(r, sport, Boolean(scores));
+        const idea = { ...r, partner: team.rid, score: ideaScore(r, sport) };
+        if (!problems.length) found.push(idea);
+        else if (scores && r.gainMe > 0) near.push({ ...idea, problems });
       }
     }
   }
-  if (scores) {
-    // With trade values, rank by match quality: green first, then the best match, then your gain.
+  sortIdeas(found, Boolean(scores));
+  const picked = pickDiverse(found, p.maxSuggestions);
+  if (!scores || picked.length >= p.maxSuggestions) return picked;
+  // Fewest problems first, then the same order as real ideas.
+  sortIdeas(near, true);
+  near.sort((a, b) => a.problems!.length - b.problems!.length);
+  return fillDiverse(picked, near, p.maxSuggestions);
+}
+
+/** Adds near misses to the picked ideas: new partners first, your players repeated only as a last resort. */
+function fillDiverse(picked: TradeIdea[], near: readonly TradeIdea[], max: number): TradeIdea[] {
+  const out = [...picked];
+  const usedMine = new Set(out.flatMap((r) => r.give.map((p) => p.id)));
+  const partners = new Set(out.map((r) => r.partner));
+  const fresh = (r: TradeIdea) => !r.give.some((p) => usedMine.has(p.id));
+  const take = (r: TradeIdea) => {
+    out.push(r);
+    partners.add(r.partner);
+    for (const p of r.give) usedMine.add(p.id);
+  };
+  for (const r of near) {
+    if (out.length >= max) break;
+    if (!partners.has(r.partner) && fresh(r)) take(r);
+  }
+  for (const r of near) {
+    if (out.length >= max) break;
+    if (!out.includes(r) && fresh(r)) take(r);
+  }
+  // Still short: allow a player of yours to appear again, so there are always three.
+  for (const r of near) {
+    if (out.length >= max) break;
+    if (!out.includes(r)) take(r);
+  }
+  return out;
+}
+
+/** Favor your gain, reward the partner's gain, prefer simpler deals (the prototype's ranking). */
+function ideaScore(r: TradeResult, sport: SportConfig): number {
+  const p = sport.model;
+  return (
+    r.gainMe +
+    p.partnerGainWeight * r.gainThem -
+    p.extraPlayerPenalty * (r.give.length + r.get.length - 2)
+  );
+}
+
+/** With trade values, rank by match quality: green first, then the best match, then your gain. */
+/** Your starters gain at least as much as the partner's: the edge you want from a fair deal. */
+export const hasEdge = (r: TradeResult) => r.dMe >= r.dThem;
+
+/**
+ * With trade values: fair (green) first, then deals where your starters gain
+ * more than theirs, then the best match and your gain.
+ */
+function sortIdeas(found: TradeIdea[], withValues: boolean): void {
+  if (withValues) {
     const green = (r: TradeIdea) => (fairnessLevel(r.fairness) === "green" ? 1 : 0);
-    found.sort((a, b) => green(b) - green(a) || b.match - a.match || b.dMe - a.dMe);
+    const edge = (r: TradeIdea) => (hasEdge(r) ? 1 : 0);
+    found.sort(
+      (a, b) =>
+        green(b) - green(a) || edge(b) - edge(a) || b.match - a.match || b.gainMe - a.gainMe,
+    );
   } else {
     found.sort((a, b) => b.score - a.score);
   }
-  return pickDiverse(found, p.maxSuggestions);
+}
+
+/**
+ * Why a trade cannot be suggested, in words (empty when it can). Both lineups
+ * must gain and the values stay close; with trade values the deal must also be
+ * fair for both, not cost you value, keep both rosters' positions sound and
+ * refill every position you give away.
+ */
+export function ideaProblems(r: TradeResult, sport: SportConfig, withValues: boolean): string[] {
+  const p = sport.model;
+  const out: string[] = [];
+  if (r.gainMe < p.minGainMe) out.push("Does not improve your team enough");
+  if (r.gainThem < p.minGainThem) out.push("Does not improve their team, so they may say no");
+  if (withValues && r.dMe < -MAX_STARTER_DIP) out.push("Weakens your starting lineup");
+  if (withValues && r.dThem < -MAX_STARTER_DIP) {
+    out.push("Weakens their starting lineup, so they may say no");
+  }
+  if (!withValues) {
+    if (r.fairness < p.minFairness) out.push("The values are too far apart");
+    return out;
+  }
+  const gap = (x: number) => Math.max(0.1, Math.round(x * 10) / 10).toFixed(1);
+  if (r.sGet < (1 - MAX_VALUE_LOSS) * r.sGive) {
+    out.push(`You would send about ${gap(r.sGive - r.sGet)} more trade value than you get`);
+  } else if (r.fairness < MIN_IDEA_FAIRNESS && r.sGet > r.sGive) {
+    out.push(
+      `About ${gap(MIN_IDEA_FAIRNESS * r.sGet - r.sGive)} more trade value from you would make it fair`,
+    );
+  } else if (r.fairness < MIN_IDEA_FAIRNESS) {
+    out.push("The values are too far apart");
+  }
+  out.push(...r.warnings, ...r.theirWarnings);
+  // A position you send must come back in the trade or stay covered by your own spare:
+  // a free agent alone is not enough depth.
+  if (r.positionsOk && r.positionFit < 1) {
+    out.push("Leaves you without a real backup at a position you send");
+  }
+  return out;
+}
+
+/** Deal shapes the trade finder tries, as [players you send, players you get]. No 3-for-1. */
+export const FINDER_SHAPES: readonly (readonly [number, number])[] = [
+  [1, 1],
+  [2, 1],
+  [1, 2],
+  [2, 2],
+  [3, 2],
+  [2, 3],
+];
+
+/** Every group of 1 to `max` players from the list. */
+export function groups<T>(list: readonly T[], max: number): T[][] {
+  const out: T[][] = [];
+  const walk = (start: number, current: T[]) => {
+    if (current.length) out.push(current);
+    if (current.length === max) return;
+    for (let i = start; i < list.length; i++) walk(i + 1, [...current, list[i]!]);
+  };
+  walk(0, []);
+  return out;
+}
+
+export type FinderMode = "sell" | "get";
+
+export interface FinderIdea extends TradeIdea {
+  /** Why it falls short, when no deal passes every rule and this is the closest one. */
+  problems: string[];
+}
+
+export interface FinderResult {
+  /** Up to three deals that pass every rule, best first. */
+  ideas: TradeIdea[];
+  /** When none passes, the closest deal and what it is missing. */
+  closest: FinderIdea | null;
+}
+
+/**
+ * Deals around one player: "sell" finds what one of your players can bring
+ * back from any team; "get" finds packages that bring a player from his team.
+ * Same rules and ranking as the trade ideas, in the shapes of FINDER_SHAPES.
+ */
+export function findTrades(
+  mode: FinderMode,
+  playerId: string,
+  myRid: number,
+  rosters: readonly TeamRoster[],
+  model: Model,
+  sport: SportConfig,
+  pool?: FreeAgentPool,
+  scores?: ReadonlyMap<string, number>,
+): FinderResult {
+  const empty: FinderResult = { ideas: [], closest: null };
+  const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
+  const owner = rosters.find((t) => t.players.some((p) => p.id === playerId));
+  const pinned = owner?.players.find((p) => p.id === playerId);
+  if (!owner || !pinned || (mode === "sell") !== (owner.rid === myRid)) return empty;
+
+  const worth = (p: Player) => scores?.get(p.id) ?? p.vorp;
+  const top = (list: readonly Player[], n: number) =>
+    list
+      .filter((p) => p.id !== playerId && tradable(p, sport))
+      .sort((a, b) => worth(b) - worth(a))
+      .slice(0, n);
+  const withPinned = (list: readonly Player[]) => [
+    [pinned],
+    ...groups(top(list, sport.model.candidates - 1), 2).map((g) => [pinned, ...g]),
+  ];
+  const allowed = (give: number, get: number) =>
+    FINDER_SHAPES.some(([a, b]) => a === give && b === get);
+
+  const withValues = Boolean(scores);
+  const needs = scores ? teamNeeds(rosters, model, sport) : null;
+  const myBase = bestLineup(mine, model.slots, sport).total;
+  const partners = mode === "sell" ? rosters.filter((t) => t.rid !== myRid) : [owner];
+  const myGroups =
+    mode === "sell" ? withPinned(mine) : groups(top(mine, sport.model.candidates), 3);
+
+  const found: TradeIdea[] = [];
+  let closest: FinderIdea | null = null;
+  for (const team of partners) {
+    const theirs = team.players;
+    const theirBase = bestLineup(theirs, model.slots, sport).total;
+    const theirGroups =
+      mode === "sell" ? groups(top(theirs, sport.model.candidates), 3) : withPinned(theirs);
+    for (const give of myGroups) {
+      for (const get of theirGroups) {
+        if (!allowed(give.length, get.length)) continue;
+        const r = evaluateTrade(
+          mine,
+          theirs,
+          give,
+          get,
+          myBase,
+          theirBase,
+          model,
+          sport,
+          pool,
+          scores,
+          needs ? { mine: needs.get(myRid), theirs: needs.get(team.rid) } : undefined,
+        );
+        const idea = { ...r, partner: team.rid, score: ideaScore(r, sport) };
+        const problems = ideaProblems(r, sport, withValues);
+        if (!problems.length) {
+          found.push(idea);
+        } else if (
+          !closest ||
+          problems.length < closest.problems.length ||
+          (problems.length === closest.problems.length && r.match > closest.match)
+        ) {
+          closest = { ...idea, problems };
+        }
+      }
+    }
+  }
+  sortIdeas(found, withValues);
+  const ideas =
+    mode === "sell"
+      ? pickPartners(found, sport.model.maxSuggestions)
+      : found.slice(0, sport.model.maxSuggestions);
+  return { ideas, closest: ideas.length ? null : closest };
+}
+
+/** Top ideas with different partners when possible (the same player may appear in each). */
+function pickPartners(sorted: readonly TradeIdea[], max: number): TradeIdea[] {
+  const picked: TradeIdea[] = [];
+  const partners = new Set<number>();
+  for (const r of sorted) {
+    if (picked.length >= max) break;
+    if (!partners.has(r.partner)) {
+      picked.push(r);
+      partners.add(r.partner);
+    }
+  }
+  for (const r of sorted) {
+    if (picked.length >= max) break;
+    if (!picked.includes(r)) picked.push(r);
+  }
+  return picked;
 }
 
 /** Top ideas with different partners, never offering the same player twice. */

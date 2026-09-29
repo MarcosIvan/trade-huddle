@@ -1,10 +1,19 @@
 .name {
   font-weight: 600;
-  line-height: 1.25;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
+  line-height: 1.5;
+}
+/* The score and injury badges flow with the name like words, so they stay beside it. */
+.nowrap {
+  white-space: nowrap;
+}
+.name .score,
+.name .injury {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.name .injury {
+  display: inline-block;
+  line-height: 1.4;
 }
 .sub {
   display: flex;
@@ -55,6 +64,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   background: var(--bad-soft);
   color: var(--bad);
 }

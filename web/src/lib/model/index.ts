@@ -4,14 +4,25 @@ export { replacementLevels } from "./replacement";
 export {
   playerScores,
   SCORE_WEIGHTS,
+  TRADE_VALUE_MAX,
   TRADE_VALUE_WEIGHTS,
   type PlayerScore,
   type TradeValueParts,
 } from "./score";
 export { average, makeScorer } from "./scoring";
 export {
+  benchDepth,
+  DEPTH_WEIGHT,
+  MAX_STARTER_DIP,
   evaluateTrade,
+  FINDER_SHAPES,
+  findTrades,
+  type FinderIdea,
+  type FinderMode,
+  type FinderResult,
+  ideaProblems,
   fairnessLevel,
+  hasEdge,
   isTrueMatch,
   MATCH,
   MAX_VALUE_LOSS,
