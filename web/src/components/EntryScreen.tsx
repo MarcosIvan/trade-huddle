@@ -62,11 +62,14 @@ export function EntryScreen({
   return (
     <div className={`container ${styles.entry}`}>
       <div className={styles.hero}>
-        <h1 className={styles.title}>Trades that make both teams better</h1>
+        <h1 className={styles.title}>
+          <span className={styles.eyebrow}>Fantasy football trade analyzer for Sleeper</span> Trades
+          that make both teams better
+        </h1>
         <p className={styles.lede}>
           Enter your Sleeper username and pick a league. Trade Huddle builds your best lineup,
-          suggests up to three fair trades that improve your starters and your trade partner&apos;s,
-          and shows how balanced any deal is.
+          suggests up to three fair NFL trades that improve your starters and your trade
+          partner&apos;s, and shows how balanced any deal is.
         </p>
       </div>
 
@@ -133,6 +136,80 @@ export function EntryScreen({
           </section>
         )}
       </div>
+
+      <About />
+    </div>
+  );
+}
+
+const FEATURES = [
+  {
+    name: "Trade analyzer",
+    text: "Pick players on both sides and see if the trade is fair, with the trade value, points per game and last 3 games each side gains or loses.",
+  },
+  {
+    name: "Trade finder",
+    text: "Choose one player to sell or to get and see the best fair deals around him, from 1-for-1 to 3-for-2.",
+  },
+  {
+    name: "Trade ideas",
+    text: "Three fair trades that improve both teams, built around the ideal roster you set: how many QBs, RBs, WRs and TEs you want.",
+  },
+  {
+    name: "Weekly lineup",
+    text: "Your best start/sit lineup for this week's NFL games, with each opponent's matchup.",
+  },
+];
+
+const QUESTIONS = [
+  {
+    q: "Is it free?",
+    a: "Yes. Trade Huddle is free and open source. There is no sign-up and no password: it only needs your Sleeper username.",
+  },
+  {
+    q: "Which leagues does it work with?",
+    a: "Sleeper redraft NFL leagues, with your league's own scoring: PPR, half PPR or standard, one-QB or superflex.",
+  },
+  {
+    q: "How is trade value calculated?",
+    a: "Each player gets a trade value from 1 to 40 that blends his preseason outlook, the draft market, expected points per game, this season, the last 3 games and his share of his NFL offense's targets and carries. A trade is fair when both sides send about the same value.",
+  },
+  {
+    q: "Where does my data go?",
+    a: "Nowhere. Everything runs in your browser, straight against Sleeper's public API. The site only remembers your username and choices in your own browser.",
+  },
+];
+
+/** What the site does and common questions: plain text that search engines can read. */
+function About() {
+  return (
+    <div className={styles.about}>
+      <section aria-labelledby="features-title">
+        <h2 id="features-title" className={styles.aboutTitle}>
+          What Trade Huddle does
+        </h2>
+        <ul className={styles.features}>
+          {FEATURES.map((f) => (
+            <li key={f.name}>
+              <h3>{f.name}</h3>
+              <p>{f.text}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section aria-labelledby="faq-title">
+        <h2 id="faq-title" className={styles.aboutTitle}>
+          Questions
+        </h2>
+        <dl className={styles.faq}>
+          {QUESTIONS.map(({ q, a }) => (
+            <div key={q}>
+              <dt>{q}</dt>
+              <dd>{a}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
     </div>
   );
 }
