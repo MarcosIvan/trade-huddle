@@ -1,5 +1,7 @@
 # Trade Huddle
 
+[![CI](https://github.com/MarcosIvan/trade-huddle/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcosIvan/trade-huddle/actions/workflows/ci.yml)
+
 Trade ideas, a trade finder and a trade analyzer for **Sleeper redraft fantasy
 football leagues**.
 
@@ -146,7 +148,10 @@ Checks, from `web/`: `npm run lint`, `npm run typecheck`, `npm test`,
 `npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
 `backtest:weekly`) after building the past seasons they use with
 `python -m trade_huddle_data build --season 2024` (and `2025`). The pipeline's own checks
-are in [`pipeline/README.md`](pipeline/README.md).
+are in [`pipeline/README.md`](pipeline/README.md). The **CI** workflow
+([`ci.yml`](.github/workflows/ci.yml)) runs all of them, plus
+`npm audit --audit-level=high`, on every pull request and every push to
+`main`.
 
 ### Deploy your own copy
 

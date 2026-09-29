@@ -23,9 +23,11 @@ Do not open a public issue for security problems.
   self-hosted.
 - **Content Security Policy (planned).** A hash-based CSP for the Next.js
   export is on the roadmap; the site does not ship one yet.
-- **Least-privilege automation.** The GitHub Actions workflow uses a read-only
-  token; only the deploy step can publish to Pages. It never runs for pull
-  requests from forks.
+- **Least-privilege automation.** Workflows use a read-only token; only the
+  deploy step can publish to Pages, and the deploy never runs for pull
+  requests. The CI workflow checks every pull request (lint, types, tests,
+  build, `npm audit`, ruff, mypy, pytest) with `pull_request`, never
+  `pull_request_target`, so code from forks gets no write access or secrets.
 - **Dependency updates.** Dependabot opens pull requests for outdated GitHub
   Actions, Python packages (pipeline and tools) and npm packages (the site).
   Major npm versions are updated by hand once the tooling supports them;

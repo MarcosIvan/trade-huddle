@@ -1,0 +1,106 @@
+# Checks every pull request and every push to main: the site (lint, types,
+# tests, formatting, build, npm audit) and the stats pipeline (ruff, mypy,
+# pytest). Nothing is deployed here; see deploy.yml.
+#
+# Security notes:
+#   - pull_request (never pull_request_target): code from forks and from
+#     Dependabot runs with a read-only token and no secrets.
+#   - Actions are pinned to full commit SHAs (version in the comment), the
+#     same ones deploy.yml uses.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A new push to the same pull request cancels the run still going.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Formatting
+        run: npm run format:check
+
+      - name: Build
+        env:
+          # Same base path as the deployed site, so the build is the real one.
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: npm run build
+
+      - name: Known vulnerabilities (high and critical)
+        run: npm audit --audit-level=high
+
+  pipeline:
+    name: Pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            pipeline/requirements.txt
+            pipeline/pyproject.toml
+
+      - name: Install the pipeline and its dev tools
+        # The runtime tree comes pinned from requirements.txt; the dev tools
+        # are pinned in pyproject.toml.
+        run: |
+          pip install -r requirements.txt
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Formatting
+        run: ruff format --check .
+
+      - name: Types
+        run: mypy src tests
+
+      - name: Tests
+        run: pytest
