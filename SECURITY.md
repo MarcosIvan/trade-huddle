@@ -28,6 +28,8 @@ Do not open a public issue for security problems.
   requests from forks.
 - **Dependency updates.** Dependabot opens pull requests for outdated GitHub
   Actions, Python packages (pipeline and tools) and npm packages (the site).
+  Major npm versions are updated by hand once the tooling supports them;
+  a vulnerability fixed only in a new major still raises a Dependabot alert.
 
 ## What the site stores
 
