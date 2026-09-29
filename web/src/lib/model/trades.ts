@@ -139,18 +139,23 @@ export function withFreeAgents(
   taken: Set<string> = new Set(),
   /** Keep positions balanced (the prototype did not). */
   balanced = false,
+  /** Your ideal roster: fill toward it and not past it. */
+  ideal?: IdealRoster,
 ): { list: readonly Valued[]; added: Valued[] } {
   let current = list;
   const added: Valued[] = [];
-  const { min, cap } = positionNeeds(model.slots, sport);
+  const { min, cap } = withIdeal(positionNeeds(model.slots, sport), ideal);
   const count = (pos: string) => current.filter((p) => p.pos === pos).length;
+  const full = (pos: string) => count(pos) >= (cap[pos] ?? Infinity);
   for (let n = 1; n <= open; n++) {
     let best: Valued | null = null;
     let bestTotal = -1;
     let bestShort = -Infinity;
+    // When every position is full, the spot still gets the most useful free agent.
+    const allFull = sport.freeAgentPositions.every(full);
     for (const pos of sport.freeAgentPositions) {
       // Never pile up a position (no third QB); on a tie, fill the thinnest position.
-      if (balanced && count(pos) >= (cap[pos] ?? Infinity)) continue;
+      if (balanced && !allFull && full(pos)) continue;
       const real = pool?.get(pos)?.find((p) => !taken.has(p.id));
       const candidate = real ?? freeAgent(model, pos, n);
       const total = bestLineup(current.concat(candidate), model.slots, sport).total;
@@ -291,6 +296,56 @@ export const FREE_AGENT_REFILL = 0.4;
 export interface PositionNeeds {
   min: Readonly<Record<string, number>>;
   cap: Readonly<Record<string, number>>;
+  /** The owner's ideal roster, when set: a trade must not move a position away from it. */
+  ideal?: IdealRoster;
+}
+
+/**
+ * The roster the owner wants: how many players in total (bench included) at
+ * each position. Positions left out keep the default rules.
+ */
+export type IdealRoster = Readonly<Record<string, number>>;
+
+/** Bench players the default ideal roster adds above the starters (RB and WR include the flex backup). */
+export const IDEAL_BENCH = { QB: 1, RB: 2, WR: 2, TE: 1 } as const;
+
+/**
+ * The ideal roster before the owner changes it, from the league's lineup:
+ * 2 QB, 5 RB, 5 WR and 2 TE in a standard one-flex league.
+ */
+export function defaultIdealRoster(slots: readonly string[], sport: SportConfig): IdealRoster {
+  const { min } = positionNeeds(slots, sport);
+  const out: Record<string, number> = {};
+  for (const pos of sport.tradePositions ?? sport.positions) {
+    out[pos] = (min[pos] ?? 0) + ((IDEAL_BENCH as Record<string, number>)[pos] ?? 1);
+  }
+  return out;
+}
+
+/** Default needs with the ideal roster on top: no more players than it asks for. */
+export function withIdeal(needs: PositionNeeds, ideal?: IdealRoster): PositionNeeds {
+  if (!ideal || !Object.keys(ideal).length) return needs;
+  return { ...needs, cap: { ...needs.cap, ...ideal }, ideal };
+}
+
+/**
+ * Needs from the ideal roster, blended half and half with the league ranking:
+ * a position below its ideal count needs a player (1), one above it can spare
+ * one (0), one right at it is neutral (0.5).
+ */
+export function idealNeeds(
+  list: readonly Valued[],
+  ideal: IdealRoster | undefined,
+  league: TeamNeeds | undefined,
+): TeamNeeds | undefined {
+  if (!league || !ideal) return league;
+  const out: Record<string, number> = { ...league };
+  for (const [pos, want] of Object.entries(ideal)) {
+    const have = list.filter((p) => p.pos === pos).length;
+    const need = have < want ? 1 : have > want ? 0 : 0.5;
+    out[pos] = ((league[pos] ?? 0.5) + need) / 2;
+  }
+  return out;
 }
 
 /**
@@ -362,7 +417,20 @@ export function positionCheck(
   for (const [pos, cap] of Object.entries(needs.cap)) {
     const now = allAfter[pos] ?? 0;
     if (now > cap && now > (allBefore[pos] ?? 0)) {
-      warnings.push(`${subject} would carry ${now} ${pos}s (${cap} is plenty)`);
+      warnings.push(
+        needs.ideal?.[pos] !== undefined
+          ? `${subject} would carry ${now} ${pos}s (the ideal roster has ${cap})`
+          : `${subject} would carry ${now} ${pos}s (${cap} is plenty)`,
+      );
+    }
+  }
+  // Below the ideal roster, a trade may keep a position as thin but not thin it further.
+  for (const [pos, want] of Object.entries(needs.ideal ?? {})) {
+    const now = allAfter[pos] ?? 0;
+    if (now < want && now < (allBefore[pos] ?? 0)) {
+      warnings.push(
+        `Leaves ${object} ${now} ${pos}${now === 1 ? "" : "s"} (the ideal roster has ${want})`,
+      );
     }
   }
   // How well each player sent is refilled at his position: best by a player coming back
@@ -411,6 +479,8 @@ export function evaluateTrade(
   pool?: FreeAgentPool,
   scores?: ReadonlyMap<string, number>,
   sideNeeds?: { mine?: TeamNeeds; theirs?: TeamNeeds },
+  /** Your ideal roster; the partner keeps the default rules. */
+  ideal?: IdealRoster,
 ): TradeResult {
   const giveIds = new Set(give.map((p) => p.id));
   const getIds = new Set(get.map((p) => p.id));
@@ -430,6 +500,7 @@ export function evaluateTrade(
       pool,
       taken,
       Boolean(scores),
+      ideal,
     ));
   if (theirOpen) {
     ({ list: theirs, added: theirPickups } = withFreeAgents(
@@ -479,7 +550,16 @@ export function evaluateTrade(
     return fa ?? null;
   };
   const worth = (p: Valued) => (scores ? (scores.get(p.id) ?? 0) : p.vorp);
-  const myCheck = positionCheck(myList, mine, give, get, needs, "you", findBackup, worth);
+  const myCheck = positionCheck(
+    myList,
+    mine,
+    give,
+    get,
+    withIdeal(needs, ideal),
+    "you",
+    findBackup,
+    worth,
+  );
   const theirCheck = positionCheck(theirList, theirs, get, give, needs, "they", findBackup, worth);
   const mineFit = needFit(sideNeeds?.mine, get, give, worth);
   const theirFit = needFit(sideNeeds?.theirs, give, get, worth);
@@ -563,6 +643,7 @@ export function suggestTrades(
   sport: SportConfig,
   pool?: FreeAgentPool,
   scores?: ReadonlyMap<string, number>,
+  ideal?: IdealRoster,
 ): TradeIdea[] {
   const p = sport.model;
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
@@ -572,6 +653,7 @@ export function suggestTrades(
     scores ? list.filter((p) => tradable(p, sport)) : list;
   const myCombos = combos(tradeCandidates(offered(mine), sport));
   const needs = scores ? teamNeeds(rosters, model, sport) : null;
+  const myNeeds = idealNeeds(mine, ideal, needs?.get(myRid));
 
   const found: TradeIdea[] = [];
   // With trade values, near misses fill the list when fewer than three deals pass.
@@ -594,7 +676,8 @@ export function suggestTrades(
           sport,
           pool,
           scores,
-          needs ? { mine: needs.get(myRid), theirs: needs.get(team.rid) } : undefined,
+          needs ? { mine: myNeeds, theirs: needs.get(team.rid) } : undefined,
+          ideal,
         );
         const problems = ideaProblems(r, sport, Boolean(scores));
         const idea = { ...r, partner: team.rid, score: ideaScore(r, sport) };
@@ -758,6 +841,7 @@ export function findTrades(
   sport: SportConfig,
   pool?: FreeAgentPool,
   scores?: ReadonlyMap<string, number>,
+  ideal?: IdealRoster,
 ): FinderResult {
   const empty: FinderResult = { ideas: [], closest: null };
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
@@ -780,6 +864,7 @@ export function findTrades(
 
   const withValues = Boolean(scores);
   const needs = scores ? teamNeeds(rosters, model, sport) : null;
+  const myNeeds = idealNeeds(mine, ideal, needs?.get(myRid));
   const myBase = bestLineup(mine, model.slots, sport).total;
   const partners = mode === "sell" ? rosters.filter((t) => t.rid !== myRid) : [owner];
   const myGroups =
@@ -806,7 +891,8 @@ export function findTrades(
           sport,
           pool,
           scores,
-          needs ? { mine: needs.get(myRid), theirs: needs.get(team.rid) } : undefined,
+          needs ? { mine: myNeeds, theirs: needs.get(team.rid) } : undefined,
+          ideal,
         );
         const idea = { ...r, partner: team.rid, score: ideaScore(r, sport) };
         const problems = ideaProblems(r, sport, withValues);

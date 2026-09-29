@@ -1,0 +1,26 @@
+.form {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.head {
+  display: grid;
+  gap: 4px;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 12px;
+}
+.field input {
+  text-align: center;
+}
+.have {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

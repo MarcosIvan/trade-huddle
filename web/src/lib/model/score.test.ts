@@ -21,7 +21,10 @@ import {
   teamNeeds,
   withFreeAgents,
   benchDepth,
+  defaultIdealRoster,
   DEPTH_WEIGHT,
+  idealNeeds,
+  withIdeal,
 } from "./trades";
 import type { Model, Player, StatsFile } from "./types";
 
@@ -584,6 +587,88 @@ describe("trade finder", () => {
   it("returns nothing for a player on the wrong side", () => {
     expect(find("sell", "tWr1")).toEqual({ ideas: [], closest: null });
     expect(find("get", "myRb1")).toEqual({ ideas: [], closest: null });
+  });
+});
+
+describe("ideal roster", () => {
+  it("defaults to 2 QB, 5 RB, 5 WR and 2 TE in a one-flex league, one more QB in superflex", () => {
+    const slots = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"];
+    expect(defaultIdealRoster(slots, NFL)).toEqual({ QB: 2, RB: 5, WR: 5, TE: 2 });
+    expect(defaultIdealRoster([...slots, "SUPER_FLEX"], NFL).QB).toBe(3);
+  });
+
+  const needs = positionNeeds(["QB", "RB", "WR"], NFL);
+  const roster = [
+    player("qb1", "QB", 20, 3),
+    player("rb1", "RB", 15, 7),
+    player("rb2", "RB", 12, 4),
+    player("rb3", "RB", 10, 2),
+    player("wr1", "WR", 14, 5),
+    player("wr2", "WR", 11, 2),
+  ];
+  const check = (give: Player[], get: Player[], ideal: Record<string, number>) => {
+    const ids = new Set(give.map((p) => p.id));
+    const after = roster.filter((p) => !ids.has(p.id)).concat(get);
+    return positionCheck(roster, after, give, get, withIdeal(needs, ideal)).warnings;
+  };
+
+  it("warns when a trade takes a position further below the ideal", () => {
+    const warnings = check([roster[3]!], [player("wr3", "WR", 12, 3)], { RB: 4 });
+    expect(warnings).toEqual(["Leaves you 2 RBs (the ideal roster has 4)"]);
+  });
+
+  it("lets a position below the ideal stay as it is", () => {
+    expect(check([roster[3]!], [player("rb4", "RB", 11, 3)], { RB: 4 })).toEqual([]);
+  });
+
+  it("warns when a trade piles a position above the ideal", () => {
+    const warnings = check([roster[5]!], [player("rb4", "RB", 11, 3)], { RB: 3 });
+    expect(warnings).toEqual(["You would carry 4 RBs (the ideal roster has 3)"]);
+  });
+
+  it("wants players where the roster is below the ideal and sells where it is above", () => {
+    const needs = idealNeeds(roster, { RB: 2, WR: 4, QB: 1 }, { RB: 0.5, WR: 0.5, QB: 0.5 });
+    expect(needs).toEqual({ RB: 0.25, WR: 0.75, QB: 0.5 });
+    expect(idealNeeds(roster, { RB: 2 }, undefined)).toBeUndefined();
+  });
+
+  it("keeps passing trade ideas and finder deals inside the ideal roster", () => {
+    const slots = ["RB", "WR"];
+    const sport: SportConfig = { ...NFL, freeAgentPositions: [] };
+    const mine = [
+      player("myRb1", "RB", 16, 8),
+      player("myRb2", "RB", 15, 7),
+      player("myRb3", "RB", 10, 2),
+      player("myWr1", "WR", 9, 0),
+      player("myWr2", "WR", 8, 0),
+    ];
+    const theirs = [
+      player("tRb1", "RB", 9, 1),
+      player("tRb2", "RB", 8, 0),
+      player("tWr1", "WR", 17, 8),
+      player("tWr2", "WR", 15, 6),
+      player("tWr3", "WR", 10, 1),
+    ];
+    const all = Object.fromEntries([...mine, ...theirs].map((p) => [p.id, p]));
+    const model: Model = { players: all, repl: { RB: 8, WR: 9 }, slots, teams: 2 };
+    const rosters = [
+      { rid: 1, players: mine },
+      { rid: 2, players: theirs },
+    ];
+    const values = new Map(Object.values(all).map((p) => [p.id, p.value * 2] as const));
+    const rbs = (r: TradeIdea) =>
+      3 - r.give.filter((p) => p.pos === "RB").length + r.get.filter((p) => p.pos === "RB").length;
+
+    // Without an ideal, selling a running back for a receiver is the natural deal here.
+    const free = suggestTrades(1, rosters, model, sport, undefined, values);
+    expect(free.some((r) => !r.problems && rbs(r) < 3)).toBe(true);
+
+    // With three running backs as the ideal, no passing deal leaves fewer.
+    const ideal = { RB: 3, WR: 5 };
+    const kept = suggestTrades(1, rosters, model, sport, undefined, values, ideal);
+    for (const r of kept.filter((r) => !r.problems)) expect(rbs(r)).toBeGreaterThanOrEqual(3);
+    const sold = findTrades("sell", "myRb2", 1, rosters, model, sport, undefined, values, ideal);
+    for (const r of sold.ideas) expect(rbs(r)).toBeGreaterThanOrEqual(3);
   });
 });
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Team } from "@/lib/league";
-import type { FinderIdea, FinderMode, Model, TradeIdea } from "@/lib/model";
+import type { FinderIdea, FinderMode, IdealRoster, Model, TradeIdea } from "@/lib/model";
 import {
   hydrateIdeas,
   runFinder,
@@ -27,6 +27,7 @@ export function useTradeFinder(
   teams: Team[],
   myRid: number,
   tradeScores: ReadonlyMap<string, number>,
+  ideal: IdealRoster,
   mode: FinderMode,
   playerId: string | null,
 ): TradeFinderState {
@@ -59,6 +60,7 @@ export function useTradeFinder(
       rosters: teams.map((t) => ({ rid: t.rid, playerIds: t.playerIds })),
       myRid,
       tradeScores: [...tradeScores],
+      ideal,
       finder: { mode, playerId },
     };
     const finish = (response: FinderResponse) => {
@@ -87,7 +89,7 @@ export function useTradeFinder(
       worker.removeEventListener("message", onMessage);
       worker.removeEventListener("error", onError);
     };
-  }, [model, teams, myRid, tradeScores, mode, playerId]);
+  }, [model, teams, myRid, tradeScores, ideal, mode, playerId]);
 
   return state;
 }

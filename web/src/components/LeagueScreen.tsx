@@ -5,15 +5,19 @@ import type { LeagueView } from "@/hooks/useLeague";
 import { useTradeIdeas } from "@/hooks/useTradeIdeas";
 import { shortDate } from "@/lib/format";
 import {
+  defaultIdealRoster,
   freeAgentPool,
   playerScores,
   rosterPlayers,
   weeklyOutlook,
   type FinderMode,
+  type IdealRoster as Ideal,
   type TradeIdea,
 } from "@/lib/model";
 import { ScoreContext } from "./ScoreContext";
 import { NFL } from "@/lib/sports/nfl";
+import { storage } from "@/lib/storage";
+import { IdealRoster, IDEAL_MAX } from "./IdealRoster";
 import { WeeklyLineup } from "./WeeklyLineup";
 import { MethodNotes } from "./MethodNotes";
 import { Notices } from "./Notices";
@@ -31,6 +35,22 @@ interface AnalyzerState {
 }
 
 const EMPTY: AnalyzerState = { partnerRid: null, give: new Set(), get: new Set() };
+
+/** The saved ideal roster for one team, over the defaults; anything unreadable is ignored. */
+function loadIdeal(key: `ideal:${string}`, defaults: Ideal): Ideal {
+  try {
+    const saved: unknown = JSON.parse(storage.get(key) ?? "null");
+    if (!saved || typeof saved !== "object") return defaults;
+    const out: Record<string, number> = { ...defaults };
+    for (const pos of Object.keys(defaults)) {
+      const n = (saved as Record<string, unknown>)[pos];
+      if (typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= IDEAL_MAX) out[pos] = n;
+    }
+    return out;
+  } catch {
+    return defaults;
+  }
+}
 
 function toggle(set: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(set);
@@ -62,7 +82,27 @@ export function LeagueScreen({
     () => new Map([...scores].map(([id, s]) => [id, s.trade] as const)),
     [scores],
   );
-  const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores);
+
+  // Your ideal roster, saved per league and team; the league's default until you change it.
+  const defaults = useMemo(() => defaultIdealRoster(model.slots, NFL), [model]);
+  const idealKey = `ideal:${league.league_id}:${myRid}` as const;
+  const [changedIdeal, setChangedIdeal] = useState<{ key: string; ideal: Ideal } | null>(null);
+  const ideal = useMemo(
+    () => (changedIdeal?.key === idealKey ? changedIdeal.ideal : loadIdeal(idealKey, defaults)),
+    [changedIdeal, idealKey, defaults],
+  );
+  function applyIdeal(next: Ideal) {
+    storage.set(idealKey, JSON.stringify(next));
+    setChangedIdeal({ key: idealKey, ideal: next });
+  }
+  const myCounts = useMemo(() => {
+    const out: Record<string, number> = {};
+    const mine = teams.find((t) => t.rid === myRid);
+    for (const p of rosterPlayers(model, mine?.playerIds ?? [])) out[p.pos] = (out[p.pos] ?? 0) + 1;
+    return out;
+  }, [model, teams, myRid]);
+
+  const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal);
 
   // Trade finder: sell one of your players or get one from another team.
   const [finder, setFinder] = useState<{
@@ -192,6 +232,13 @@ export function LeagueScreen({
             title="Trade ideas"
             subtitle="The three best deals for your team, fair to both sides"
           >
+            <IdealRoster
+              key={`${idealKey}-${JSON.stringify(ideal)}`}
+              applied={ideal}
+              defaults={defaults}
+              counts={myCounts}
+              onApply={applyIdeal}
+            />
             <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
           </Section>
         </div>
@@ -206,6 +253,7 @@ export function LeagueScreen({
             teams={teams}
             myRid={myRid}
             tradeScores={tradeScores}
+            ideal={ideal}
             mode={finder.mode}
             playerId={finder.forRid === myRid ? finder.playerId : null}
             onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
@@ -231,6 +279,7 @@ export function LeagueScreen({
             sparkMax={sparkMax}
             pool={pool}
             tradeScores={tradeScores}
+            ideal={ideal}
             onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
             onToggleGive={(id) =>
               setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })

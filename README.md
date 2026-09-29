@@ -100,6 +100,12 @@ A deal is suggested only if:
   back in the deal or is covered by a spare you already have, nobody is left
   short of starters, and nobody piles up a position (no third QB in a one-QB
   league). Kickers and defenses are not traded.
+- it **respects your ideal roster**: how many QBs, RBs, WRs and TEs you want,
+  bench included (2, 5, 5 and 2 by default in a one-flex league; one more QB
+  in superflex). You can change it above the trade ideas and press **Update
+  trade ideas**. A deal may keep a position below or above the ideal as it
+  is, but never takes it further away, and positions below the ideal count as
+  needs when ranking. It is saved in your browser for each league and team.
 
 Trade ideas show **three** deals: fair first, then those where your starters
 gain more than the partner's, then the best matches (each side getting the

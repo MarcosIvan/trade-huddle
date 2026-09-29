@@ -5,6 +5,7 @@ import {
   isTrueMatch,
   rosterPlayers,
   type FinderMode,
+  type IdealRoster,
   type Model,
   type Player,
   type TradeIdea,
@@ -29,6 +30,7 @@ export function TradeFinder({
   teams,
   myRid,
   tradeScores,
+  ideal,
   mode,
   playerId,
   onMode,
@@ -39,6 +41,7 @@ export function TradeFinder({
   teams: Team[];
   myRid: number;
   tradeScores: ReadonlyMap<string, number>;
+  ideal: IdealRoster;
   mode: FinderMode;
   playerId: string | null;
   onMode: (mode: FinderMode) => void;
@@ -54,6 +57,7 @@ export function TradeFinder({
     teams,
     myRid,
     tradeScores,
+    ideal,
     mode,
     playerId,
   );

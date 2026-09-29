@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Team } from "@/lib/league";
-import type { Model, TradeIdea } from "@/lib/model";
+import type { IdealRoster, Model, TradeIdea } from "@/lib/model";
 import {
   hydrateIdeas,
   runSearch,
@@ -21,6 +21,7 @@ export function useTradeIdeas(
   teams: Team[],
   myRid: number | null,
   tradeScores: ReadonlyMap<string, number>,
+  ideal: IdealRoster,
 ): TradeIdeasState {
   // Starts as "searching" so the empty-state message never flashes before the first search.
   const [state, setState] = useState<TradeIdeasState>({ ideas: [], searching: model !== null });
@@ -48,6 +49,7 @@ export function useTradeIdeas(
       rosters: teams.map((t) => ({ rid: t.rid, playerIds: t.playerIds })),
       myRid,
       tradeScores: [...tradeScores],
+      ideal,
     };
     const finish = (response: SearchResponse) => {
       if (response.requestId !== requestRef.current) return; // a newer search replaced this one
@@ -71,7 +73,7 @@ export function useTradeIdeas(
       worker.removeEventListener("message", onMessage);
       worker.removeEventListener("error", onError);
     };
-  }, [model, teams, myRid, tradeScores]);
+  }, [model, teams, myRid, tradeScores, ideal]);
 
   return state;
 }

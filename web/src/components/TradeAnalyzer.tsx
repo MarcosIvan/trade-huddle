@@ -6,6 +6,7 @@ import {
   evaluateTrade,
   rosterPlayers,
   type FreeAgentPool,
+  type IdealRoster,
   type Model,
   type Player,
   type StatsFile,
@@ -82,6 +83,7 @@ export function TradeAnalyzer({
   sparkMax,
   pool,
   tradeScores,
+  ideal,
   onPartner,
   onToggleGive,
   onToggleGet,
@@ -96,6 +98,7 @@ export function TradeAnalyzer({
   sparkMax: number;
   pool: FreeAgentPool;
   tradeScores: ReadonlyMap<string, number>;
+  ideal: IdealRoster;
   onPartner: (rid: number) => void;
   onToggleGive: (id: string) => void;
   onToggleGet: (id: string) => void;
@@ -126,8 +129,10 @@ export function TradeAnalyzer({
       NFL,
       pool,
       tradeScores,
+      undefined,
+      ideal,
     );
-  }, [mine, theirs, give, get, model, pool, tradeScores]);
+  }, [mine, theirs, give, get, model, pool, tradeScores, ideal]);
 
   const partnerName = partner?.name ?? "Partner";
   const read = !result
