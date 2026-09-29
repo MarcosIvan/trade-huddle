@@ -1,6 +1,8 @@
 # Trade Huddle
 
 [![CI](https://github.com/MarcosIvan/trade-huddle/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcosIvan/trade-huddle/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/MarcosIvan/trade-huddle/actions/workflows/codeql.yml/badge.svg)](https://github.com/MarcosIvan/trade-huddle/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/MarcosIvan/trade-huddle/badge)](https://scorecard.dev/viewer/?uri=github.com/MarcosIvan/trade-huddle)
 
 Trade ideas, a trade finder and a trade analyzer for **Sleeper redraft fantasy
 football leagues**.
@@ -152,8 +154,10 @@ Security Policy to every page, see
 `python -m trade_huddle_data build --season 2024` (and `2025`). The pipeline's own checks
 are in [`pipeline/README.md`](pipeline/README.md). The **CI** workflow
 ([`ci.yml`](.github/workflows/ci.yml)) runs all of them, plus
-`npm audit --audit-level=high`, on every pull request and every push to
-`main`.
+`npm audit --audit-level=high` and a gitleaks scan of the git history for
+secrets, on every pull request and every push to `main`. To check for
+secrets before each commit too: `pip install pre-commit && pre-commit install`
+(see [`.pre-commit-config.yaml`](.pre-commit-config.yaml)).
 
 ### Deploy your own copy
 

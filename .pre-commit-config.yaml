@@ -1,0 +1,8 @@
+# Local hooks (optional): `pip install pre-commit && pre-commit install`.
+# gitleaks checks staged changes for secrets before each commit; CI scans the
+# whole history again on every pull request (ci.yml, job "Secrets").
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # frozen: v8.30.1
+    hooks:
+      - id: gitleaks
