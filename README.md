@@ -144,7 +144,9 @@ The demo league works without the stats build: open
 `http://localhost:3000/?demo`. To regenerate it: `python tools/make_demo.py`.
 
 Checks, from `web/`: `npm run lint`, `npm run typecheck`, `npm test`,
-`npm run format:check`, `npm run build`. The value model's backtests run with
+`npm run format:check`, `npm run build` (which also adds the Content
+Security Policy to every page, see
+[ADR 0009](docs/adr/0009-content-security-policy.md)). The value model's backtests run with
 `npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
 `backtest:weekly`) after building the past seasons they use with
 `python -m trade_huddle_data build --season 2024` (and `2025`). The pipeline's own checks
