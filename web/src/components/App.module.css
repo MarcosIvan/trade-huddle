@@ -19,3 +19,15 @@
     transform: rotate(360deg);
   }
 }
+
+/* While the app starts: the entry screen for new visitors, the loading
+   message for visits that go straight to a league (see theme-init.js). */
+.boot {
+  display: none;
+}
+:global(:root[data-boot="league"]) .boot {
+  display: flex;
+}
+:global(:root[data-boot="league"]) .entryBoot {
+  display: none;
+}

@@ -157,6 +157,15 @@ Not needed to use the site. If you want your own:
 3. _Actions → Build and deploy → Run workflow_. After that it runs every day at
    10:00 UTC and on every push to `main`.
 4. Open `https://<your-user>.github.io/<repo-name>/`.
+5. Optional, to show up on Google: add the site to
+   [Google Search Console](https://search.google.com/search-console) as a
+   _URL prefix_ property, choose the **HTML tag** method and copy only the
+   `content` value into a repository variable named
+   `GOOGLE_SITE_VERIFICATION` (_Settings → Secrets and variables → Actions →
+   Variables_). Run the workflow again, verify, then submit `sitemap.xml`.
+
+The canonical link, link previews and `sitemap.xml` use the address GitHub
+Pages reports, so a fork or a custom domain needs no code change.
 
 The workflow needs no secrets.
 

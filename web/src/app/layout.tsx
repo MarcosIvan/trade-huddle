@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import type { ReactNode } from "react";
+import {
+  HOME_URL,
+  OG_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  STRUCTURED_DATA,
+} from "@/lib/site";
 import { BASE_PATH } from "@/lib/stats";
 import "@/styles/globals.css";
 
@@ -26,10 +34,33 @@ const display = localFont({
   display: "swap",
 });
 
+/** Google Search Console ownership token, set by the deploy workflow when there is one. */
+const googleVerification = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined;
+
 export const metadata: Metadata = {
-  title: "Trade Huddle",
-  description:
-    "Fair trade suggestions and a trade analyzer for Sleeper redraft leagues, valuing players by what they have produced and how they are playing right now.",
+  metadataBase: new URL(HOME_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // ?demo and ?league=<id> show the same page: search engines index the home address.
+  alternates: { canonical: HOME_URL },
+  openGraph: {
+    type: "website",
+    url: HOME_URL,
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+    images: [OG_IMAGE],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE.url],
+  },
+  robots: { index: true, follow: true },
+  verification: googleVerification ? { google: googleVerification } : undefined,
   referrer: "no-referrer",
   icons: { icon: "icon.svg" },
 };
@@ -57,7 +88,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src={`${BASE_PATH}/theme-init.js`} />
       </head>
-      <body>{children}</body>
+      <body>
+        <script
+          type="application/ld+json"
+          // Our own constant, never data from Sleeper; "<" is escaped so it cannot close the tag.
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(STRUCTURED_DATA).replace(/</g, "\\u003c"),
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
