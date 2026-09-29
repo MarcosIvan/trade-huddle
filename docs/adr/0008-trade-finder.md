@@ -85,3 +85,11 @@ agency, not traded.
   path (no trade values) is unchanged and its reference tests still pass.
 - Stricter refills mean fewer ideas for some rosters; the finder shows the
   closest deal when none passes.
+
+## Amendment (2026-09-29): no same-position 1-for-1 ideas
+
+Trade ideas skip one-for-one swaps between players of the same position
+(`isSamePositionSwap`). The owner found they rarely help either side: one
+team always gets the lesser player, so they mostly showed up as near misses
+filling the three spots. The trade finder and the analyzer still allow them,
+since there the owner picks the players.

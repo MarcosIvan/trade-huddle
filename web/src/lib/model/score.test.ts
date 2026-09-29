@@ -10,6 +10,7 @@ import {
   findTrades,
   hasEdge,
   ideaProblems,
+  isSamePositionSwap,
   type FinderMode,
   type TradeIdea,
   type TradeResult,
@@ -584,6 +585,36 @@ describe("trade finder", () => {
     const passing = ideas.filter((r) => !r.problems && fairnessLevel(r.fairness) === "green");
     const edges = passing.map(hasEdge);
     expect(edges).toEqual([...edges].sort((a, b) => Number(b) - Number(a)));
+  });
+
+  it("leaves 1-for-1 swaps at the same position out of the trade ideas", () => {
+    // Two all-RB teams. A straight RB-for-RB swap would qualify for the list:
+    // either passing every rule or, with fewer than three deals, as a near miss
+    // (it helps your lineup)…
+    const rbs = (prefix: string, values: number[]) =>
+      values.map((v, i) => player(`${prefix}Rb${i}`, "RB", v, v - 8));
+    const a = rbs("a", [17, 12, 11, 10]);
+    const b2 = rbs("b", [16, 13, 10, 9]);
+    const all2 = Object.fromEntries([...a, ...b2].map((p) => [p.id, p]));
+    const m: Model = { players: all2, repl: { RB: 8, WR: 9 }, slots: ["RB", "RB"], teams: 2 };
+    const teams = [
+      { rid: 1, players: a },
+      { rid: 2, players: b2 },
+    ];
+    const vals = new Map(Object.values(all2).map((p) => [p.id, p.value * 2] as const));
+    const base = (list: Player[]) => bestLineup(list, m.slots, sport).total;
+    const swaps = a
+      .filter((p) => p.pos === "RB")
+      .flatMap((g) => b2.filter((p) => p.pos === "RB").map((t) => [g, t] as const));
+    const listable = swaps.filter(([g, t]) => {
+      const r = evaluateTrade(a, b2, [g], [t], base(a), base(b2), m, sport, undefined, vals);
+      return ideaProblems(r, sport, true).length === 0 || r.gainMe > 0;
+    });
+    expect(listable.length).toBeGreaterThan(0);
+
+    // …but trade ideas never suggest one.
+    const ideas = suggestTrades(1, teams, m, sport, undefined, vals);
+    expect(ideas.some((r) => isSamePositionSwap(r.give, r.get))).toBe(false);
   });
 
   it("returns nothing for a player on the wrong side", () => {

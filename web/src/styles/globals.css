@@ -177,6 +177,9 @@ main {
 
 /* ---------- Tables ---------- */
 .table-wrap {
+  /* Contains the absolutely positioned screen-reader text inside, which
+     would otherwise escape the scroll box and widen the page. */
+  position: relative;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }

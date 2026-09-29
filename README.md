@@ -113,6 +113,10 @@ A deal is suggested only if:
   positions below the ideal count as needs when ranking. It is saved in your
   browser for each league and team.
 
+Trade ideas never suggest a 1-for-1 swap at the same position (RB for RB):
+it rarely helps either side much. The trade finder and the analyzer still
+allow it.
+
 Trade ideas show **three** deals: fair first, then those where your starters
 gain more than the partner's, then the best matches (each side getting the
 best player at a position where it is weak). When fewer than three deals pass,
