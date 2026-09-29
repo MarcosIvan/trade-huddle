@@ -1,9 +1,9 @@
-import { useMemo } from "react";
 import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import {
   bestLineup,
   rosterPlayers,
+  type Lineup,
   type Model,
   type Player,
   type Valued,
@@ -81,48 +81,47 @@ function Group({ label }: { label: string }) {
   );
 }
 
+/** A team's best lineup for this week's games, its bench and who is not playing. */
+export interface WeekLineup {
+  lineup: Lineup<Rated>;
+  bench: Rated[];
+  out: Rated[];
+}
+
+/** Rates every player on the team by this week's projection and picks the best lineup. */
+export function weekLineup(
+  model: Model,
+  team: Team | undefined,
+  outlook: ReadonlyMap<string, WeeklyOutlook>,
+): WeekLineup {
+  const rated: Rated[] = rosterPlayers(model, team?.playerIds ?? []).map((p) => {
+    const o = outlook.get(p.id) ?? {
+      pts: 0,
+      opponent: null,
+      home: false,
+      matchup: 1,
+      bye: true,
+      availability: 1,
+    };
+    return { ...p, player: p, outlook: o, value: o.pts, startable: !o.bye && o.availability > 0 };
+  });
+  const lineup = bestLineup(rated, model.slots, NFL);
+  const rest = rated.filter((r) => !lineup.used.has(r.id)).sort((a, b) => b.value - a.value);
+  return { lineup, bench: rest.filter((r) => r.startable), out: rest.filter((r) => !r.startable) };
+}
+
 /** The best lineup for this week's games: projected points, opponent and matchup. */
 export function WeeklyLineup({
   model,
-  teams,
-  myRid,
   week,
-  outlook,
+  rated: { lineup, bench, out },
 }: {
   model: Model;
-  teams: Team[];
-  myRid: number;
   week: number;
-  outlook: ReadonlyMap<string, WeeklyOutlook>;
+  rated: WeekLineup;
 }) {
-  const team = teams.find((t) => t.rid === myRid);
-  const { lineup, bench, out } = useMemo(() => {
-    const rated: Rated[] = rosterPlayers(model, team?.playerIds ?? []).map((p) => {
-      const o = outlook.get(p.id) ?? {
-        pts: 0,
-        opponent: null,
-        home: false,
-        matchup: 1,
-        bye: true,
-        availability: 1,
-      };
-      return { ...p, player: p, outlook: o, value: o.pts, startable: !o.bye && o.availability > 0 };
-    });
-    const lu = bestLineup(rated, model.slots, NFL);
-    const rest = rated.filter((r) => !lu.used.has(r.id)).sort((a, b) => b.value - a.value);
-    return {
-      lineup: lu,
-      bench: rest.filter((r) => r.startable),
-      out: rest.filter((r) => !r.startable),
-    };
-  }, [model, team, outlook]);
-
   return (
     <>
-      <div className={styles.strength}>
-        <span className={styles.big}>{fmt(lineup.total)}</span>
-        <span className={styles.unit}>projected points for week {week}</span>
-      </div>
       <div className="table-wrap">
         <table className="table">
           <caption className="visually-hidden">
@@ -157,11 +156,6 @@ export function WeeklyLineup({
           </tbody>
         </table>
       </div>
-      <p className="hint">
-        Projections blend Sleeper&apos;s weekly projection with this site&apos;s value, adjusted for
-        what each opponent allows to the position. Questionable and Doubtful players are discounted
-        by their chance to play.
-      </p>
     </>
   );
 }

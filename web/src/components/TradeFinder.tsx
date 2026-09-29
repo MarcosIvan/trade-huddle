@@ -15,9 +15,9 @@ import { ScoreContext } from "./ScoreContext";
 import { IdeaCard } from "./TradeIdeas";
 import styles from "./TradeFinder.module.css";
 
-const MODES: { mode: FinderMode; label: string; hint: string }[] = [
-  { mode: "sell", label: "Sell a player", hint: "One of yours: what can he bring back?" },
-  { mode: "get", label: "Get a player", hint: "From another team: what would it take?" },
+const MODES: { mode: FinderMode; label: string }[] = [
+  { mode: "sell", label: "Sell a player" },
+  { mode: "get", label: "Get a player" },
 ];
 
 /**
@@ -106,7 +106,6 @@ export function TradeFinder({
               </label>
             ))}
           </div>
-          <p className="hint">{MODES.find((m) => m.mode === mode)!.hint}</p>
         </fieldset>
         <div className={`field ${styles.player}`}>
           <label htmlFor={playerFieldId}>Player</label>
@@ -129,12 +128,7 @@ export function TradeFinder({
       </div>
 
       <div aria-live="polite" aria-busy={searching}>
-        {!chosen ? (
-          <p className="hint">
-            Deals use the same rules as the trade ideas: 1-for-1, 2-for-1, 2-for-2 or 3-for-2, value
-            first, fair for both sides and positions kept balanced.
-          </p>
-        ) : searching ? (
+        {!chosen ? null : searching ? (
           <p className={`card ${styles.status}`}>Searching deals for {chosen.name}…</p>
         ) : ideas.length > 0 ? (
           <div className={styles.list}>

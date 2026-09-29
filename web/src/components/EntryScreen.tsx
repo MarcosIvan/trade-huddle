@@ -3,7 +3,7 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { friendlyError } from "@/hooks/useLeague";
 import { currentSeason, findUser, userLeagues } from "@/lib/sleeper/client";
-import { parseLeagueInput, type LeagueSummary } from "@/lib/sleeper/validate";
+import type { LeagueSummary } from "@/lib/sleeper/validate";
 import { storage } from "@/lib/storage";
 import styles from "./EntryScreen.module.css";
 
@@ -17,9 +17,7 @@ export function EntryScreen({
   onOpenDemo: () => void;
 }) {
   const userFieldId = useId();
-  const leagueFieldId = useId();
   const [username, setUsername] = useState("");
-  const [leagueInput, setLeagueInput] = useState("");
   const [searching, setSearching] = useState(false);
   const [message, setMessage] = useState<string | null>(error);
   const [leagues, setLeagues] = useState<{
@@ -61,17 +59,6 @@ export function EntryScreen({
     }
   }
 
-  function openById(e: FormEvent) {
-    e.preventDefault();
-    const leagueId = parseLeagueInput(leagueInput);
-    if (!leagueId) {
-      setMessage("Enter a league ID (only digits) or a sleeper.com league link.");
-      return;
-    }
-    setMessage(null);
-    onOpenLeague(leagueId);
-  }
-
   return (
     <div className={`container ${styles.entry}`}>
       <div className={styles.hero}>
@@ -107,37 +94,6 @@ export function EntryScreen({
             </div>
             <p className="hint" id={`${userFieldId}-hint`}>
               Your profile username, not your team name.
-            </p>
-          </div>
-        </form>
-
-        <div className={styles.or} aria-hidden="true">
-          <span>or</span>
-        </div>
-
-        <form className={styles.form} onSubmit={openById}>
-          <div className="field">
-            <label htmlFor={leagueFieldId}>League ID or link</label>
-            <div className={styles.inline}>
-              <input
-                id={leagueFieldId}
-                className="input"
-                type="text"
-                inputMode="url"
-                value={leagueInput}
-                onChange={(e) => setLeagueInput(e.target.value)}
-                autoCapitalize="off"
-                spellCheck={false}
-                maxLength={200}
-                required
-                aria-describedby={`${leagueFieldId}-hint`}
-              />
-              <button className="btn" type="submit">
-                Open league
-              </button>
-            </div>
-            <p className="hint" id={`${leagueFieldId}-hint`}>
-              For example 1234567890123456789, or a link like sleeper.com/leagues/1234…
             </p>
           </div>
         </form>

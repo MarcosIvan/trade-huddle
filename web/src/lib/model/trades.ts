@@ -145,7 +145,8 @@ export function withFreeAgents(
   let current = list;
   const added: Valued[] = [];
   const { min, cap } = withIdeal(positionNeeds(model.slots, sport), ideal);
-  const count = (pos: string) => current.filter((p) => p.pos === pos).length;
+  // Against the ideal roster, players on injured reserve do not count.
+  const count = (pos: string) => current.filter((p) => p.pos === pos && !(ideal && onIr(p))).length;
   const full = (pos: string) => count(pos) >= (cap[pos] ?? Infinity);
   for (let n = 1; n <= open; n++) {
     let best: Valued | null = null;
@@ -306,18 +307,45 @@ export interface PositionNeeds {
  */
 export type IdealRoster = Readonly<Record<string, number>>;
 
+/** On injured reserve: such players do not count toward the ideal roster. */
+export const onIr = (p: Valued): boolean => (p as Partial<Player>).inj === "IR";
+
+/** Players per position that count toward the ideal roster (everyone but injured reserve). */
+export function idealCounts(list: readonly Valued[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const p of list) if (!onIr(p)) out[p.pos] = (out[p.pos] ?? 0) + 1;
+  return out;
+}
+
 /** Bench players the default ideal roster adds above the starters (RB and WR include the flex backup). */
 export const IDEAL_BENCH = { QB: 1, RB: 2, WR: 2, TE: 1 } as const;
 
+/** Most players an ideal roster may ask for, all positions together. */
+export const IDEAL_MAX_PLAYERS = 14;
+
 /**
  * The ideal roster before the owner changes it, from the league's lineup:
- * 2 QB, 5 RB, 5 WR and 2 TE in a standard one-flex league.
+ * 2 QB, 5 RB, 5 WR and 2 TE in a standard one-flex league. Past
+ * IDEAL_MAX_PLAYERS, bench spots come off the position with the most of them
+ * (receivers first on a tie).
  */
 export function defaultIdealRoster(slots: readonly string[], sport: SportConfig): IdealRoster {
   const { min } = positionNeeds(slots, sport);
   const out: Record<string, number> = {};
+  const bench: Record<string, number> = {};
   for (const pos of sport.tradePositions ?? sport.positions) {
-    out[pos] = (min[pos] ?? 0) + ((IDEAL_BENCH as Record<string, number>)[pos] ?? 1);
+    const spare = (IDEAL_BENCH as Record<string, number>)[pos] ?? 1;
+    bench[pos] = spare;
+    out[pos] = (min[pos] ?? 0) + spare;
+  }
+  const total = () => Object.values(out).reduce((s, n) => s + n, 0);
+  const order = ["WR", "RB", ...Object.keys(out)].filter((pos) => pos in out);
+  while (total() > IDEAL_MAX_PLAYERS) {
+    const pos = order.reduce((a, b) => ((bench[b] ?? 0) > (bench[a] ?? 0) ? b : a));
+    const spare = bench[pos] ?? 0;
+    if (!spare) break;
+    bench[pos] = spare - 1;
+    out[pos] = (out[pos] ?? 0) - 1;
   }
   return out;
 }
@@ -340,8 +368,9 @@ export function idealNeeds(
 ): TeamNeeds | undefined {
   if (!league || !ideal) return league;
   const out: Record<string, number> = { ...league };
+  const counts = idealCounts(list);
   for (const [pos, want] of Object.entries(ideal)) {
-    const have = list.filter((p) => p.pos === pos).length;
+    const have = counts[pos] ?? 0;
     const need = have < want ? 1 : have > want ? 0 : 0.5;
     out[pos] = ((league[pos] ?? 0.5) + need) / 2;
   }
@@ -393,6 +422,9 @@ export function positionCheck(
   const readyAfter = countByPos(after, true);
   const allBefore = countByPos(before, false);
   const allAfter = countByPos(after, false);
+  // The ideal roster leaves players on injured reserve out of the count.
+  const idealBefore = idealCounts(before);
+  const idealAfter = idealCounts(after);
   const warnings: string[] = [];
   // Spares before any free agent is added: players beyond what the lineup needs.
   const spare = (pos: string) => (readyAfter[pos] ?? 0) >= (needs.min[pos] ?? 0) + 1;
@@ -415,10 +447,11 @@ export function positionCheck(
     }
   }
   for (const [pos, cap] of Object.entries(needs.cap)) {
-    const now = allAfter[pos] ?? 0;
-    if (now > cap && now > (allBefore[pos] ?? 0)) {
+    const byIdeal = needs.ideal?.[pos] !== undefined;
+    const now = (byIdeal ? idealAfter : allAfter)[pos] ?? 0;
+    if (now > cap && now > ((byIdeal ? idealBefore : allBefore)[pos] ?? 0)) {
       warnings.push(
-        needs.ideal?.[pos] !== undefined
+        byIdeal
           ? `${subject} would carry ${now} ${pos}s (the ideal roster has ${cap})`
           : `${subject} would carry ${now} ${pos}s (${cap} is plenty)`,
       );
@@ -426,8 +459,8 @@ export function positionCheck(
   }
   // Below the ideal roster, a trade may keep a position as thin but not thin it further.
   for (const [pos, want] of Object.entries(needs.ideal ?? {})) {
-    const now = allAfter[pos] ?? 0;
-    if (now < want && now < (allBefore[pos] ?? 0)) {
+    const now = idealAfter[pos] ?? 0;
+    if (now < want && now < (idealBefore[pos] ?? 0)) {
       warnings.push(
         `Leaves ${object} ${now} ${pos}${now === 1 ? "" : "s"} (the ideal roster has ${want})`,
       );

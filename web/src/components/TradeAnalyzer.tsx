@@ -9,11 +9,10 @@ import {
   type IdealRoster,
   type Model,
   type Player,
-  type StatsFile,
 } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT, TradeValue } from "./Player";
+import { Delta, FormValue, PlayerCell, TRADE_VALUE_HINT, TradeValue } from "./Player";
 import { ScoreContext } from "./ScoreContext";
 import styles from "./TradeAnalyzer.module.css";
 import { rosterNotes } from "./TradeIdeas";
@@ -59,28 +58,115 @@ function PickList({
   );
 }
 
-function valueMix(p: Player, prevSeason: string): string {
-  const w = p.weights;
-  const parts: string[] = [];
-  if (w.prev > 0.005) {
-    const outlook = p.projPpg !== null && NFL.model.projWeight > 0;
-    parts.push(`${pct(w.prev)} ${outlook ? "outlook" : prevSeason}`);
-  }
-  if (w.season > 0.005) parts.push(`${pct(w.season)} season`);
-  if (w.recent > 0.005) parts.push(`${pct(w.recent)} last ${RECENT}`);
-  if (w.repl > 0.005) parts.push(`${pct(w.repl)} replacement`);
-  return parts.join(" · ");
+/** What one side gains or loses: what it receives minus what it sends. */
+interface SideChange {
+  trade: number;
+  ppg: number;
+  last: number;
+}
+
+/** Received minus sent, in trade value (with the side discount), points per game and last games. */
+function sideChange(sGet: number, sGive: number, get: Player[], give: Player[]): SideChange {
+  const sum = (list: Player[], f: (p: Player) => number) => list.reduce((s, p) => s + f(p), 0);
+  return {
+    trade: sGet - sGive,
+    ppg: sum(get, (p) => p.value) - sum(give, (p) => p.value),
+    last: sum(get, (p) => p.lastAvg ?? 0) - sum(give, (p) => p.lastAvg ?? 0),
+  };
+}
+
+/**
+ * One direction of the trade: the players you send or receive, and what the
+ * team getting them gains or loses in trade value, points per game and the
+ * last games. Both sides sit near zero only when the trade balances.
+ */
+function TradeSide({
+  title,
+  change,
+  players,
+}: {
+  title: string;
+  change: SideChange;
+  players: Player[];
+}) {
+  const titleId = useId();
+  const stats = [
+    { label: "Trade value", value: change.trade, hint: TRADE_VALUE_HINT },
+    { label: "Pts/g", value: change.ppg, hint: "Expected points per game" },
+    { label: `Last ${RECENT}`, value: change.last, hint: `Points per game, last ${RECENT} games` },
+  ];
+  return (
+    <section className={styles.team} aria-labelledby={titleId}>
+      <div className={styles.teamHead}>
+        <h4 id={titleId}>{title}</h4>
+        <dl className={styles.changes}>
+          {stats.map((st) => (
+            <div key={st.label} className={styles.change} title={st.hint}>
+              <dt>{st.label}</dt>
+              <dd className={styles.big}>
+                <Delta value={st.value} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      {players.length === 0 ? (
+        <p className="hint">No players picked.</p>
+      ) : (
+        <div className="table-wrap">
+          <table className={`table ${styles.players}`}>
+            <caption className="visually-hidden">{title}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Player</th>
+                <th scope="col" className="num" title={TRADE_VALUE_HINT}>
+                  Trade value
+                </th>
+                <th scope="col" className="num" title="Expected points per game">
+                  Pts/g
+                </th>
+                <th scope="col" className="num">
+                  Last {RECENT}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {players.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <PlayerCell player={p} />
+                  </td>
+                  <td className={`num ${styles.value}`}>
+                    <TradeValue player={p} />
+                  </td>
+                  <td className="num">
+                    {fmt(p.value)}
+                    {p.injMult < 1 && (
+                      <span className={styles.games}>
+                        {p.noTeam ? "no team" : "injury"} −{pct(1 - p.injMult)}
+                      </span>
+                    )}
+                  </td>
+                  <td className="num">
+                    <FormValue player={p} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
 }
 
 export function TradeAnalyzer({
   model,
-  stats,
   teams,
   myRid,
   partnerRid,
   give,
   get,
-  sparkMax,
   pool,
   tradeScores,
   ideal,
@@ -89,13 +175,11 @@ export function TradeAnalyzer({
   onToggleGet,
 }: {
   model: Model;
-  stats: StatsFile;
   teams: Team[];
   myRid: number;
   partnerRid: number | null;
   give: ReadonlySet<string>;
   get: ReadonlySet<string>;
-  sparkMax: number;
   pool: FreeAgentPool;
   tradeScores: ReadonlyMap<string, number>;
   ideal: IdealRoster;
@@ -135,13 +219,6 @@ export function TradeAnalyzer({
   }, [mine, theirs, give, get, model, pool, tradeScores, ideal]);
 
   const partnerName = partner?.name ?? "Partner";
-  const read = !result
-    ? ""
-    : result.dMe > 0.05 && result.dThem > 0.05
-      ? "Both teams improve, so this has a good chance of being accepted."
-      : result.dThem <= 0.05
-        ? `${partnerName}'s starters don't improve, so this will be a hard sell.`
-        : "Your starters don't improve with this deal.";
 
   return (
     <>
@@ -171,110 +248,22 @@ export function TradeAnalyzer({
         />
       </div>
 
-      <div className={styles.result} aria-live="polite">
-        {!result ? (
-          <p className="hint">
-            Pick at least one player on each side, or open one of the trade ideas above.
-          </p>
-        ) : (
-          <>
+      <div aria-live="polite">
+        {result && (
+          <div className={`card ${styles.result}`}>
             <h3 className="visually-hidden">Trade result</h3>
-            <div className={styles.stats}>
-              <div className={`card ${styles.stat}`}>
-                <span className="label">Your starters</span>
-                <span className={styles.big}>
-                  <Delta value={result.dMe} />
-                </span>
-                <span className={styles.small}>
-                  {fmt(result.meBefore)} → {fmt(result.meAfter)} pts/game
-                </span>
-              </div>
-              <div className={`card ${styles.stat}`}>
-                <span className="label">{partnerName}&apos;s starters</span>
-                <span className={styles.big}>
-                  <Delta value={result.dThem} />
-                </span>
-                <span className={styles.small}>
-                  {fmt(result.themBefore)} → {fmt(result.themAfter)} pts/game
-                </span>
-              </div>
-              <div className={`card ${styles.stat}`}>
-                <span className="label">Fairness</span>
-                <BalanceMeter sGive={result.sGive} sGet={result.sGet} fairness={result.fairness} />
-                <span className={styles.small}>{read}</span>
-              </div>
-            </div>
-
-            <div
-              className="table-wrap"
-              role="region"
-              aria-label="Players in this trade"
-              tabIndex={0}
-            >
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th scope="col">Side</th>
-                    <th scope="col">Player</th>
-                    <th scope="col" className="num">
-                      {stats.prev_season}
-                    </th>
-                    <th scope="col" className="num">
-                      {stats.season}
-                    </th>
-                    <th scope="col" className="num">
-                      Last {RECENT}
-                    </th>
-                    <th scope="col">Weeks</th>
-                    <th scope="col" className="num" title="Expected points per game">
-                      Pts/g
-                    </th>
-                    <th scope="col" className="num" title={TRADE_VALUE_HINT}>
-                      Trade value
-                    </th>
-                    <th scope="col">Pts/g mix</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ...result.give.map((p) => ({ p, side: "You send" })),
-                    ...result.get.map((p) => ({ p, side: "You get" })),
-                  ].map(({ p, side }) => (
-                    <tr key={p.id}>
-                      <td className="muted">{side}</td>
-                      <td>
-                        <PlayerCell player={p} />
-                      </td>
-                      <td className="num">
-                        {fmt(p.prevPpg)}
-                        {p.prevG > 0 && <span className={styles.games}>{p.prevG} g</span>}
-                      </td>
-                      <td className="num">
-                        {fmt(p.seasonAvg)}
-                        {p.g > 0 && <span className={styles.games}>{p.g} g</span>}
-                      </td>
-                      <td className="num">
-                        <FormValue player={p} />
-                      </td>
-                      <td>
-                        <Sparkline player={p} max={sparkMax} />
-                      </td>
-                      <td className="num">
-                        {fmt(p.value)}
-                        {p.injMult < 1 && (
-                          <span className={styles.games}>
-                            {p.noTeam ? "no team" : "injury"} −{pct(1 - p.injMult)}
-                          </span>
-                        )}
-                      </td>
-                      <td className={`num ${styles.value}`}>
-                        <TradeValue player={p} />
-                      </td>
-                      <td className={styles.mix}>{valueMix(p, stats.prev_season)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <BalanceMeter sGive={result.sGive} sGet={result.sGet} fairness={result.fairness} />
+            <div className={styles.teams}>
+              <TradeSide
+                title="You send"
+                change={sideChange(result.sGive, result.sGet, result.give, result.get)}
+                players={result.give}
+              />
+              <TradeSide
+                title="You receive"
+                change={sideChange(result.sGet, result.sGive, result.get, result.give)}
+                players={result.get}
+              />
             </div>
             {result.warnings.map((w) => (
               <p key={w} className={`hint ${styles.warning}`}>
@@ -287,12 +276,7 @@ export function TradeAnalyzer({
                 {n}
               </p>
             ))}
-            <p className="hint">
-              Points are per game under your league&apos;s scoring. Fairness compares the trade
-              value (1 to 40) on each side; a side&apos;s second and third players count 85% and
-              70%.
-            </p>
-          </>
+          </div>
         )}
       </div>
     </>

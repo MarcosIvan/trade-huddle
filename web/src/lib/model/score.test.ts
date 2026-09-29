@@ -23,6 +23,8 @@ import {
   benchDepth,
   defaultIdealRoster,
   DEPTH_WEIGHT,
+  IDEAL_MAX_PLAYERS,
+  idealCounts,
   idealNeeds,
   withIdeal,
 } from "./trades";
@@ -591,10 +593,18 @@ describe("trade finder", () => {
 });
 
 describe("ideal roster", () => {
-  it("defaults to 2 QB, 5 RB, 5 WR and 2 TE in a one-flex league, one more QB in superflex", () => {
+  it("defaults to 2 QB, 5 RB, 5 WR and 2 TE in a one-flex league, at most 14 players", () => {
     const slots = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"];
     expect(defaultIdealRoster(slots, NFL)).toEqual({ QB: 2, RB: 5, WR: 5, TE: 2 });
-    expect(defaultIdealRoster([...slots, "SUPER_FLEX"], NFL).QB).toBe(3);
+    const threeWide = defaultIdealRoster([...slots, "WR"], NFL);
+    expect(Object.values(threeWide).reduce((s, n) => s + n, 0)).toBe(IDEAL_MAX_PLAYERS);
+    // Superflex adds a QB; a receiver comes off so the total stays within the limit.
+    expect(defaultIdealRoster([...slots, "SUPER_FLEX"], NFL)).toEqual({
+      QB: 3,
+      RB: 5,
+      WR: 4,
+      TE: 2,
+    });
   });
 
   const needs = positionNeeds(["QB", "RB", "WR"], NFL);
@@ -624,6 +634,20 @@ describe("ideal roster", () => {
   it("warns when a trade piles a position above the ideal", () => {
     const warnings = check([roster[5]!], [player("rb4", "RB", 11, 3)], { RB: 3 });
     expect(warnings).toEqual(["You would carry 4 RBs (the ideal roster has 3)"]);
+  });
+
+  it("leaves players on injured reserve out of the ideal roster count", () => {
+    const hurt = player("rbIr", "RB", 14, 6, { inj: "IR" });
+    const withIr = [...roster, hurt];
+    // Three healthy RBs and one on IR: getting a fourth healthy RB fits an ideal of 4.
+    const get = [player("rb4", "RB", 11, 3)];
+    const give = [roster[5]!];
+    const after = withIr.filter((p) => p !== give[0]).concat(get);
+    expect(positionCheck(withIr, after, give, get, withIdeal(needs, { RB: 4 })).warnings).toEqual(
+      [],
+    );
+    expect(idealCounts(withIr).RB).toBe(3);
+    expect(idealNeeds(withIr, { RB: 4 }, { RB: 0.5 })).toEqual({ RB: 0.75 });
   });
 
   it("wants players where the roster is below the ideal and sells where it is above", () => {

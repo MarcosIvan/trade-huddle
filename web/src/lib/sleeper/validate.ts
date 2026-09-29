@@ -10,24 +10,6 @@ export const isLeagueId = (s: unknown): s is string =>
 export const isUsername = (s: unknown): s is string =>
   typeof s === "string" && /^[A-Za-z0-9_.-]{2,40}$/.test(s);
 
-/**
- * Accepts a bare league ID or a Sleeper league link
- * (https://sleeper.com/leagues/<id>/... or sleeper.app) and returns the ID.
- */
-export function parseLeagueInput(input: string): string | null {
-  const text = input.trim();
-  if (isLeagueId(text)) return text;
-  let url: URL;
-  try {
-    url = new URL(text);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "https:" || !/^(www\.)?sleeper\.(com|app)$/.test(url.hostname)) return null;
-  const match = /^\/leagues\/(\d{5,25})(\/|$)/.exec(url.pathname);
-  return match?.[1] ?? null;
-}
-
 export class ResponseShapeError extends Error {
   constructor(what: string) {
     super(`Unexpected response from Sleeper (${what}).`);

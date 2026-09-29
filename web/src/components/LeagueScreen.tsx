@@ -3,10 +3,12 @@
 import { useId, useMemo, useState } from "react";
 import type { LeagueView } from "@/hooks/useLeague";
 import { useTradeIdeas } from "@/hooks/useTradeIdeas";
-import { shortDate } from "@/lib/format";
+import { fmt } from "@/lib/format";
 import {
   defaultIdealRoster,
   freeAgentPool,
+  idealCounts,
+  onIr,
   playerScores,
   rosterPlayers,
   weeklyOutlook,
@@ -18,8 +20,7 @@ import { ScoreContext } from "./ScoreContext";
 import { NFL } from "@/lib/sports/nfl";
 import { storage } from "@/lib/storage";
 import { IdealRoster, IDEAL_MAX } from "./IdealRoster";
-import { WeeklyLineup } from "./WeeklyLineup";
-import { MethodNotes } from "./MethodNotes";
+import { WeeklyLineup, weekLineup } from "./WeeklyLineup";
 import { Notices } from "./Notices";
 import { Section } from "./Section";
 import { TeamLineup } from "./TeamLineup";
@@ -95,11 +96,12 @@ export function LeagueScreen({
     storage.set(idealKey, JSON.stringify(next));
     setChangedIdeal({ key: idealKey, ideal: next });
   }
+  // What you have now at each position, players on injured reserve apart (they don't count).
   const myCounts = useMemo(() => {
-    const out: Record<string, number> = {};
-    const mine = teams.find((t) => t.rid === myRid);
-    for (const p of rosterPlayers(model, mine?.playerIds ?? [])) out[p.pos] = (out[p.pos] ?? 0) + 1;
-    return out;
+    const mine = rosterPlayers(model, teams.find((t) => t.rid === myRid)?.playerIds ?? []);
+    const ir: Record<string, number> = {};
+    for (const p of mine) if (onIr(p)) ir[p.pos] = (ir[p.pos] ?? 0) + 1;
+    return { active: idealCounts(mine), ir };
   }, [model, teams, myRid]);
 
   const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal);
@@ -137,6 +139,17 @@ export function LeagueScreen({
     () => (week ? weeklyOutlook(model, stats, league, week, NFL.model) : null),
     [model, stats, league, week],
   );
+  const thisWeek = useMemo(
+    () =>
+      outlook
+        ? weekLineup(
+            model,
+            teams.find((t) => t.rid === myRid),
+            outlook,
+          )
+        : null,
+    [model, teams, myRid, outlook],
+  );
 
   // Players on no roster in this league: who you could pick up after an uneven trade.
   const pool = useMemo(
@@ -148,9 +161,6 @@ export function LeagueScreen({
     () => [...teams].sort((a, b) => a.name.localeCompare(b.name)),
     [teams],
   );
-  const weeks = stats.weeks.length
-    ? `weeks ${stats.weeks[0]}–${stats.weeks[stats.weeks.length - 1]} of ${stats.season}`
-    : `no ${stats.season} games yet`;
 
   function openIdea(idea: TradeIdea) {
     setAnalyzer({
@@ -172,9 +182,6 @@ export function LeagueScreen({
               {league.name}
               {demo && <span className={styles.demoTag}>Fictional data</span>}
             </h1>
-            <p className={styles.meta}>
-              {teams.length} teams · {weeks} · stats updated {shortDate(stats.generated_at)}
-            </p>
           </div>
           <div className={styles.controls}>
             <div className="field">
@@ -208,46 +215,37 @@ export function LeagueScreen({
         <Notices kinds={notices} />
 
         <div className={styles.grid}>
-          <Section
-            id="team"
-            title="Your team"
-            subtitle={
-              week && outlook ? "Best lineup for this week" : "Best lineup by current value"
-            }
-          >
-            {week && outlook ? (
-              <WeeklyLineup
-                model={model}
-                teams={teams}
-                myRid={myRid}
-                week={week}
-                outlook={outlook}
-              />
-            ) : (
+          {week && thisWeek ? (
+            <Section
+              id="team"
+              title={`Your best team for week ${week}`}
+              aside={
+                <span className={styles.projected}>
+                  <b>{fmt(thisWeek.lineup.total)}</b> projected pts
+                </span>
+              }
+            >
+              <WeeklyLineup model={model} week={week} rated={thisWeek} />
+            </Section>
+          ) : (
+            <Section id="team" title="Your team" subtitle="Best lineup by current value">
               <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
-            )}
-          </Section>
-          <Section
-            id="ideas"
-            title="Trade ideas"
-            subtitle="The three best deals for your team, fair to both sides"
-          >
+            </Section>
+          )}
+          <Section id="ideas" title="Trade ideas">
             <IdealRoster
               key={`${idealKey}-${JSON.stringify(ideal)}`}
               applied={ideal}
               defaults={defaults}
-              counts={myCounts}
+              counts={myCounts.active}
+              onIr={myCounts.ir}
               onApply={applyIdeal}
             />
             <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
           </Section>
         </div>
 
-        <Section
-          id="finder"
-          title="Trade finder"
-          subtitle="Pick one player to sell or to get, and see the best deals around him"
-        >
+        <Section id="finder" title="Trade finder">
           <TradeFinder
             model={model}
             teams={teams}
@@ -262,21 +260,14 @@ export function LeagueScreen({
           />
         </Section>
 
-        <Section
-          id="analyzer"
-          title="Trade analyzer"
-          subtitle="Pick players on each side to see the impact and the balance"
-          className={styles.analyzer}
-        >
+        <Section id="analyzer" title="Trade analyzer" className={styles.analyzer}>
           <TradeAnalyzer
             model={model}
-            stats={stats}
             teams={teams}
             myRid={myRid}
             partnerRid={partnerRid}
             give={current.give}
             get={partnerRid === current.partnerRid ? current.get : new Set()}
-            sparkMax={sparkMax}
             pool={pool}
             tradeScores={tradeScores}
             ideal={ideal}
@@ -289,8 +280,6 @@ export function LeagueScreen({
             }
           />
         </Section>
-
-        <MethodNotes stats={stats} repl={model.repl} />
       </div>
     </ScoreContext.Provider>
   );

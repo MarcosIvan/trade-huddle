@@ -30,10 +30,6 @@
   font-weight: 700;
   letter-spacing: 0;
 }
-.meta {
-  font-size: 15px;
-  color: var(--ink-2);
-}
 .controls {
   display: flex;
   flex-wrap: wrap;
@@ -54,6 +50,17 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   align-items: start;
   gap: 40px;
+}
+.projected {
+  font-size: 15px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.projected b {
+  font-family: var(--display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--ink);
 }
 .analyzer {
   margin-top: 48px;
