@@ -16,7 +16,8 @@ Do not open a public issue for security problems.
   could be attacked.
 - **Escaped output.** Team, league and player names come from other users.
   React escapes every one of them, and `dangerouslySetInnerHTML` is banned by
-  the lint rule `react/no-danger`.
+  the lint rule `react/no-danger`. The one exception is the site's own
+  structured data (a constant, never Sleeper data, with `<` escaped).
 - **Validated input.** Usernames and league IDs are checked before they are used
   in API requests, and Sleeper's responses are validated before use.
 - **No third parties.** The site only talks to `api.sleeper.app`; its fonts are
@@ -32,8 +33,19 @@ Do not open a public issue for security problems.
 - **Least-privilege automation.** Workflows use a read-only token; only the
   deploy step can publish to Pages, and the deploy never runs for pull
   requests. The CI workflow checks every pull request (lint, types, tests,
-  build, `npm audit`, ruff, mypy, pytest) with `pull_request`, never
+  build, `npm audit`, ruff, mypy, pytest, secrets) with `pull_request`, never
   `pull_request_target`, so code from forks gets no write access or secrets.
+  Only GitHub's own actions plus the OpenSSF Scorecard action may run, each
+  pinned to a full commit SHA.
+- **Automated scanning.**
+  - **Secrets:** gitleaks scans the whole git history on every pull request
+    (the official release, checked by SHA-256), and can run as a local
+    pre-commit hook. GitHub secret scanning and push protection are on.
+  - **Code:** CodeQL (`security-extended` queries) analyzes the TypeScript,
+    the Python pipeline and the workflows on every pull request, on `main`
+    and weekly.
+  - **Practices:** OpenSSF Scorecard rates the repository weekly and on
+    every change to `main`.
 - **Dependency updates.** Dependabot opens pull requests for outdated GitHub
   Actions, Python packages (pipeline and tools) and npm packages (the site).
   Major npm versions are updated by hand once the tooling supports them;
