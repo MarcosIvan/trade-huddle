@@ -27,7 +27,7 @@ Do not open a public issue for security problems.
   token; only the deploy step can publish to Pages. It never runs for pull
   requests from forks.
 - **Dependency updates.** Dependabot opens pull requests for outdated GitHub
-  Actions and Python packages.
+  Actions, Python packages (pipeline and tools) and npm packages (the site).
 
 ## What the site stores
 
