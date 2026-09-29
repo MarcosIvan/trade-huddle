@@ -1,12 +1,32 @@
-# Opens pull requests when GitHub Actions or Python dependencies have updates,
-# including security fixes.
+# Opens pull requests when GitHub Actions, Python or npm dependencies have
+# updates, including security fixes. Each entry must point at the directory
+# that holds the manifest files; Dependabot does not search subfolders.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+
+  # Stats pipeline (pyproject.toml, requirements.txt) and the optional
+  # Google Sheets export (requirements-sheets.txt).
   - package-ecosystem: pip
-    directory: /
+    directories:
+      - /pipeline
+      - /tools
     schedule:
       interval: weekly
+
+  # The Next.js site. Minor and patch updates of build and test tools come as
+  # one pull request; the app's runtime (next, react) and major versions come
+  # one by one, since those are the ones that can break the site.
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+    groups:
+      dev-tools:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
