@@ -8,6 +8,9 @@
   gap: 20px;
 }
 .picklist {
+  /* Contains the absolutely positioned screen-reader text of rows scrolled
+     out of view; without it they stretch the page far below the footer. */
+  position: relative;
   margin-top: 6px;
   max-height: 380px;
   overflow-y: auto;

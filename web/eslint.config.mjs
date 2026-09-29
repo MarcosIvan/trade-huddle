@@ -10,7 +10,9 @@ const config = [
       "react/no-danger": "error",
     },
   },
-  { ignores: [".next/", "out/", "next-env.d.ts", "public/"] },
+  {
+    ignores: [".next/", "out/", "next-env.d.ts", "public/", "test-results/", "playwright-report/"],
+  },
 ];
 
 export default config;

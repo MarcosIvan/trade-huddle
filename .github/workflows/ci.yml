@@ -1,6 +1,7 @@
 # Checks every pull request and every push to main: the site (lint, types,
-# tests, formatting, build, npm audit) and the stats pipeline (ruff, mypy,
-# pytest). Nothing is deployed here; see deploy.yml.
+# tests, formatting, build, npm audit), end-to-end tests of the built site
+# (Playwright) and the stats pipeline (ruff, mypy, pytest). Nothing is
+# deployed here; see deploy.yml.
 #
 # Security notes:
 #   - pull_request (never pull_request_target): code from forks and from
@@ -65,6 +66,48 @@ jobs:
 
       - name: Known vulnerabilities (high and critical)
         run: npm audit --audit-level=high
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # Build and serve under the deployed base path, like GitHub Pages.
+      NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        # Sleeper's API is mocked in every test; nothing leaves the runner.
+        run: npm run test:e2e
+
+      - name: Keep the traces of failed tests
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-traces
+          path: web/test-results/
+          retention-days: 7
 
   secrets:
     name: Secrets

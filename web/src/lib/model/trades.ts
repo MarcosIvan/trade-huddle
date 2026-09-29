@@ -698,6 +698,7 @@ export function suggestTrades(
     const theirCombos = combos(tradeCandidates(offered(theirs), sport));
     for (const give of myCombos) {
       for (const get of theirCombos) {
+        if (isSamePositionSwap(give, get)) continue;
         const r = evaluateTrade(
           mine,
           theirs,
@@ -727,6 +728,14 @@ export function suggestTrades(
   near.sort((a, b) => a.problems!.length - b.problems!.length);
   return fillDiverse(picked, near, p.maxSuggestions);
 }
+
+/**
+ * One player for one player at the same position (RB for RB): it rarely
+ * helps either side much, so trade ideas skip it. The trade finder and the
+ * analyzer still allow it.
+ */
+export const isSamePositionSwap = (give: readonly Player[], get: readonly Player[]): boolean =>
+  give.length === 1 && get.length === 1 && give[0]!.pos === get[0]!.pos;
 
 /** Adds near misses to the picked ideas: new partners first, your players repeated only as a last resort. */
 function fillDiverse(picked: TradeIdea[], near: readonly TradeIdea[], max: number): TradeIdea[] {

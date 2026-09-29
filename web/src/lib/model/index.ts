@@ -29,6 +29,7 @@ export {
   onIr,
   type IdealRoster,
   idealNeeds,
+  isSamePositionSwap,
   isTrueMatch,
   MATCH,
   MAX_VALUE_LOSS,
