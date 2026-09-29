@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-09-28
 - Supersedes: the "Level / Form / usage bonus" parts of ADR 0006
+- Amended by: ADR 0008 (refills, bench depth, match weights, three ideas)
 
 ## Context
 
@@ -35,16 +36,16 @@ Each part is on a 0-1 scale that is
 comparable across positions (production is measured against the average of
 the position's top 3, raised to 1.5 so gaps still count):
 
-| Part | Weight | Measure |
-|---|---|---|
-| Base | 15 | preseason projection, or last season |
-| Market | 15 | draft ADP in the league's format, `1 / (1 + (ADP/40)²)`; fades by `8 / (8 + games)`, the rest goes to Expected |
-| Expected | 15 | expected points per game from here on (the backtested model of ADRs 0001-0003) |
-| Season | 10 | points per game this season |
-| Recent | 10 | points per game over the last 3 games |
-| Edge | 10 | distance above the average starter at the position, in standard deviations, through a logistic |
-| Scarcity | 10 | √(points above replacement / the league's best) |
-| Usage | 15 | share of the NFL offense's targets + carries relative to a lead player (QB, K, DEF use Expected) |
+| Part     | Weight | Measure                                                                                                        |
+| -------- | ------ | -------------------------------------------------------------------------------------------------------------- |
+| Base     | 15     | preseason projection, or last season                                                                           |
+| Market   | 15     | draft ADP in the league's format, `1 / (1 + (ADP/40)²)`; fades by `8 / (8 + games)`, the rest goes to Expected |
+| Expected | 15     | expected points per game from here on (the backtested model of ADRs 0001-0003)                                 |
+| Season   | 10     | points per game this season                                                                                    |
+| Recent   | 10     | points per game over the last 3 games                                                                          |
+| Edge     | 10     | distance above the average starter at the position, in standard deviations, through a logistic                 |
+| Scarcity | 10     | √(points above replacement / the league's best)                                                                |
+| Usage    | 15     | share of the NFL offense's targets + carries relative to a lead player (QB, K, DEF use Expected)               |
 
 While a player has played no more games than the recent window, Season and
 Recent are the same games: Recent's weight and half of Season's move to
