@@ -40,7 +40,7 @@ jobs:
 
       - name: Install the data pipeline
         run: |
-          pip install -r pipeline/requirements.txt
+          pip install --require-hashes -r pipeline/requirements.txt
           pip install --no-deps -e pipeline
 
       - name: Build the stats file

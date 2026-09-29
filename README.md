@@ -132,7 +132,7 @@ Requirements: Python 3.12 and Node 22.
 ```bash
 # 1. Build the stats file (writes web/public/data/nfl/stats.json)
 python -m venv .venv
-.venv/bin/pip install -r pipeline/requirements.txt
+.venv/bin/pip install --require-hashes -r pipeline/requirements.txt
 .venv/bin/pip install --no-deps -e pipeline
 .venv/bin/python -m trade_huddle_data build
 
