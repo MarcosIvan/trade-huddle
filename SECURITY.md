@@ -46,13 +46,16 @@ or apps belong to Sleeper.
   the exact inline scripts Next writes, allowed by SHA-256 hash; no
   `'unsafe-inline'` or `'unsafe-eval'`; styles, images and fonts only from
   the site; network requests only to the site and `api.sleeper.app`. The
-  build fails if a page gains inline styles or event handlers. Limits of a
+  build fails if a page gains inline styles or event handlers. End-to-end
+  tests load the built site with Sleeper's API mocked to return league, team
+  and owner names that contain HTML and scripts; they fail if any of it runs,
+  if the CSP blocks anything, or on any page error. Limits of a
   meta policy (no `frame-ancestors`, no reports) are in
   [ADR 0009](docs/adr/0009-content-security-policy.md).
 - **Least-privilege automation.** Workflows use a read-only token; only the
   deploy step can publish to Pages, and the deploy never runs for pull
   requests. The CI workflow checks every pull request (lint, types, tests,
-  build, `npm audit`, ruff, mypy, pytest, secrets) with `pull_request`, never
+  build, end-to-end tests, `npm audit`, ruff, mypy, pytest, secrets) with `pull_request`, never
   `pull_request_target`, so code from forks gets no write access or secrets.
   Only GitHub's own actions plus the OpenSSF Scorecard action may run, each
   pinned to a full commit SHA.

@@ -152,12 +152,24 @@ The demo league works without the stats build: open
 Checks, from `web/`: `npm run lint`, `npm run typecheck`, `npm test`,
 `npm run format:check`, `npm run build` (which also adds the Content
 Security Policy to every page, see
-[ADR 0009](docs/adr/0009-content-security-policy.md)). The value model's backtests run with
+[ADR 0009](docs/adr/0009-content-security-policy.md)). End-to-end tests run
+Playwright against that build, served like GitHub Pages, with Sleeper's API
+mocked (hostile names included); each test fails on any CSP violation or page
+error, and axe checks WCAG 2.1 AA in both themes:
+
+```bash
+npx playwright install chromium   # once
+NEXT_PUBLIC_BASE_PATH=/trade-huddle npm run build
+NEXT_PUBLIC_BASE_PATH=/trade-huddle npm run test:e2e
+```
+
+The value model's backtests run with
 `npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
 `backtest:weekly`) after building the past seasons they use with
 `python -m trade_huddle_data build --season 2024` (and `2025`). The pipeline's own checks
 are in [`pipeline/README.md`](pipeline/README.md). The **CI** workflow
-([`ci.yml`](.github/workflows/ci.yml)) runs all of them, plus
+([`ci.yml`](.github/workflows/ci.yml)) runs all of them (except the
+backtests), plus
 `npm audit --audit-level=high` and a gitleaks scan of the git history for
 secrets, on every pull request and every push to `main`. To check for
 secrets before each commit too: `pip install pre-commit && pre-commit install`
