@@ -21,8 +21,14 @@ Do not open a public issue for security problems.
   in API requests, and Sleeper's responses are validated before use.
 - **No third parties.** The site only talks to `api.sleeper.app`; its fonts are
   self-hosted.
-- **Content Security Policy (planned).** A hash-based CSP for the Next.js
-  export is on the roadmap; the site does not ship one yet.
+- **Content Security Policy.** Every page carries a strict CSP in a meta tag
+  (GitHub Pages can't send headers): scripts only from the site itself plus
+  the exact inline scripts Next writes, allowed by SHA-256 hash; no
+  `'unsafe-inline'` or `'unsafe-eval'`; styles, images and fonts only from
+  the site; network requests only to the site and `api.sleeper.app`. The
+  build fails if a page gains inline styles or event handlers. Limits of a
+  meta policy (no `frame-ancestors`, no reports) are in
+  [ADR 0009](docs/adr/0009-content-security-policy.md).
 - **Least-privilege automation.** Workflows use a read-only token; only the
   deploy step can publish to Pages, and the deploy never runs for pull
   requests. The CI workflow checks every pull request (lint, types, tests,
