@@ -102,7 +102,6 @@ export function IdeaCard({
           {name}
           {partner?.handle && <span className={styles.handle}>@{partner.handle}</span>}
         </h3>
-        <span className={styles.tag}>Idea {index + 1}</span>
       </div>
       <div className={styles.swap}>
         <Side label="You send" players={idea.give} />
@@ -120,7 +119,6 @@ export function IdeaCard({
             Your bench <Delta value={idea.depthMe} />
           </span>
         )}
-        <span className="hint">pts per game</span>
         {idea.myNeedPos && (
           <span className={`${styles.chip} ${styles.plus}`}>
             Fills your need at {idea.myNeedPos}

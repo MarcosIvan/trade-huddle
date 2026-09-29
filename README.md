@@ -4,7 +4,7 @@ Trade ideas, a trade finder and a trade analyzer for **Sleeper redraft fantasy
 football leagues**.
 
 **Use it:** open **https://marcosivan.github.io/trade-huddle/**, type your
-Sleeper username (or paste a league ID) and pick a league. No sign-up, no
+Sleeper username and pick a league. No sign-up, no
 download. Want to look around first? Open the
 [demo league](https://marcosivan.github.io/trade-huddle/?demo) (fictional data).
 
@@ -100,6 +100,14 @@ A deal is suggested only if:
   back in the deal or is covered by a spare you already have, nobody is left
   short of starters, and nobody piles up a position (no third QB in a one-QB
   league). Kickers and defenses are not traded.
+- it **respects your ideal roster**: how many QBs, RBs, WRs and TEs you want,
+  bench included, at most 14 in total (2, 5, 5 and 2 by default in a one-flex
+  league; in superflex one more QB and one fewer WR). Players on injured
+  reserve don't count. You can change it with the − and + buttons above the
+  trade ideas and press **Update trade ideas**. A deal may keep a position
+  below or above the ideal as it is, but never takes it further away, and
+  positions below the ideal count as needs when ranking. It is saved in your
+  browser for each league and team.
 
 Trade ideas show **three** deals: fair first, then those where your starters
 gain more than the partner's, then the best matches (each side getting the
@@ -107,6 +115,9 @@ best player at a position where it is weak). When fewer than three deals pass,
 the nearest ones fill the list and say what they are missing. The **trade
 finder** applies the same rules around one player, in 1-for-1, 2-for-1,
 2-for-2 and 3-for-2 shapes ([ADR 0008](docs/adr/0008-trade-finder.md)).
+The **trade analyzer** shows any deal in one card: fairness on top, then what
+you send and what you receive, each with what it gains or loses in trade
+value, points per game and the last 3 games (received minus sent).
 
 ## For developers
 

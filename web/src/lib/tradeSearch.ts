@@ -9,6 +9,7 @@ import {
   freeAgentPool,
   rosterPlayers,
   suggestTrades,
+  type IdealRoster,
   type Model,
   type Player,
   type TradeIdea,
@@ -22,6 +23,8 @@ export interface SearchRequest {
   myRid: number;
   /** Trade score per player (Player Score without team importance). */
   tradeScores: [string, number][];
+  /** Your ideal roster (total players per position); empty keeps the default rules. */
+  ideal: IdealRoster;
 }
 
 export type IdeaIds = Omit<TradeIdea, "give" | "get"> & { give: string[]; get: string[] };
@@ -37,10 +40,11 @@ export function runSearch({
   rosters,
   myRid,
   tradeScores,
+  ideal,
 }: SearchRequest): SearchResponse {
   const teams = rosters.map((r) => ({ rid: r.rid, players: rosterPlayers(model, r.playerIds) }));
   const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
-  const ideas = suggestTrades(myRid, teams, model, NFL, pool, new Map(tradeScores));
+  const ideas = suggestTrades(myRid, teams, model, NFL, pool, new Map(tradeScores), ideal);
   return {
     requestId,
     ideas: ideas.map((r) => ({ ...r, give: r.give.map((p) => p.id), get: r.get.map((p) => p.id) })),
@@ -75,6 +79,7 @@ export function runFinder({
   rosters,
   myRid,
   tradeScores,
+  ideal,
   finder,
 }: FinderRequest): FinderResponse {
   const teams = rosters.map((r) => ({ rid: r.rid, players: rosterPlayers(model, r.playerIds) }));
@@ -88,6 +93,7 @@ export function runFinder({
     NFL,
     pool,
     new Map(tradeScores),
+    ideal,
   );
   return { requestId, ideas: ideas.map(toIds), closest: closest ? toIds(closest) : null };
 }

@@ -3,7 +3,6 @@ import {
   isLeagueId,
   isUsername,
   parseLeague,
-  parseLeagueInput,
   parseLeagueList,
   parseLeagueUsers,
   parseRosters,
@@ -34,25 +33,6 @@ describe("input validation", () => {
       expect(isUsername(name)).toBe(false);
     },
   );
-
-  it("reads a league ID from an ID or a Sleeper link", () => {
-    expect(parseLeagueInput(" 1234567890123456789 ")).toBe("1234567890123456789");
-    expect(parseLeagueInput("https://sleeper.com/leagues/1234567890123456789/team")).toBe(
-      "1234567890123456789",
-    );
-    expect(parseLeagueInput("https://sleeper.app/leagues/12345")).toBe("12345");
-  });
-
-  it.each([
-    "http://sleeper.com/leagues/12345",
-    "https://evil.example/leagues/12345",
-    "https://sleeper.com.evil.example/leagues/12345",
-    "https://sleeper.com/leagues/abc",
-    "javascript:alert(1)",
-    "leagues/12345",
-  ])("rejects %s", (input) => {
-    expect(parseLeagueInput(input)).toBeNull();
-  });
 });
 
 describe("response validation", () => {
