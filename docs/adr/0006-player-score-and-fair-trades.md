@@ -1,6 +1,6 @@
 # ADR 0006: Player Score, fair-trade traffic light and match-based trade ideas
 
-- Status: accepted
+- Status: accepted; trade value and fairness parts superseded by ADR 0007
 - Date: 2026-09-28
 
 ## Context

@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { useContext, useId, useMemo } from "react";
 import { fmt, pct } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import {
@@ -12,7 +12,8 @@ import {
 } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT } from "./Player";
+import { Delta, FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT, TradeValue } from "./Player";
+import { ScoreContext } from "./ScoreContext";
 import styles from "./TradeAnalyzer.module.css";
 import { rosterNotes } from "./TradeIdeas";
 
@@ -30,7 +31,9 @@ function PickList({
   onToggle: (id: string) => void;
 }) {
   const labelId = useId();
-  const sorted = [...players].sort((a, b) => b.vorp - a.vorp || b.value - a.value);
+  const scores = useContext(ScoreContext);
+  const worth = (p: Player) => scores.get(p.id)?.trade ?? p.vorp;
+  const sorted = [...players].sort((a, b) => worth(b) - worth(a) || b.value - a.value);
   return (
     <div>
       <span className="label" id={labelId}>
@@ -45,7 +48,7 @@ function PickList({
               <input type="checkbox" checked={on} onChange={() => onToggle(p.id)} />
               <PlayerCell player={p} />
               <span className={`num ${styles.value}`} title={TRADE_VALUE_HINT}>
-                {fmt(p.vorp)}
+                <TradeValue player={p} />
               </span>
             </label>
           );
@@ -259,21 +262,30 @@ export function TradeAnalyzer({
                           </span>
                         )}
                       </td>
-                      <td className={`num ${styles.value}`}>{fmt(p.vorp)}</td>
+                      <td className={`num ${styles.value}`}>
+                        <TradeValue player={p} />
+                      </td>
                       <td className={styles.mix}>{valueMix(p, stats.prev_season)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {result.warnings.map((w) => (
+              <p key={w} className={`hint ${styles.warning}`}>
+                <span aria-hidden="true">⚠ </span>
+                {w}
+              </p>
+            ))}
             {rosterNotes(result, partnerName).map((n) => (
               <p key={n} className="hint">
                 {n}
               </p>
             ))}
             <p className="hint">
-              All numbers are points per game under your league&apos;s scoring. Balance compares how
-              much each player scores above a replacement-level player.
+              Points are per game under your league&apos;s scoring. Fairness compares the trade
+              value (1 to 100) on each side; a side&apos;s second and third players count 85% and
+              70%.
             </p>
           </>
         )}

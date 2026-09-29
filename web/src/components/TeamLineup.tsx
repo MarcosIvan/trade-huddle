@@ -3,7 +3,7 @@ import { fmt, ordinal } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import { bestLineup, rosterPlayers, type Model, type Player } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
-import { FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT } from "./Player";
+import { FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT, TradeValue } from "./Player";
 import styles from "./TeamLineup.module.css";
 
 const RECENT = NFL.model.recentGames;
@@ -27,7 +27,9 @@ function Row({
           <td>
             <PlayerCell player={player} />
           </td>
-          <td className={`num ${styles.value}`}>{fmt(player.vorp)}</td>
+          <td className={`num ${styles.value}`}>
+            <TradeValue player={player} />
+          </td>
           <td className={`num ${styles.ppg}`}>{fmt(player.value)}</td>
           <td className="num">
             <FormValue player={player} />

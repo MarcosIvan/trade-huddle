@@ -120,4 +120,6 @@ export interface Model {
   /** The league's lineup slots the model can fill, in league order. */
   slots: readonly string[];
   teams: number;
+  /** Which of the stats file's ADP formats fits this league (half, ppr, std, 2qb). */
+  adpFormat?: string;
 }

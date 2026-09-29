@@ -97,3 +97,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.warning {
+  color: var(--warn);
+  font-weight: 600;
+}

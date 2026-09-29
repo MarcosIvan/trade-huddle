@@ -20,6 +20,13 @@ export function modelSlots(league: LeagueSettings, sport: SportConfig): string[]
   return (league.roster_positions ?? []).filter((s) => s in sport.slotEligibility);
 }
 
+/** The draft-ADP format closest to the league: superflex/2QB, then points per reception. */
+export function adpFormat(league: LeagueSettings, slots: readonly string[]): string {
+  if (slots.filter((s) => s === "QB" || s === "SUPER_FLEX").length >= 2) return "2qb";
+  const rec = league.scoring_settings?.rec ?? 0;
+  return rec >= 0.75 ? "ppr" : rec >= 0.25 ? "half" : "std";
+}
+
 /** Targets, carries and red-zone targets of one game, in USAGE_KEYS order. */
 function makeOpportunityReader(keys: readonly string[]) {
   const index = new Map(USAGE_KEYS.map((k, i) => [keys.indexOf(k), i]));
@@ -202,7 +209,7 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
   repl = replacementLevels(list, slots, teams, sport);
   for (const pl of list) pl.vorp = Math.max(0, pl.value - (repl[pl.pos] ?? 0));
 
-  return { players, repl, slots, teams };
+  return { players, repl, slots, teams, adpFormat: adpFormat(league, slots) };
 }
 
 /** The model's players on a roster, skipping positions the model does not value. */
