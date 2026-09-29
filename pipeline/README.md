@@ -5,8 +5,8 @@ public API (no keys needed).
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install -r pipeline/requirements.txt
-.venv/bin/pip install --no-deps -e pipeline            # or -e "pipeline[dev]" for tests
+.venv/bin/pip install --require-hashes -r pipeline/requirements.txt   # requirements-dev.txt for tests
+.venv/bin/pip install --no-deps -e pipeline
 
 .venv/bin/python -m trade_huddle_data build            # -> web/public/data/nfl/stats.json
 .venv/bin/python -m trade_huddle_data build --season 2025   # a past season, for backtests
@@ -33,6 +33,24 @@ cd pipeline
 ../.venv/bin/mypy src tests
 ../.venv/bin/pytest
 ```
+
+### Updating dependencies
+
+Every dependency is pinned with its hashes, so pip refuses a package that
+doesn't match (a tampered upload, for example). The pins live in
+`pyproject.toml` (and `tools/requirements-sheets.in` for the Sheets export);
+the `.txt` files are generated from them with
+[pip-tools](https://pip-tools.readthedocs.io/). After changing a pin, run,
+from `pipeline/`:
+
+```bash
+pip-compile --allow-unsafe --generate-hashes --strip-extras --output-file=requirements.txt pyproject.toml
+pip-compile --allow-unsafe --generate-hashes --strip-extras --extra=dev --constraint=requirements.txt --output-file=requirements-dev.txt pyproject.toml
+cd ../tools && pip-compile --allow-unsafe --generate-hashes --strip-extras --output-file=requirements-sheets.txt requirements-sheets.in
+```
+
+Each file's header shows its command. CI and the deploy install with
+`--require-hashes`.
 
 `transform.py` holds pure functions (responses in, file out) and is where
 the tests focus; `sleeper.py` is the only module that talks to the network.

@@ -1,10 +1,29 @@
 # Security
 
-## Reporting a problem
+## Reporting a vulnerability
 
-Please report security issues privately through GitHub:
-**Security → Report a vulnerability** on this repository.
-Do not open a public issue for security problems.
+Please report security vulnerabilities privately, through GitHub's private
+vulnerability reporting:
+**[Report a vulnerability](https://github.com/MarcosIvan/trade-huddle/security/advisories/new)**
+(the **Security** tab → **Report a vulnerability**). Do not open a public
+issue for security problems.
+
+Please include what is affected (a page, a workflow, a file), how to
+reproduce it, and what an attacker could do with it.
+
+What to expect (coordinated disclosure):
+
+- An acknowledgement within **7 days**.
+- An assessment, and for a confirmed vulnerability, a fix within **30
+  days** when possible, followed by a published
+  [security advisory](https://github.com/MarcosIvan/trade-huddle/security/advisories)
+  that credits you if you want.
+- Please keep the details private until the fix is released or 90 days have
+  passed, whichever comes first.
+
+**Scope:** this repository and the site it deploys
+(https://marcosivan.github.io/trade-huddle/). Problems in Sleeper's own API
+or apps belong to Sleeper.
 
 ## How this project is built to be safe
 

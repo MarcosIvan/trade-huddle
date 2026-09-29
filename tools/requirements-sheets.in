@@ -1,0 +1,7 @@
+# Only for the optional Google Sheets export (tools/sheets_export.py).
+# Source for requirements-sheets.txt (see "Updating dependencies" in pipeline/README.md).
+# Same requests tree as the pipeline:
+-c ../pipeline/requirements.txt
+requests==2.34.2
+gspread==6.2.1
+google-auth==2.59.0
