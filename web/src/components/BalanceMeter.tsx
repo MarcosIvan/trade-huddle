@@ -23,7 +23,7 @@ export function FairnessBadge({ fairness, favors }: { fairness: number; favors: 
   );
 }
 
-/** Player Score sent versus received (without team importance), with the fairness badge. */
+/** Trade value sent versus received, with the fairness badge. */
 export function BalanceMeter({
   sGive,
   sGet,
@@ -43,17 +43,17 @@ export function BalanceMeter({
       <div
         className={styles.bar}
         role="img"
-        aria-label={`Trade score: you send ${fmt(sGive, 0)}, you get ${fmt(sGet, 0)}`}
+        aria-label={`Trade value: you send ${fmt(sGive, 0)}, you get ${fmt(sGet, 0)}`}
       >
         <span className={styles.give} style={{ flexGrow: give }} />
         <span className={styles.get} style={{ flexGrow: get }} />
       </div>
       <div className={styles.row} aria-hidden="true">
         <span>
-          Score you send <b>{fmt(sGive, 0)}</b>
+          Value you send <b>{fmt(sGive, 0)}</b>
         </span>
         <span>
-          Score you get <b>{fmt(sGet, 0)}</b>
+          Value you get <b>{fmt(sGet, 0)}</b>
         </span>
       </div>
     </div>

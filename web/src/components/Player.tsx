@@ -1,5 +1,6 @@
 import { fmt, signed, trend } from "@/lib/format";
-import type { Player } from "@/lib/model";
+import type { Player, PlayerScore } from "@/lib/model";
+import { SCORE_WEIGHTS } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import styles from "./Player.module.css";
 import { usePlayerScore } from "./ScoreContext";
@@ -8,7 +9,33 @@ const KNOWN_POSITIONS = new Set(NFL.positions);
 
 /** What "trade value" means, for tooltips and captions. */
 export const TRADE_VALUE_HINT =
-  "Points per game above what a free agent at the same position would score. Scarce positions are worth more.";
+  "Trade value, 1 to 100: proven base, draft market, expected points, this season, last 3 games, edge over his position, NFL usage and positional scarcity.";
+
+const PART_LABELS: Record<keyof PlayerScore["parts"], string> = {
+  base: "base",
+  market: "market",
+  expected: "expected",
+  season: "season",
+  recent: "last 3",
+  edge: "vs. position",
+  scarcity: "scarcity",
+  usage: "usage",
+};
+
+/** Trade value (1-100) with its parts in the tooltip; value above replacement until scores load. */
+export function TradeValue({ player }: { player: Player }) {
+  const s = usePlayerScore(player.id);
+  if (!s) return <>{fmt(player.vorp)}</>;
+  const parts = (Object.keys(PART_LABELS) as (keyof PlayerScore["parts"])[])
+    .map((k) => `${PART_LABELS[k]} ${Math.round(s.parts[k] * 100)}`)
+    .join(", ");
+  const extra = s.availability < 1 ? `, availability ${Math.round(s.availability * 100)}%` : "";
+  return (
+    <span title={`Trade value ${Math.round(s.trade)}: ${parts}${extra}`}>
+      {Math.round(s.trade)}
+    </span>
+  );
+}
 
 export function PosBadge({ pos }: { pos: string }) {
   const cls = KNOWN_POSITIONS.has(pos) ? styles[pos as keyof typeof styles] : undefined;
@@ -31,12 +58,10 @@ export function ScorePill({ id }: { id: string }) {
   const s = usePlayerScore(id);
   if (!s) return null;
   const parts = [
-    `level ${Math.round(s.level * 50)}/50`,
-    `form ${Math.round(s.form * 30)}/30`,
-    `team importance ${Math.round(s.importance * 20)}/20`,
+    `trade value ${Math.round(s.trade)} × ${SCORE_WEIGHTS.trade}`,
+    `team importance ${Math.round(s.importance * SCORE_WEIGHTS.importance)}/${SCORE_WEIGHTS.importance}`,
   ];
-  if (s.usage > 0)
-    parts.push(`usage bonus +${s.usage.toFixed(1)} (weapon #${s.usageRank} of his offense)`);
+  if (s.usageRank) parts.push(`weapon #${s.usageRank} of his offense`);
   return (
     <span className={styles.score} title={`Player Score: ${parts.join(", ")}`}>
       <span className="visually-hidden">Player Score </span>

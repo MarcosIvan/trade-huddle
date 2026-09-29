@@ -8,7 +8,7 @@ import {
   type Valued,
 } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, PosBadge, TRADE_VALUE_HINT } from "./Player";
+import { Delta, PosBadge, TRADE_VALUE_HINT, TradeValue } from "./Player";
 import styles from "./TradeIdeas.module.css";
 
 function pickupText(p: Valued): string {
@@ -47,7 +47,7 @@ function Side({ label, players }: { label: string; players: Player[] }) {
               {p.name}
             </span>
             <span className={styles.tradeValue} title={TRADE_VALUE_HINT}>
-              {fmt(p.vorp)}
+              <TradeValue player={p} />
             </span>
           </li>
         ))}
@@ -104,6 +104,16 @@ function IdeaCard({
           Their starters <Delta value={idea.dThem} />
         </span>
         <span className="hint">pts per game</span>
+        {idea.myNeedPos && (
+          <span className={`${styles.chip} ${styles.plus}`}>
+            Fills your need at {idea.myNeedPos}
+          </span>
+        )}
+        {idea.theirNeedPos && (
+          <span className={`${styles.chip} ${styles.plus}`}>
+            Fills their need at {idea.theirNeedPos}
+          </span>
+        )}
         {idea.benchShare >= 0.25 && (
           <span className={`${styles.chip} ${styles.plus}`}>Sends a player from your bench</span>
         )}

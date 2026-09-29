@@ -1,5 +1,13 @@
 import { fmt, pct } from "@/lib/format";
-import { estimate, SCORE_WEIGHTS, type ReplacementLevels, type StatsFile } from "@/lib/model";
+import {
+  estimate,
+  MAX_VALUE_LOSS,
+  MIN_IDEA_FAIRNESS,
+  SCORE_WEIGHTS,
+  TRADE_VALUE_WEIGHTS,
+  type ReplacementLevels,
+  type StatsFile,
+} from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import styles from "./MethodNotes.module.css";
 
@@ -70,30 +78,42 @@ export function MethodNotes({ stats, repl }: { stats: StatsFile; repl: Replaceme
           {NFL.positions.map((pos) => `${pos} ${fmt(repl[pos])}`).join(", ")} pts/game.
         </p>
         <p>
-          <b>Trade value</b> is Pts/g minus the replacement level of the player&apos;s position: how
-          much better he is than what you could pick up for free. It is the main number on this site
-          and the currency of trade balance. Scarce positions are worth more, so a 23-point running
-          back is worth far more than a 24-point quarterback when good quarterbacks sit in free
-          agency.
+          <b>Trade value</b> (1 to 100) is the main number on this site and the currency of trade
+          fairness. It combines several measures, each compared across the league:{" "}
+          {TRADE_VALUE_WEIGHTS.base} points for his proven base (preseason projection or last
+          season), {TRADE_VALUE_WEIGHTS.market} for where drafters took him (fading as games are
+          played), {TRADE_VALUE_WEIGHTS.expected} for expected points per game,{" "}
+          {TRADE_VALUE_WEIGHTS.season} for this season, {TRADE_VALUE_WEIGHTS.recent} for the last{" "}
+          {P.recentGames} games, {TRADE_VALUE_WEIGHTS.edge} for how far he is above the average
+          starter at his position, {TRADE_VALUE_WEIGHTS.scarcity} for points above a free agent and{" "}
+          {TRADE_VALUE_WEIGHTS.usage} for his share of his NFL offense&apos;s targets and carries.
+          Early in the season, when this season and the last {P.recentGames} games are the same
+          games, they count once and the base carries more. Scarce positions are scaled up, injured
+          players lose part of their value (they come back), and nobody is worth less than 1.
         </p>
         <p>
-          <b>Player Score</b> (0 to 100, next to each name): {SCORE_WEIGHTS.level} points for trade
-          value, {SCORE_WEIGHTS.form} for recent form above replacement, and{" "}
-          {SCORE_WEIGHTS.importance} for how important he is to his fantasy team, plus up to{" "}
-          {SCORE_WEIGHTS.usage} bonus points for the three main weapons of each NFL offense (share
-          of the team&apos;s targets and carries; the first gets the most).
+          <b>Player Score</b> (0 to 100, next to each name) is {pct(SCORE_WEIGHTS.trade)} of the
+          trade value plus up to {SCORE_WEIGHTS.importance} points for how important he is to his
+          fantasy team.
         </p>
         <p>
-          <b>Fairness</b> compares the Player Scores on each side without the team-importance part,
-          so a player is worth the same to both teams: green is a fair trade (90% or more), yellow
+          <b>Fairness</b> compares the trade value on each side, so a player is worth the same to
+          both teams. Each side&apos;s best player counts in full, the second 85% and the third 70%,
+          so two good players do not add up to a star. Green is a fair trade (90% or more), yellow
           could work but does not look fair (75% to 89%), red means don&apos;t do it.
         </p>
         <p>
           <b>Trade ideas</b>: the site tests every 1- or 2-player swap with every team and keeps
           deals that raise your starters by at least {fmt(P.minGainMe)} pts/game, also raise the
-          partner&apos;s starters, and are never red. The three shown are the best matches: fair
-          first, then both lineups gaining alike, then sending players from your bench. A star marks
-          a true match (fair, and both teams gain comparably), or the closest one when none is.
+          partner&apos;s starters, and are at least {pct(MIN_IDEA_FAIRNESS)} fair, so neither side
+          loses. Value comes first: an idea never costs you more than {pct(MAX_VALUE_LOSS)} of the
+          trade value you send. Positions must stay sound on both rosters: every position you give
+          away is refilled (or you have a spare), nobody is left short of starters, and nobody piles
+          up a position (such as a third QB in a one-QB league). The three shown are the best
+          matches: fair first, then both lineups gaining alike, then each side getting the best
+          player at a position where its lineup is weak (and sending from where it is strong), then
+          refilled positions and players sent from your bench. A star marks a true match (fair, and
+          both teams gain comparably), or the closest one when none is.
         </p>
       </div>
     </details>
