@@ -26,6 +26,8 @@ import {
   DEPTH_WEIGHT,
   IDEAL_MAX_PLAYERS,
   idealCounts,
+  inIrSlots,
+  IR_SLOTS,
   idealNeeds,
   withIdeal,
 } from "./trades";
@@ -624,15 +626,15 @@ describe("trade finder", () => {
 });
 
 describe("ideal roster", () => {
-  it("defaults to 2 QB, 5 RB, 5 WR and 2 TE in a one-flex league, at most 14 players", () => {
+  it("defaults to 2 QB, 4 RB, 5 WR and 2 TE in a one-flex league, at most 13 players", () => {
     const slots = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"];
-    expect(defaultIdealRoster(slots, NFL)).toEqual({ QB: 2, RB: 5, WR: 5, TE: 2 });
+    expect(defaultIdealRoster(slots, NFL)).toEqual({ QB: 2, RB: 4, WR: 5, TE: 2 });
     const threeWide = defaultIdealRoster([...slots, "WR"], NFL);
     expect(Object.values(threeWide).reduce((s, n) => s + n, 0)).toBe(IDEAL_MAX_PLAYERS);
     // Superflex adds a QB; a receiver comes off so the total stays within the limit.
     expect(defaultIdealRoster([...slots, "SUPER_FLEX"], NFL)).toEqual({
       QB: 3,
-      RB: 5,
+      RB: 4,
       WR: 4,
       TE: 2,
     });
@@ -679,6 +681,14 @@ describe("ideal roster", () => {
     );
     expect(idealCounts(withIr).RB).toBe(3);
     expect(idealNeeds(withIr, { RB: 4 }, { RB: 0.5 })).toEqual({ RB: 0.75 });
+  });
+
+  it("counts players on IR past the three IR spots, the least valuable first", () => {
+    const hurt = [22, 18, 9, 4].map((v, i) => player(`rbIr${i}`, "RB", v, 1, { inj: "IR" }));
+    expect([...inIrSlots(hurt)].map((p) => p.id)).toEqual(["rbIr0", "rbIr1", "rbIr2"]);
+    expect(idealCounts([...roster, ...hurt.slice(0, IR_SLOTS)]).RB).toBe(3);
+    // A fourth player on IR takes a roster spot.
+    expect(idealCounts([...roster, ...hurt]).RB).toBe(4);
   });
 
   it("wants players where the roster is below the ideal and sells where it is above", () => {

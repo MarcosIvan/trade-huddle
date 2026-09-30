@@ -26,6 +26,8 @@ export {
   defaultIdealRoster,
   IDEAL_MAX_PLAYERS,
   idealCounts,
+  inIrSlots,
+  IR_SLOTS,
   onIr,
   type IdealRoster,
   idealNeeds,

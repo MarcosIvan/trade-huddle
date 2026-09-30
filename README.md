@@ -105,9 +105,11 @@ A deal is suggested only if:
   short of starters, and nobody piles up a position (no third QB in a one-QB
   league). Kickers and defenses are not traded.
 - it **respects your ideal roster**: how many QBs, RBs, WRs and TEs you want,
-  bench included, at most 14 in total (2, 5, 5 and 2 by default in a one-flex
+  bench included, at most 13 in total (2, 4, 5 and 2 by default in a one-flex
   league; in superflex one more QB and one fewer WR). Players on injured
-  reserve don't count. You can change it with the − and + buttons above the
+  reserve don't count: each team has 3 IR spots outside the roster. From a
+  fourth player on IR on, the extra ones take a roster spot and count (the
+  least valuable first). You can change it with the − and + buttons above the
   trade ideas and press **Update trade ideas**. A deal may keep a position
   below or above the ideal as it is, but never takes it further away, and
   positions below the ideal count as needs when ranking. It is saved in your

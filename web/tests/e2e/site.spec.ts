@@ -89,11 +89,11 @@ test.describe("demo league", () => {
     }
   });
 
-  test("reruns the ideas with a new ideal roster, within 14 players", async ({ page }) => {
+  test("reruns the ideas with a new ideal roster, within 13 players", async ({ page }) => {
     const update = page.getByRole("button", { name: "Update trade ideas" });
     await page.getByRole("button", { name: "One more RB" }).click();
     await page.getByRole("button", { name: "One more WR" }).click();
-    // 16 players: blocked, with the reason on hover.
+    // 15 players: blocked, with the reason on hover.
     await expect(update).toHaveAttribute("aria-disabled", "true");
     await update.hover();
     await expect(page.getByRole("tooltip")).toContainText("Remove 2 players");

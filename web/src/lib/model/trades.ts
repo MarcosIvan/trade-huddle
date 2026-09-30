@@ -145,8 +145,9 @@ export function withFreeAgents(
   let current = list;
   const added: Valued[] = [];
   const { min, cap } = withIdeal(positionNeeds(model.slots, sport), ideal);
-  // Against the ideal roster, players on injured reserve do not count.
-  const count = (pos: string) => current.filter((p) => p.pos === pos && !(ideal && onIr(p))).length;
+  // Against the ideal roster, players in the IR spots do not count.
+  const reserve = ideal ? inIrSlots(list) : new Set<Valued>();
+  const count = (pos: string) => current.filter((p) => p.pos === pos && !reserve.has(p)).length;
   const full = (pos: string) => count(pos) >= (cap[pos] ?? Infinity);
   for (let n = 1; n <= open; n++) {
     let best: Valued | null = null;
@@ -307,13 +308,31 @@ export interface PositionNeeds {
  */
 export type IdealRoster = Readonly<Record<string, number>>;
 
-/** On injured reserve: such players do not count toward the ideal roster. */
+/** On injured reserve. */
 export const onIr = (p: Valued): boolean => (p as Partial<Player>).inj === "IR";
 
-/** Players per position that count toward the ideal roster (everyone but injured reserve). */
+/** Injured reserve spots each team has outside its roster. */
+export const IR_SLOTS = 3;
+
+/**
+ * The players in the injured reserve spots: up to IR_SLOTS players on IR, the
+ * most valuable first. They do not count toward the ideal roster; any other
+ * player on IR takes a roster spot and counts.
+ */
+export function inIrSlots(list: readonly Valued[]): Set<Valued> {
+  return new Set(
+    list
+      .filter(onIr)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, IR_SLOTS),
+  );
+}
+
+/** Players per position that count toward the ideal roster (everyone but the IR spots). */
 export function idealCounts(list: readonly Valued[]): Record<string, number> {
+  const reserve = inIrSlots(list);
   const out: Record<string, number> = {};
-  for (const p of list) if (!onIr(p)) out[p.pos] = (out[p.pos] ?? 0) + 1;
+  for (const p of list) if (!reserve.has(p)) out[p.pos] = (out[p.pos] ?? 0) + 1;
   return out;
 }
 
@@ -321,13 +340,13 @@ export function idealCounts(list: readonly Valued[]): Record<string, number> {
 export const IDEAL_BENCH = { QB: 1, RB: 2, WR: 2, TE: 1 } as const;
 
 /** Most players an ideal roster may ask for, all positions together. */
-export const IDEAL_MAX_PLAYERS = 14;
+export const IDEAL_MAX_PLAYERS = 13;
 
 /**
  * The ideal roster before the owner changes it, from the league's lineup:
- * 2 QB, 5 RB, 5 WR and 2 TE in a standard one-flex league. Past
+ * 2 QB, 4 RB, 5 WR and 2 TE in a standard one-flex league. Past
  * IDEAL_MAX_PLAYERS, bench spots come off the position with the most of them
- * (receivers first on a tie).
+ * (running backs first on a tie).
  */
 export function defaultIdealRoster(slots: readonly string[], sport: SportConfig): IdealRoster {
   const { min } = positionNeeds(slots, sport);
@@ -339,7 +358,7 @@ export function defaultIdealRoster(slots: readonly string[], sport: SportConfig)
     out[pos] = (min[pos] ?? 0) + spare;
   }
   const total = () => Object.values(out).reduce((s, n) => s + n, 0);
-  const order = ["WR", "RB", ...Object.keys(out)].filter((pos) => pos in out);
+  const order = ["RB", "WR", ...Object.keys(out)].filter((pos) => pos in out);
   while (total() > IDEAL_MAX_PLAYERS) {
     const pos = order.reduce((a, b) => ((bench[b] ?? 0) > (bench[a] ?? 0) ? b : a));
     const spare = bench[pos] ?? 0;
@@ -422,7 +441,7 @@ export function positionCheck(
   const readyAfter = countByPos(after, true);
   const allBefore = countByPos(before, false);
   const allAfter = countByPos(after, false);
-  // The ideal roster leaves players on injured reserve out of the count.
+  // The ideal roster leaves players in the IR spots out of the count.
   const idealBefore = idealCounts(before);
   const idealAfter = idealCounts(after);
   const warnings: string[] = [];

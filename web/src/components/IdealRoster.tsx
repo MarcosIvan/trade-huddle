@@ -23,9 +23,9 @@ export function IdealRoster({
 }: {
   applied: Ideal;
   defaults: Ideal;
-  /** How many players the team has now at each position, injured reserve left out. */
+  /** How many players the team has now at each position, the IR spots left out. */
   counts: Readonly<Record<string, number>>;
-  /** Players on injured reserve at each position: shown apart, never counted. */
+  /** Players in the IR spots at each position: shown apart, never counted. */
   onIr: Readonly<Record<string, number>>;
   onApply: (ideal: Ideal) => void;
 }) {
