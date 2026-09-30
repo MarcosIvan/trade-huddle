@@ -28,10 +28,9 @@ who were already valued well.
 
 ## Decision
 
-**Calibrate against a market of real trade values.** The public redraft
-trade values of FantasyCalc served as the reference. They are used **only
-offline, for this calibration**: the site does not call FantasyCalc and the
-daily build does not fetch it.
+**Calibrate against a market of real trade values.** Current redraft trade
+values from real leagues served as the reference, **only offline, for this
+calibration**: neither the site nor the daily build fetches or stores them.
 
 A search over the trade value's parameters minimized, on that league, the gap
 in value points between each of the top 100 players (by market value) and the
