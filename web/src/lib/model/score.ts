@@ -4,22 +4,26 @@
  * Trade value, 1 to 40 (one decimal): what a player is worth in a trade, built from
  * several measures, each on a 0-1 scale that is comparable across positions:
  *
- *   base       15  what he has proven: preseason projection, or last season
- *   market     15  where drafters took him (ADP); fades as the season's games pile up
- *   expected   15  expected points per game from here on (the backtested model)
- *   season     10  points per game this season
- *   recent     10  points per game over the last 3 games
- *   edge       10  how far he is above the average starter at his position
- *   scarcity   10  points above a free agent at his position, relative to the league's best
+ *   expected   30  expected points per game from here on (the backtested model)
+ *   scarcity   25  points above a free agent at his position, relative to the league's best
  *   usage      15  his importance to his NFL offense (share of targets + carries)
+ *   season     10  points per game this season
+ *   market     10  where drafters took him (ADP); fades as the season's games pile up
+ *   recent      5  points per game over the last 3 games
+ *   base        5  what he has proven: preseason projection, or last season
  *
  * While the season has no more games than the recent window, "season" and
  * "recent" are the same games: they count once, at half weight, and the rest
  * goes to base, so three games cannot swing the value alone.
  * The sum is scaled by how scarce his position is in this league (mildly, so
- * positions stay comparable) and by his availability (injury or no team),
- * relative to the best player in the league (40). Every
- * player keeps at least 1: nobody is worth nothing in a trade.
+ * positions stay comparable) and by his availability (injury or no team).
+ * A star (drafted in the top REPUTATION_MAX_ADP) worth less than his draft
+ * rank at his position is lifted part of the way toward the value of that
+ * rank (REPUTATION_GAMES), so a slow start does not sink him; the lift fades
+ * as games pile up. Values are relative to the best player in the league
+ * (40). Every player keeps at least 1: nobody is worth nothing in a trade.
+ *
+ * Calibrated in ADR 0010 against a market of real trade values.
  *
  * Player Score, 0 to 100, adds his importance to his fantasy team:
  *   80 points × trade value / 40 + 20 points × his value / the best value on his roster.
@@ -37,7 +41,6 @@ export interface TradeValueParts {
   expected: number;
   season: number;
   recent: number;
-  edge: number;
   scarcity: number;
   usage: number;
 }
@@ -52,6 +55,8 @@ export interface PlayerScore {
   posScale: number;
   /** Share of his value kept after injury or having no team, 0 to 1. */
   availability: number;
+  /** Share of his value that comes from the reputation lift (a star off to a slow start), 0 to 1. */
+  reputation: number;
   /** His value relative to the best player on his fantasy roster, 0 to 1. */
   importance: number;
   /** 1-3 when he is one of his offense's three main weapons. */
@@ -59,13 +64,12 @@ export interface PlayerScore {
 }
 
 export const TRADE_VALUE_WEIGHTS = {
-  base: 15,
-  market: 15,
-  expected: 15,
+  base: 5,
+  market: 10,
+  expected: 30,
   season: 10,
-  recent: 10,
-  edge: 10,
-  scarcity: 10,
+  recent: 5,
+  scarcity: 25,
   usage: 15,
 } as const;
 
@@ -76,17 +80,17 @@ export const TRADE_VALUE_MAX = 40;
 export const SCORE_WEIGHTS = { trade: 80, importance: 20 } as const;
 
 /** Share of team targets + carries that makes a lead player at each position. */
-const LEAD_SHARE: Record<string, number> = { RB: 0.35, WR: 0.18, TE: 0.14 };
+const LEAD_SHARE: Record<string, number> = { RB: 0.55, WR: 0.2, TE: 0.14 };
 /** Recent games used for usage share. */
 const USAGE_GAMES = 4;
 /** Players averaged to find each position's elite level. */
 const ELITE = 3;
 /** Production ratios are raised to this power, so production gaps still count. */
 const SPREAD = 1.5;
-/** Steepness of the edge over the position's average starter (per standard deviation). */
-const EDGE_SLOPE = 1.2;
 /** Scarcity only moves trade value between this floor and 1, so positions stay comparable. */
 const SCARCITY_FLOOR = 0.5;
+/** The position's scarcity ratio is raised to this power: below 1, positions sit closer together. */
+const SCARCITY_POWER = 0.6;
 /** Kickers and defenses are easy to replace. */
 const MINOR_POSITION_SCALE = 0.3;
 const MINOR_POSITIONS = new Set(["K", "DEF"]);
@@ -94,6 +98,11 @@ const MINOR_POSITIONS = new Set(["K", "DEF"]);
 const ADP_HALF = 40;
 /** Steepness of the market score: early rounds are worth much more than late ones. */
 const ADP_CURVE = 2;
+
+/** Stars: players drafted this early (ADP) get the reputation lift. */
+export const REPUTATION_MAX_ADP = 60;
+/** The reputation lift closes REPUTATION_GAMES / (REPUTATION_GAMES + games) of the gap. */
+export const REPUTATION_GAMES = 8;
 
 /** An injured player keeps this share of the value his injury rule takes away (he comes back). */
 const INJURY_RECOVERY = 0.4;
@@ -133,16 +142,6 @@ const mean = (xs: readonly number[]) => (xs.length ? xs.reduce((s, x) => s + x, 
 /** Points per game he would score while healthy and on a team. */
 const healthyPpg = (p: Player) => (p.injMult > 0 ? p.value / p.injMult : p.value);
 
-/** How many players of each position start across the league (flex slots shared out). */
-function startersByPos(model: Model, sport: SportConfig): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const slot of model.slots) {
-    const el = sport.slotEligibility[slot] ?? [];
-    for (const pos of el) out[pos] = (out[pos] ?? 0) + model.teams / el.length;
-  }
-  return out;
-}
-
 /** Share of a player's value kept after injury (he may come back) or having no team. */
 function availability(p: Player, sport: SportConfig): number {
   const rule = p.inj ? sport.model.injury[p.inj] : undefined;
@@ -162,19 +161,13 @@ export function playerScores(
   const byPos = new Map<string, Player[]>();
   for (const p of players) byPos.set(p.pos, [...(byPos.get(p.pos) ?? []), p]);
 
-  // Each position's elite level, starter average and spread, from healthy output.
-  const starters = startersByPos(model, sport);
-  const ref = new Map<string, { elite: number; avg: number; sd: number; eliteVorp: number }>();
+  // Each position's elite level, from healthy output.
+  const ref = new Map<string, { elite: number; eliteVorp: number }>();
   for (const [pos, list] of byPos) {
     const ppg = list.map(healthyPpg).sort((a, b) => b - a);
-    const pool = ppg.slice(0, Math.max(ELITE, Math.round(starters[pos] ?? model.teams)));
-    const avg = mean(pool);
-    const sd = Math.sqrt(mean(pool.map((x) => (x - avg) ** 2))) || 1;
     const vorps = list.map((p) => p.vorp).sort((a, b) => b - a);
     ref.set(pos, {
       elite: Math.max(1e-9, mean(ppg.slice(0, ELITE))),
-      avg,
-      sd,
       eliteVorp: mean(vorps.slice(0, ELITE)),
     });
   }
@@ -187,7 +180,8 @@ export function playerScores(
   const posScale = (pos: string) =>
     MINOR_POSITIONS.has(pos)
       ? MINOR_POSITION_SCALE
-      : SCARCITY_FLOOR + (1 - SCARCITY_FLOOR) * clamp01((ref.get(pos)?.eliteVorp ?? 0) / topVorp);
+      : SCARCITY_FLOOR +
+        (1 - SCARCITY_FLOOR) * clamp01((ref.get(pos)?.eliteVorp ?? 0) / topVorp) ** SCARCITY_POWER;
 
   // Usage: share of targets + carries relative to a lead player; top three weapons per offense.
   const shares = usageShares(model, stats);
@@ -206,7 +200,10 @@ export function playerScores(
   const healthyVorp = (p: Player) => Math.max(0, healthyPpg(p) - (model.repl[p.pos] ?? 0));
   const bestVorp = Math.max(1e-9, ...players.map(healthyVorp));
 
-  const raw = new Map<string, { value: number; parts: TradeValueParts; avail: number }>();
+  const raw = new Map<
+    string,
+    { value: number; parts: TradeValueParts; avail: number; lift: number }
+  >();
   for (const p of players) {
     const r = ref.get(p.pos)!;
     const production = (ppg: number) => clamp01(Math.max(0, ppg) / r.elite) ** SPREAD;
@@ -221,7 +218,6 @@ export function playerScores(
       expected: production(expected),
       season: production(season),
       recent: production(recent),
-      edge: 1 / (1 + Math.exp((-EDGE_SLOPE * (expected - r.avg)) / r.sd)),
       scarcity: Math.sqrt(healthyVorp(p) / bestVorp),
       // Positions without a usage share (QB, K, DEF) use their expected production instead.
       usage: share === undefined ? production(expected) : clamp01(share / LEAD_SHARE[p.pos]!),
@@ -243,7 +239,28 @@ export function playerScores(
       0,
     );
     const avail = availability(p, sport);
-    raw.set(p.id, { value: (sum / 100) * posScale(p.pos) * avail, parts, avail });
+    raw.set(p.id, { value: (sum / 100) * posScale(p.pos) * avail, parts, avail, lift: 0 });
+  }
+
+  // Reputation: a star below the value of his draft rank at his position is lifted part of
+  // the way to it (the rank's value, with his own availability), less as games pile up.
+  if (model.adpFormat) {
+    const adpOf = (p: Player) => stats.players[p.id]?.adp?.[model.adpFormat!];
+    for (const [pos, list] of byPos) {
+      if (MINOR_POSITIONS.has(pos)) continue;
+      const values = list.map((p) => raw.get(p.id)!.value).sort((a, b) => b - a);
+      const drafted = list
+        .filter((p) => adpOf(p) !== undefined)
+        .sort((a, b) => adpOf(a)! - adpOf(b)!);
+      drafted.forEach((p, i) => {
+        if (adpOf(p)! > REPUTATION_MAX_ADP) return;
+        const r = raw.get(p.id)!;
+        const gap = (values[i] ?? 0) * r.avail - r.value;
+        if (gap <= 0) return;
+        r.lift = (gap * REPUTATION_GAMES) / (REPUTATION_GAMES + p.g);
+        r.value += r.lift;
+      });
+    }
   }
   const best = Math.max(1e-9, ...[...raw.values()].map((r) => r.value));
 
@@ -270,6 +287,7 @@ export function playerScores(
       parts: r.parts,
       posScale: posScale(p.pos),
       availability: r.avail,
+      reputation: r.value > 0 ? r.lift / r.value : 0,
       importance: imp,
       usageRank: usageRank.get(p.id) ?? null,
     });

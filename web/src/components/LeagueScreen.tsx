@@ -8,7 +8,7 @@ import {
   defaultIdealRoster,
   freeAgentPool,
   idealCounts,
-  onIr,
+  inIrSlots,
   playerScores,
   rosterPlayers,
   weeklyOutlook,
@@ -96,11 +96,11 @@ export function LeagueScreen({
     storage.set(idealKey, JSON.stringify(next));
     setChangedIdeal({ key: idealKey, ideal: next });
   }
-  // What you have now at each position, players on injured reserve apart (they don't count).
+  // What you have now at each position, players in the IR spots apart (they don't count).
   const myCounts = useMemo(() => {
     const mine = rosterPlayers(model, teams.find((t) => t.rid === myRid)?.playerIds ?? []);
     const ir: Record<string, number> = {};
-    for (const p of mine) if (onIr(p)) ir[p.pos] = (ir[p.pos] ?? 0) + 1;
+    for (const p of inIrSlots(mine)) ir[p.pos] = (ir[p.pos] ?? 0) + 1;
     return { active: idealCounts(mine), ir };
   }, [model, teams, myRid]);
 

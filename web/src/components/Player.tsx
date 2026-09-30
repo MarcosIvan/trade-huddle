@@ -9,7 +9,7 @@ const KNOWN_POSITIONS = new Set(NFL.positions);
 
 /** What "trade value" means, for tooltips and captions. */
 export const TRADE_VALUE_HINT =
-  "Trade value, 1 to 40: proven base, draft market, expected points, this season, last 3 games, edge over his position, NFL usage and positional scarcity.";
+  "Trade value, 1 to 40: expected points, positional scarcity, NFL usage, this season, draft market, last 3 games and proven base; stars off to a slow start keep part of their draft rank's value.";
 
 const PART_LABELS: Record<keyof PlayerScore["parts"], string> = {
   base: "base",
@@ -17,7 +17,6 @@ const PART_LABELS: Record<keyof PlayerScore["parts"], string> = {
   expected: "expected",
   season: "season",
   recent: "last 3",
-  edge: "vs. position",
   scarcity: "scarcity",
   usage: "usage",
 };
@@ -29,7 +28,9 @@ export function TradeValue({ player }: { player: Player }) {
   const parts = (Object.keys(PART_LABELS) as (keyof PlayerScore["parts"])[])
     .map((k) => `${PART_LABELS[k]} ${Math.round(s.parts[k] * 100)}`)
     .join(", ");
-  const extra = s.availability < 1 ? `, availability ${Math.round(s.availability * 100)}%` : "";
+  const extra =
+    (s.availability < 1 ? `, availability ${Math.round(s.availability * 100)}%` : "") +
+    (s.reputation > 0 ? `, reputation +${Math.round(s.reputation * 100)}%` : "");
   return <span title={`Trade value ${fmt(s.trade)}: ${parts}${extra}`}>{fmt(s.trade)}</span>;
 }
 

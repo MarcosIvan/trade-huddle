@@ -145,8 +145,9 @@ export function withFreeAgents(
   let current = list;
   const added: Valued[] = [];
   const { min, cap } = withIdeal(positionNeeds(model.slots, sport), ideal);
-  // Against the ideal roster, players on injured reserve do not count.
-  const count = (pos: string) => current.filter((p) => p.pos === pos && !(ideal && onIr(p))).length;
+  // Against the ideal roster, players in the IR spots do not count.
+  const reserve = ideal ? inIrSlots(list) : new Set<Valued>();
+  const count = (pos: string) => current.filter((p) => p.pos === pos && !reserve.has(p)).length;
   const full = (pos: string) => count(pos) >= (cap[pos] ?? Infinity);
   for (let n = 1; n <= open; n++) {
     let best: Valued | null = null;
@@ -307,13 +308,31 @@ export interface PositionNeeds {
  */
 export type IdealRoster = Readonly<Record<string, number>>;
 
-/** On injured reserve: such players do not count toward the ideal roster. */
+/** On injured reserve. */
 export const onIr = (p: Valued): boolean => (p as Partial<Player>).inj === "IR";
 
-/** Players per position that count toward the ideal roster (everyone but injured reserve). */
+/** Injured reserve spots each team has outside its roster. */
+export const IR_SLOTS = 3;
+
+/**
+ * The players in the injured reserve spots: up to IR_SLOTS players on IR, the
+ * most valuable first. They do not count toward the ideal roster; any other
+ * player on IR takes a roster spot and counts.
+ */
+export function inIrSlots(list: readonly Valued[]): Set<Valued> {
+  return new Set(
+    list
+      .filter(onIr)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, IR_SLOTS),
+  );
+}
+
+/** Players per position that count toward the ideal roster (everyone but the IR spots). */
 export function idealCounts(list: readonly Valued[]): Record<string, number> {
+  const reserve = inIrSlots(list);
   const out: Record<string, number> = {};
-  for (const p of list) if (!onIr(p)) out[p.pos] = (out[p.pos] ?? 0) + 1;
+  for (const p of list) if (!reserve.has(p)) out[p.pos] = (out[p.pos] ?? 0) + 1;
   return out;
 }
 
@@ -321,13 +340,13 @@ export function idealCounts(list: readonly Valued[]): Record<string, number> {
 export const IDEAL_BENCH = { QB: 1, RB: 2, WR: 2, TE: 1 } as const;
 
 /** Most players an ideal roster may ask for, all positions together. */
-export const IDEAL_MAX_PLAYERS = 14;
+export const IDEAL_MAX_PLAYERS = 13;
 
 /**
  * The ideal roster before the owner changes it, from the league's lineup:
- * 2 QB, 5 RB, 5 WR and 2 TE in a standard one-flex league. Past
+ * 2 QB, 4 RB, 5 WR and 2 TE in a standard one-flex league. Past
  * IDEAL_MAX_PLAYERS, bench spots come off the position with the most of them
- * (receivers first on a tie).
+ * (running backs first on a tie).
  */
 export function defaultIdealRoster(slots: readonly string[], sport: SportConfig): IdealRoster {
   const { min } = positionNeeds(slots, sport);
@@ -339,7 +358,7 @@ export function defaultIdealRoster(slots: readonly string[], sport: SportConfig)
     out[pos] = (min[pos] ?? 0) + spare;
   }
   const total = () => Object.values(out).reduce((s, n) => s + n, 0);
-  const order = ["WR", "RB", ...Object.keys(out)].filter((pos) => pos in out);
+  const order = ["RB", "WR", ...Object.keys(out)].filter((pos) => pos in out);
   while (total() > IDEAL_MAX_PLAYERS) {
     const pos = order.reduce((a, b) => ((bench[b] ?? 0) > (bench[a] ?? 0) ? b : a));
     const spare = bench[pos] ?? 0;
@@ -422,7 +441,7 @@ export function positionCheck(
   const readyAfter = countByPos(after, true);
   const allBefore = countByPos(before, false);
   const allAfter = countByPos(after, false);
-  // The ideal roster leaves players on injured reserve out of the count.
+  // The ideal roster leaves players in the IR spots out of the count.
   const idealBefore = idealCounts(before);
   const idealAfter = idealCounts(after);
   const warnings: string[] = [];
@@ -664,10 +683,10 @@ export function tradeCandidates(list: readonly Player[], sport: SportConfig): Pl
 }
 
 /**
- * Tries every 1-for-1, 2-for-1, 1-for-2 and 2-for-2 deal with every team and
- * keeps the ones that improve both lineups and stay close in value. With trade
- * values, a deal must also not cost you value and must keep both rosters'
- * positions balanced.
+ * Tries every deal in the shapes of isIdeaShape with every team and keeps the
+ * ones that improve both lineups and stay close in value. With trade values, a
+ * deal must also not cost you value and must keep both rosters' positions
+ * balanced.
  */
 export function suggestTrades(
   myRid: number,
@@ -684,7 +703,15 @@ export function suggestTrades(
   // With trade values, kickers and defenses are left out: they are streamed, not traded.
   const offered = (list: readonly Player[]) =>
     scores ? list.filter((p) => tradable(p, sport)) : list;
-  const myCombos = combos(tradeCandidates(offered(mine), sport));
+  // With trade values, ideas take the shapes of isIdeaShape (up to 3 players a
+  // side); without them, the prototype's pairs, minus same-position swaps.
+  const size = scores ? 3 : 2;
+  const worth = (pl: Player) => scores?.get(pl.id) ?? pl.vorp;
+  const shaped = (give: Player[], get: Player[]) =>
+    scores ? isIdeaShape(give, get, worth) : !isSamePositionSwap(give, get);
+  const myLean = scores ? (depthLeans(rosters, model, sport, worth).get(myRid) ?? "any") : "any";
+  const inLean = (r: TradeIdea) => fitsLean(myLean, ideaLean(r.give, r.get, worth));
+  const myGroups = groups(tradeCandidates(offered(mine), sport), size);
   const needs = scores ? teamNeeds(rosters, model, sport) : null;
   const myNeeds = idealNeeds(mine, ideal, needs?.get(myRid));
 
@@ -695,10 +722,10 @@ export function suggestTrades(
     if (team.rid === myRid) continue;
     const theirs = team.players;
     const theirBase = bestLineup(theirs, model.slots, sport).total;
-    const theirCombos = combos(tradeCandidates(offered(theirs), sport));
-    for (const give of myCombos) {
-      for (const get of theirCombos) {
-        if (isSamePositionSwap(give, get)) continue;
+    const theirGroups = groups(tradeCandidates(offered(theirs), sport), size);
+    for (const give of myGroups) {
+      for (const get of theirGroups) {
+        if (!shaped(give, get)) continue;
         const r = evaluateTrade(
           mine,
           theirs,
@@ -720,11 +747,11 @@ export function suggestTrades(
       }
     }
   }
-  sortIdeas(found, Boolean(scores));
+  sortIdeas(found, Boolean(scores), inLean);
   const picked = pickDiverse(found, p.maxSuggestions);
   if (!scores || picked.length >= p.maxSuggestions) return picked;
   // Fewest problems first, then the same order as real ideas.
-  sortIdeas(near, true);
+  sortIdeas(near, true, inLean);
   near.sort((a, b) => a.problems!.length - b.problems!.length);
   return fillDiverse(picked, near, p.maxSuggestions);
 }
@@ -736,6 +763,142 @@ export function suggestTrades(
  */
 export const isSamePositionSwap = (give: readonly Player[], get: readonly Player[]): boolean =>
   give.length === 1 && get.length === 1 && give[0]!.pos === get[0]!.pos;
+
+/** In a 2-for-2 idea, the lesser player on each side is worth at most this share of the better one. */
+export const IDEA_DEPTH_SHARE = 0.75;
+
+const byWorth = (list: readonly Player[], worth: (p: Player) => number) =>
+  [...list].sort((a, b) => worth(b) - worth(a));
+
+/**
+ * The deals trade ideas suggest, the ones worth a second look:
+ * - 1-for-1 at different positions;
+ * - 2-for-1 or 3-for-2 (and the other way round): the side with fewer players
+ *   has each one worth more than any player on the other side, at positions
+ *   the other side sends;
+ * - 2-for-2 crossing a star and a depth player: a star at one position and a
+ *   lesser player at another for a star at that other position and a lesser
+ *   player at the first (high RB + low TE for high TE + low RB);
+ * - 2-for-2 consolidating two good players into a star and a depth player
+ *   (isConsolidation), either way round.
+ * Two players of alike value for two others is left out: it rarely excites
+ * anyone. The analyzer allows any shape.
+ */
+export function isIdeaShape(
+  give: readonly Player[],
+  get: readonly Player[],
+  worth: (p: Player) => number,
+): boolean {
+  const [few, many] = give.length <= get.length ? [give, get] : [get, give];
+  if (few.length === 1 && many.length === 1) return few[0]!.pos !== many[0]!.pos;
+  if (many.length === few.length + 1 && few.length <= 2) {
+    const left = many.map((p) => p.pos);
+    for (const p of few) {
+      const i = left.indexOf(p.pos);
+      if (i < 0) return false;
+      left.splice(i, 1);
+    }
+    const top = Math.max(...many.map(worth));
+    return few.every((p) => worth(p) > top);
+  }
+  if (few.length === 2 && many.length === 2) {
+    const [starA, depthA] = byWorth(give, worth) as [Player, Player];
+    const [starB, depthB] = byWorth(get, worth) as [Player, Player];
+    const crossed =
+      starA.pos !== starB.pos &&
+      starA.pos === depthB.pos &&
+      depthA.pos === starB.pos &&
+      worth(depthA) <= IDEA_DEPTH_SHARE * worth(starA) &&
+      worth(depthB) <= IDEA_DEPTH_SHARE * worth(starB);
+    return crossed || isConsolidation(give, get, worth) || isConsolidation(get, give, worth);
+  }
+  return false;
+}
+
+/** In a 2-for-2 consolidation, the star is worth at least this many times the better of the two. */
+export const STAR_EDGE = 1.15;
+
+/**
+ * Two good players for a star and a depth player: the two are alike (neither
+ * worth IDEA_DEPTH_SHARE or less of the other), the star is worth STAR_EDGE
+ * times the better of them and plays a position of one of them, and the depth
+ * player is worth IDEA_DEPTH_SHARE or less of the lesser one.
+ */
+export function isConsolidation(
+  two: readonly Player[],
+  starAndDepth: readonly Player[],
+  worth: (p: Player) => number,
+): boolean {
+  if (two.length !== 2 || starAndDepth.length !== 2) return false;
+  const [star, depth] = byWorth(starAndDepth, worth) as [Player, Player];
+  const values = two.map(worth);
+  return (
+    Math.min(...values) > IDEA_DEPTH_SHARE * Math.max(...values) &&
+    worth(star) >= STAR_EDGE * Math.max(...values) &&
+    worth(depth) <= IDEA_DEPTH_SHARE * Math.min(...values) &&
+    two.some((p) => p.pos === star.pos)
+  );
+}
+
+/**
+ * Which way a team's deals should lean: with many solid players it gains from
+ * packing them into stars ("consolidate"); with few, from turning a star into
+ * more solid players ("spread"); near the league average, either.
+ */
+export type DepthLean = "consolidate" | "spread" | "any";
+
+/** A team leans one way with at least this many solid players more (or fewer) than average. */
+export const LEAN_MARGIN = 1;
+
+/**
+ * Each team's lean, from its solid players: worth at least the league's last
+ * starter at the traded positions (teams × lineup slots other than kickers
+ * and defenses).
+ */
+export function depthLeans(
+  rosters: readonly TeamRoster[],
+  model: Model,
+  sport: SportConfig,
+  worth: (p: Player) => number,
+): Map<number, DepthLean> {
+  const traded = sport.tradePositions ?? sport.positions;
+  const streamed = sport.positions.filter((pos) => !traded.includes(pos));
+  const starters = model.slots.filter((s) => !streamed.includes(s)).length * rosters.length;
+  const all = rosters
+    .flatMap((t) => t.players.filter((p) => tradable(p, sport)))
+    .map(worth)
+    .sort((a, b) => b - a);
+  const line = all[Math.min(starters, all.length) - 1] ?? Infinity;
+  const solid = new Map(
+    rosters.map((t) => [
+      t.rid,
+      t.players.filter((p) => tradable(p, sport) && worth(p) >= line).length,
+    ]),
+  );
+  const average = [...solid.values()].reduce((a, n) => a + n, 0) / Math.max(1, solid.size);
+  return new Map(
+    [...solid].map(([rid, n]) => [
+      rid,
+      n >= average + LEAN_MARGIN ? "consolidate" : n <= average - LEAN_MARGIN ? "spread" : "any",
+    ]),
+  );
+}
+
+/** Which way a deal leans for you: more players sent (or a consolidation) packs them into stars. */
+export function ideaLean(
+  give: readonly Player[],
+  get: readonly Player[],
+  worth: (p: Player) => number,
+): DepthLean {
+  if (give.length !== get.length) return give.length > get.length ? "consolidate" : "spread";
+  if (isConsolidation(give, get, worth)) return "consolidate";
+  if (isConsolidation(get, give, worth)) return "spread";
+  return "any";
+}
+
+/** A deal in your team's lean (or one that leans neither way) ranks ahead of the others. */
+const fitsLean = (lean: DepthLean, deal: DepthLean) =>
+  lean === "any" || deal === "any" || lean === deal;
 
 /** Adds near misses to the picked ideas: new partners first, your players repeated only as a last resort. */
 function fillDiverse(picked: TradeIdea[], near: readonly TradeIdea[], max: number): TradeIdea[] {
@@ -780,15 +943,25 @@ export const hasEdge = (r: TradeResult) => r.dMe >= r.dThem;
 
 /**
  * With trade values: fair (green) first, then deals where your starters gain
- * more than theirs, then the best match and your gain.
+ * more than theirs, then deals in your team's depth lean, then the best match
+ * and your gain.
  */
-function sortIdeas(found: TradeIdea[], withValues: boolean): void {
+function sortIdeas(
+  found: TradeIdea[],
+  withValues: boolean,
+  inLean: (r: TradeIdea) => boolean = () => true,
+): void {
   if (withValues) {
     const green = (r: TradeIdea) => (fairnessLevel(r.fairness) === "green" ? 1 : 0);
     const edge = (r: TradeIdea) => (hasEdge(r) ? 1 : 0);
+    const lean = (r: TradeIdea) => (inLean(r) ? 1 : 0);
     found.sort(
       (a, b) =>
-        green(b) - green(a) || edge(b) - edge(a) || b.match - a.match || b.gainMe - a.gainMe,
+        green(b) - green(a) ||
+        edge(b) - edge(a) ||
+        lean(b) - lean(a) ||
+        b.match - a.match ||
+        b.gainMe - a.gainMe,
     );
   } else {
     found.sort((a, b) => b.score - a.score);
@@ -857,22 +1030,19 @@ export function groups<T>(list: readonly T[], max: number): T[][] {
 
 export type FinderMode = "sell" | "get";
 
-export interface FinderIdea extends TradeIdea {
-  /** Why it falls short, when no deal passes every rule and this is the closest one. */
-  problems: string[];
-}
-
 export interface FinderResult {
-  /** Up to three deals that pass every rule, best first. */
+  /**
+   * Three deals, best first: the ones that pass every rule, then the closest
+   * ones with what they miss (`problems`).
+   */
   ideas: TradeIdea[];
-  /** When none passes, the closest deal and what it is missing. */
-  closest: FinderIdea | null;
 }
 
 /**
  * Deals around one player: "sell" finds what one of your players can bring
  * back from any team; "get" finds packages that bring a player from his team.
- * Same rules and ranking as the trade ideas, in the shapes of FINDER_SHAPES.
+ * Same rules, shapes (isIdeaShape) and ranking as the trade ideas; without
+ * trade values, the shapes of FINDER_SHAPES.
  */
 export function findTrades(
   mode: FinderMode,
@@ -885,7 +1055,7 @@ export function findTrades(
   scores?: ReadonlyMap<string, number>,
   ideal?: IdealRoster,
 ): FinderResult {
-  const empty: FinderResult = { ideas: [], closest: null };
+  const empty: FinderResult = { ideas: [] };
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
   const owner = rosters.find((t) => t.players.some((p) => p.id === playerId));
   const pinned = owner?.players.find((p) => p.id === playerId);
@@ -901,8 +1071,10 @@ export function findTrades(
     [pinned],
     ...groups(top(list, sport.model.candidates - 1), 2).map((g) => [pinned, ...g]),
   ];
-  const allowed = (give: number, get: number) =>
-    FINDER_SHAPES.some(([a, b]) => a === give && b === get);
+  const shaped = (give: Player[], get: Player[]) =>
+    scores
+      ? isIdeaShape(give, get, worth)
+      : FINDER_SHAPES.some(([a, b]) => a === give.length && b === get.length);
 
   const withValues = Boolean(scores);
   const needs = scores ? teamNeeds(rosters, model, sport) : null;
@@ -913,7 +1085,7 @@ export function findTrades(
     mode === "sell" ? withPinned(mine) : groups(top(mine, sport.model.candidates), 3);
 
   const found: TradeIdea[] = [];
-  let closest: FinderIdea | null = null;
+  const near: TradeIdea[] = [];
   for (const team of partners) {
     const theirs = team.players;
     const theirBase = bestLineup(theirs, model.slots, sport).total;
@@ -921,7 +1093,7 @@ export function findTrades(
       mode === "sell" ? groups(top(theirs, sport.model.candidates), 3) : withPinned(theirs);
     for (const give of myGroups) {
       for (const get of theirGroups) {
-        if (!allowed(give.length, get.length)) continue;
+        if (!shaped(give, get)) continue;
         const r = evaluateTrade(
           mine,
           theirs,
@@ -938,30 +1110,36 @@ export function findTrades(
         );
         const idea = { ...r, partner: team.rid, score: ideaScore(r, sport) };
         const problems = ideaProblems(r, sport, withValues);
-        if (!problems.length) {
-          found.push(idea);
-        } else if (
-          !closest ||
-          problems.length < closest.problems.length ||
-          (problems.length === closest.problems.length && r.match > closest.match)
-        ) {
-          closest = { ...idea, problems };
-        }
+        if (!problems.length) found.push(idea);
+        else near.push({ ...idea, problems });
       }
     }
   }
-  sortIdeas(found, withValues);
-  const ideas =
-    mode === "sell"
-      ? pickPartners(found, sport.model.maxSuggestions)
-      : found.slice(0, sport.model.maxSuggestions);
-  return { ideas, closest: ideas.length ? null : closest };
+  const myLean = scores ? (depthLeans(rosters, model, sport, worth).get(myRid) ?? "any") : "any";
+  const inLean = (r: TradeIdea) => fitsLean(myLean, ideaLean(r.give, r.get, worth));
+  const max = sport.model.maxSuggestions;
+  const pick = (sorted: readonly TradeIdea[], picked: TradeIdea[] = []) =>
+    mode === "sell" ? pickPartners(sorted, max, picked) : [...picked, ...sorted].slice(0, max);
+  sortIdeas(found, withValues, inLean);
+  const ideas = pick(found);
+  if (ideas.length >= max) return { ideas };
+  // Too few pass: the closest deals fill the list, fewest problems first.
+  sortIdeas(near, withValues, inLean);
+  near.sort((a, b) => a.problems!.length - b.problems!.length);
+  return { ideas: pick(near, ideas) };
 }
 
-/** Top ideas with different partners when possible (the same player may appear in each). */
-function pickPartners(sorted: readonly TradeIdea[], max: number): TradeIdea[] {
-  const picked: TradeIdea[] = [];
-  const partners = new Set<number>();
+/**
+ * Top ideas after the ones already picked, with different partners when
+ * possible (the same player may appear in each).
+ */
+function pickPartners(
+  sorted: readonly TradeIdea[],
+  max: number,
+  already: readonly TradeIdea[] = [],
+): TradeIdea[] {
+  const picked = [...already];
+  const partners = new Set(picked.map((r) => r.partner));
   for (const r of sorted) {
     if (picked.length >= max) break;
     if (!partners.has(r.partner)) {

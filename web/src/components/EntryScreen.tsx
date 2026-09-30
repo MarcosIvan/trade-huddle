@@ -149,7 +149,7 @@ const FEATURES = [
   },
   {
     name: "Trade finder",
-    text: "Choose one player to sell or to get and see the best fair deals around him, from 1-for-1 to 3-for-2.",
+    text: "Choose one player to sell or to get and see the three best fair deals around him, from 1-for-1 to 3-for-2.",
   },
   {
     name: "Trade ideas",

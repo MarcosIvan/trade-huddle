@@ -22,8 +22,9 @@ const MODES: { mode: FinderMode; label: string }[] = [
 
 /**
  * Deals around one chosen player: sell one of yours to any team, or get one
- * from another team. Shows up to three deals with the best match starred, or
- * the closest deal and what it is missing when none passes every rule.
+ * from another team. Shows three deals, best first, with every true match
+ * starred; when too few pass every rule, the closest ones fill in with what
+ * they are missing.
  */
 export function TradeFinder({
   model,
@@ -52,7 +53,7 @@ export function TradeFinder({
   const playerFieldId = useId();
   const scores = useContext(ScoreContext);
   const worth = (p: Player) => scores.get(p.id)?.trade ?? p.vorp;
-  const { ideas, closest, searching } = useTradeFinder(
+  const { ideas, searching } = useTradeFinder(
     model,
     teams,
     myRid,
@@ -132,6 +133,12 @@ export function TradeFinder({
           <p className={`card ${styles.status}`}>Searching deals for {chosen.name}…</p>
         ) : ideas.length > 0 ? (
           <div className={styles.list}>
+            {ideas.every((r) => r.problems) && (
+              <p className={`card ${styles.status}`}>
+                <b>No deal for {chosen.name} passes every rule.</b> These are the closest ones and
+                what they are missing.
+              </p>
+            )}
             {ideas.map((idea, i) => (
               <IdeaCard
                 key={`${idea.partner}-${idea.give.map((p) => p.id).join()}-${idea.get.map((p) => p.id).join()}`}
@@ -140,33 +147,16 @@ export function TradeFinder({
                 index={i}
                 partner={teamOf(idea.partner)}
                 star={
-                  isTrueMatch(idea)
-                    ? idea === ideas.find(isTrueMatch)
-                      ? "match"
-                      : null
-                    : i === 0 && !ideas.some(isTrueMatch)
+                  !idea.problems && isTrueMatch(idea)
+                    ? "match"
+                    : i === 0 && !ideas.some((r) => !r.problems && isTrueMatch(r))
                       ? "closest"
                       : null
                 }
+                problems={idea.problems}
                 onOpen={() => onOpen(idea)}
               />
             ))}
-          </div>
-        ) : closest ? (
-          <div className={styles.list}>
-            <p className={`card ${styles.status}`}>
-              <b>No deal for {chosen.name} passes every rule.</b> This is the closest one and what
-              it is missing.
-            </p>
-            <IdeaCard
-              idPrefix="finder-closest"
-              idea={closest}
-              index={0}
-              partner={teamOf(closest.partner)}
-              star={null}
-              problems={closest.problems}
-              onOpen={() => onOpen(closest)}
-            />
           </div>
         ) : (
           <p className={`card ${styles.status}`}>

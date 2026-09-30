@@ -69,21 +69,24 @@ touchdown counts less. Calibrated with a backtest on 2024 and 2025
 
 **Trade value (1 to 40, one decimal)**: what a player is worth in a trade. It
 combines several measures, each compared across the league
-([ADR 0007](docs/adr/0007-composite-trade-value.md)):
+([ADR 0007](docs/adr/0007-composite-trade-value.md),
+[ADR 0010](docs/adr/0010-market-calibrated-trade-value.md)):
 
 | Part                                              | Weight |
 | ------------------------------------------------- | ------ |
-| Proven base (preseason projection or last season) | 15     |
-| Draft market (ADP; fades as games are played)     | 15     |
-| Expected points per game                          | 15     |
-| This season                                       | 10     |
-| Last 3 games                                      | 10     |
-| Edge over the average starter at his position     | 10     |
-| Points above a free agent (scarcity)              | 10     |
+| Expected points per game                          | 30     |
+| Points above a free agent (scarcity)              | 25     |
 | Share of his NFL offense's targets and carries    | 15     |
+| This season                                       | 10     |
+| Draft market (ADP; fades as games are played)     | 10     |
+| Last 3 games                                      | 5      |
+| Proven base (preseason projection or last season) | 5      |
 
 Scarce positions are scaled up (running backs, and quarterbacks in superflex),
-injured players keep part of their value, and nobody goes below 1. The
+injured players keep part of their value, and nobody goes below 1. A star
+(drafted in the top 60) off to a slow start keeps part of the value of his
+draft rank at his position, less as games are played. The weights were
+calibrated against a market of real trade values. The
 **Player Score** (0-100, next to each name) adds how important the player is
 to his fantasy team.
 
@@ -105,24 +108,38 @@ A deal is suggested only if:
   short of starters, and nobody piles up a position (no third QB in a one-QB
   league). Kickers and defenses are not traded.
 - it **respects your ideal roster**: how many QBs, RBs, WRs and TEs you want,
-  bench included, at most 14 in total (2, 5, 5 and 2 by default in a one-flex
+  bench included, at most 13 in total (2, 4, 5 and 2 by default in a one-flex
   league; in superflex one more QB and one fewer WR). Players on injured
-  reserve don't count. You can change it with the − and + buttons above the
+  reserve don't count: each team has 3 IR spots outside the roster. From a
+  fourth player on IR on, the extra ones take a roster spot and count (the
+  least valuable first). You can change it with the − and + buttons above the
   trade ideas and press **Update trade ideas**. A deal may keep a position
   below or above the ideal as it is, but never takes it further away, and
   positions below the ideal count as needs when ranking. It is saved in your
   browser for each league and team.
 
-Trade ideas never suggest a 1-for-1 swap at the same position (RB for RB):
-it rarely helps either side much. The trade finder and the analyzer still
-allow it.
+Trade ideas only suggest the deals worth a second look:
+
+- **1-for-1** at different positions (never RB for RB);
+- **2-for-1 or 3-for-2**, either way: the side sending fewer players gets
+  better ones, at positions the other side sends;
+- **2-for-2 crossed**: a star and a depth player for a star and a depth
+  player at the opposite positions (high RB + low TE for high TE + low RB);
+- **2-for-2 consolidation**: two alike good players for a clearly better star
+  and a depth player, or the other way round.
+
+Two players of alike value for two others are left out. A roster with many
+good players leans to packing them into stars; one with few leans to turning
+a star into more good players. That is a preference in the ranking, not a
+rule.
 
 Trade ideas show **three** deals: fair first, then those where your starters
-gain more than the partner's, then the best matches (each side getting the
-best player at a position where it is weak). When fewer than three deals pass,
-the nearest ones fill the list and say what they are missing. The **trade
-finder** applies the same rules around one player, in 1-for-1, 2-for-1,
-2-for-2 and 3-for-2 shapes ([ADR 0008](docs/adr/0008-trade-finder.md)).
+gain more than the partner's, then those in your roster's lean, then the best
+matches (each side getting the best player at a position where it is weak).
+When fewer than three deals pass, the nearest ones fill the list and say what
+they are missing. The **trade finder** applies the same rules, shapes and
+ranking around one player and also always shows three deals, starring every
+true match ([ADR 0008](docs/adr/0008-trade-finder.md)).
 The **trade analyzer** shows any deal in one card: fairness on top, then what
 you send and what you receive, each with what it gains or loses in trade
 value, points per game and the last 3 games (received minus sent).
