@@ -117,6 +117,15 @@ test.describe("demo league", () => {
     await expectNoEmptySpace(page);
   });
 
+  test("shows the same needs a trade idea fills in the analyzer", async ({ page }) => {
+    const idea = page.locator("#ideas article", { hasText: /Fills (your|their) need/ }).first();
+    const fills = await idea.getByText(/^Fills (your|their) need at /).allInnerTexts();
+    expect(fills.length).toBeGreaterThan(0);
+    await idea.getByRole("button", { name: "Open in analyzer" }).click();
+    const analyzer = page.locator("#analyzer");
+    for (const text of fills) await expect(analyzer.getByText(text)).toBeVisible();
+  });
+
   test("finds deals for a chosen player", async ({ page }) => {
     await page.locator("#finder select").selectOption({ index: 1 });
     await expect(page.locator('#finder [aria-busy="true"]')).toHaveCount(0, { timeout: 60_000 });

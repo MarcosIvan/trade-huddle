@@ -4,7 +4,9 @@ import { teamLabel, type Team } from "@/lib/league";
 import {
   bestLineup,
   evaluateTrade,
+  idealNeeds,
   rosterPlayers,
+  teamNeeds,
   type FreeAgentPool,
   type IdealRoster,
   type Model,
@@ -194,6 +196,16 @@ export function TradeAnalyzer({
     [model, teams, myRid],
   );
   const theirs = useMemo(() => rosterPlayers(model, partner?.playerIds ?? []), [model, partner]);
+  // Each team's needs by position, as in trade ideas; yours follow your ideal roster.
+  const needs = useMemo(
+    () =>
+      teamNeeds(
+        teams.map((t) => ({ rid: t.rid, players: rosterPlayers(model, t.playerIds) })),
+        model,
+        NFL,
+      ),
+    [model, teams],
+  );
   const others = [...teams]
     .filter((t) => t.rid !== myRid)
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -213,10 +225,13 @@ export function TradeAnalyzer({
       NFL,
       pool,
       tradeScores,
-      undefined,
+      {
+        mine: idealNeeds(mine, ideal, needs.get(myRid)),
+        theirs: partnerRid === null ? undefined : needs.get(partnerRid),
+      },
       ideal,
     );
-  }, [mine, theirs, give, get, model, pool, tradeScores, ideal]);
+  }, [mine, theirs, give, get, model, pool, tradeScores, ideal, needs, myRid, partnerRid]);
 
   const partnerName = partner?.name ?? "Partner";
 
@@ -265,6 +280,16 @@ export function TradeAnalyzer({
                 players={result.get}
               />
             </div>
+            {(result.myNeedPos || result.theirNeedPos) && (
+              <p className={styles.fits}>
+                {result.myNeedPos && (
+                  <span className={styles.fit}>Fills your need at {result.myNeedPos}</span>
+                )}
+                {result.theirNeedPos && (
+                  <span className={styles.fit}>Fills their need at {result.theirNeedPos}</span>
+                )}
+              </p>
+            )}
             {result.warnings.map((w) => (
               <p key={w} className={`hint ${styles.warning}`}>
                 <span aria-hidden="true">⚠ </span>
