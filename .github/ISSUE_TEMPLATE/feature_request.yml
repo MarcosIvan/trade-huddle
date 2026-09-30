@@ -1,0 +1,20 @@
+name: Idea or feature request
+description: Suggest something new or a change to how values are computed.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: Describe the situation, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence (for value changes)
+      description: For example, a comparison with a trade market or cases where the current value looks wrong. No private league data, please.
