@@ -115,16 +115,28 @@ A deal is suggested only if:
   positions below the ideal count as needs when ranking. It is saved in your
   browser for each league and team.
 
-Trade ideas never suggest a 1-for-1 swap at the same position (RB for RB):
-it rarely helps either side much. The trade finder and the analyzer still
-allow it.
+Trade ideas only suggest the deals worth a second look:
+
+- **1-for-1** at different positions (never RB for RB);
+- **2-for-1 or 3-for-2**, either way: the side sending fewer players gets
+  better ones, at positions the other side sends;
+- **2-for-2 crossed**: a star and a depth player for a star and a depth
+  player at the opposite positions (high RB + low TE for high TE + low RB);
+- **2-for-2 consolidation**: two alike good players for a clearly better star
+  and a depth player, or the other way round.
+
+Two players of alike value for two others are left out. A roster with many
+good players leans to packing them into stars; one with few leans to turning
+a star into more good players. That is a preference in the ranking, not a
+rule.
 
 Trade ideas show **three** deals: fair first, then those where your starters
-gain more than the partner's, then the best matches (each side getting the
-best player at a position where it is weak). When fewer than three deals pass,
-the nearest ones fill the list and say what they are missing. The **trade
-finder** applies the same rules around one player, in 1-for-1, 2-for-1,
-2-for-2 and 3-for-2 shapes ([ADR 0008](docs/adr/0008-trade-finder.md)).
+gain more than the partner's, then those in your roster's lean, then the best
+matches (each side getting the best player at a position where it is weak).
+When fewer than three deals pass, the nearest ones fill the list and say what
+they are missing. The **trade finder** applies the same rules, shapes and
+ranking around one player and also always shows three deals, starring every
+true match ([ADR 0008](docs/adr/0008-trade-finder.md)).
 The **trade analyzer** shows any deal in one card: fairness on top, then what
 you send and what you receive, each with what it gains or loses in trade
 value, points per game and the last 3 games (received minus sent).

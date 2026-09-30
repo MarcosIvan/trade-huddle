@@ -93,3 +93,38 @@ Trade ideas skip one-for-one swaps between players of the same position
 team always gets the lesser player, so they mostly showed up as near misses
 filling the three spots. The trade finder and the analyzer still allow them,
 since there the owner picks the players.
+
+## Amendment (2026-09-30): the deals that excite, and three finder deals
+
+The owner found 2-for-2 ideas between players of alike value dull ("nobody
+will make them") and asked trade ideas to focus on the shapes that are worth
+a second look (`isIdeaShape`):
+
+- **1-for-1** at different positions, alike in value.
+- **2-for-1 and 3-for-2** (and the other way round): the side sending fewer
+  players sends better ones, each worth more than any player coming back, at
+  positions the other side sends.
+- **2-for-2 crossed**: a star at one position and a depth player at another
+  for a star at that other position and a depth player at the first (high RB +
+  low TE for high TE + low RB). A depth player is worth at most 75% of the star
+  on his side (`IDEA_DEPTH_SHARE`).
+- **2-for-2 consolidation** (`isConsolidation`): two alike good players for a
+  star worth at least 15% more than the better of them (`STAR_EDGE`), at one of
+  their positions, and a depth player; or the other way round.
+
+Trade ideas now search up to three players a side (the candidates stay the
+best 10), but only deals in these shapes are evaluated.
+
+**Depth lean** (`depthLeans`, `ideaLean`): a team with at least one more
+starter-level player than the league average (worth at least the league's
+last starter at the traded positions) leans to consolidate them into stars
+(2-for-1, 3-for-2, consolidation); one with at least one fewer leans to spread
+a star into more good players (1-for-2, 2-for-3, the reverse consolidation). It is
+a preference, not a rule: in the ranking it comes after fairness and your
+starters' edge, before the match quality.
+
+**Trade finder**: it uses the same shapes and lean, and always shows three
+deals, best first. When fewer than three pass every rule, the closest ones
+(fewest problems) fill the list with what they are missing, as in trade ideas.
+Every true match gets the star, not only the first. `FINDER_SHAPES` remains for
+the prototype path without trade values.

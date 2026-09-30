@@ -10,6 +10,10 @@ import {
   findTrades,
   hasEdge,
   ideaProblems,
+  isIdeaShape,
+  isConsolidation,
+  depthLeans,
+  ideaLean,
   isSamePositionSwap,
   type FinderMode,
   type TradeIdea,
@@ -531,9 +535,8 @@ describe("trade finder", () => {
   const shape = (r: TradeIdea) => [r.give.length, r.get.length];
 
   it("sells a chosen player to different teams, always including him", () => {
-    const { ideas, closest } = find("sell", "myRb2");
-    expect(ideas.length).toBeGreaterThan(1);
-    expect(closest).toBeNull();
+    const { ideas } = find("sell", "myRb2");
+    expect(ideas).toHaveLength(3);
     for (const r of ideas) expect(r.give.map((p) => p.id)).toContain("myRb2");
     expect(new Set(ideas.map((r) => r.partner)).size).toBeGreaterThan(1);
   });
@@ -547,33 +550,41 @@ describe("trade finder", () => {
     }
   });
 
-  it("only tries 1-1, 2-1, 1-2, 2-2, 3-2 and 2-3 deals", () => {
-    const allowed = FINDER_SHAPES.map((s) => s.join());
+  it("only suggests the trade ideas' shapes", () => {
+    const worth = (p: Player) => values.get(p.id) ?? 0;
     for (const mode of ["sell", "get"] as const) {
       const id = mode === "sell" ? "myRb2" : "tWr2";
-      for (const r of find(mode, id).ideas) expect(allowed).toContain(shape(r).join());
+      for (const r of find(mode, id).ideas) {
+        expect(isIdeaShape(r.give, r.get, worth)).toBe(true);
+        expect(shape(r).join()).not.toBe("3,1");
+      }
     }
-    expect(allowed).not.toContain("3,1");
-    expect(allowed).not.toContain("1,3");
+    // Without trade values, the finder's own shapes.
+    const allowed = FINDER_SHAPES.map((s) => s.join());
+    for (const r of findTrades("sell", "myRb2", 1, rosters, model, sport).ideas) {
+      expect(allowed).toContain(shape(r).join());
+    }
   });
 
-  it("shows the closest deal and what it misses when none passes", () => {
+  it("always shows three deals: passing ones first, then the closest with what they miss", () => {
+    const { ideas } = find("get", "tWr2");
+    expect(ideas).toHaveLength(3);
+    const firstNear = ideas.findIndex((r) => r.problems);
+    if (firstNear >= 0) {
+      for (const r of ideas.slice(firstNear)) expect(r.problems!.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("shows the closest deals and what they miss when none passes", () => {
     // Their best receiver priced far above anything I could send: no fair package exists.
     const pricey = new Map(values).set("tWr1", 200);
-    const { ideas, closest } = findTrades(
-      "get",
-      "tWr1",
-      1,
-      rosters,
-      model,
-      sport,
-      undefined,
-      pricey,
-    );
-    expect(ideas).toEqual([]);
-    expect(closest).not.toBeNull();
-    expect(closest!.get.map((p) => p.id)).toContain("tWr1");
-    expect(closest!.problems.join()).toMatch(/more trade value from you would make it fair/);
+    const { ideas } = findTrades("get", "tWr1", 1, rosters, model, sport, undefined, pricey);
+    expect(ideas).toHaveLength(3);
+    for (const r of ideas) {
+      expect(r.problems!.length).toBeGreaterThan(0);
+      expect(r.get.map((p) => p.id)).toContain("tWr1");
+    }
+    expect(ideas[0]!.problems!.join()).toMatch(/more trade value from you would make it fair/);
   });
 
   it("always shows three trade ideas: passing ones first, near misses with what they miss", () => {
@@ -620,8 +631,101 @@ describe("trade finder", () => {
   });
 
   it("returns nothing for a player on the wrong side", () => {
-    expect(find("sell", "tWr1")).toEqual({ ideas: [], closest: null });
-    expect(find("get", "myRb1")).toEqual({ ideas: [], closest: null });
+    expect(find("sell", "tWr1")).toEqual({ ideas: [] });
+    expect(find("get", "myRb1")).toEqual({ ideas: [] });
+  });
+});
+
+describe("depth lean", () => {
+  const worth = (pl: Player) => pl.value;
+  const team = (rid: number, values: number[]) => ({
+    rid,
+    players: values.map((v, i) => player(`t${rid}p${i}`, i % 2 ? "WR" : "RB", v, 1)),
+  });
+  // Two lineup slots per team, three teams: the six best players are starter-level.
+  const rosters = [team(1, [20, 18, 16, 15, 3]), team(2, [19, 4, 3, 2]), team(3, [17, 5, 4, 2])];
+  const all = Object.fromEntries(rosters.flatMap((t) => t.players.map((p) => [p.id, p])));
+  const model: Model = { players: all, repl: { RB: 1, WR: 1 }, slots: ["RB", "WR"], teams: 3 };
+
+  it("packs many solid players into stars and spreads a thin roster", () => {
+    const leans = depthLeans(rosters, model, NFL, worth);
+    expect(leans.get(1)).toBe("consolidate");
+    expect(leans.get(2)).toBe("spread");
+    expect(leans.get(3)).toBe("spread");
+  });
+});
+
+describe("trade idea shapes", () => {
+  const values: Record<string, number> = {};
+  const p = (id: string, pos: string, value: number) => {
+    values[id] = value;
+    return player(id, pos, 10, 2);
+  };
+  const worth = (pl: Player) => values[pl.id] ?? 0;
+  const rbHigh = p("rbHigh", "RB", 30);
+  const rbLow = p("rbLow", "RB", 12);
+  const teHigh = p("teHigh", "TE", 29);
+  const teLow = p("teLow", "TE", 11);
+  const wrMid = p("wrMid", "WR", 20);
+  const wrMid2 = p("wrMid2", "WR", 19);
+  const rbMid = p("rbMid", "RB", 20);
+  const wrLow = p("wrLow", "WR", 14);
+
+  it("takes 1-for-1 deals only at different positions", () => {
+    expect(isIdeaShape([rbHigh], [teHigh], worth)).toBe(true);
+    expect(isIdeaShape([rbHigh], [rbMid], worth)).toBe(false);
+  });
+
+  it("takes 2-for-1 when the single player beats both and plays a position sent", () => {
+    expect(isIdeaShape([rbMid, wrLow], [rbHigh], worth)).toBe(true);
+    // The other way round, for a team that needs more players.
+    expect(isIdeaShape([rbHigh], [rbMid, wrLow], worth)).toBe(true);
+    // A position neither side sends back.
+    expect(isIdeaShape([wrMid, wrLow], [rbHigh], worth)).toBe(false);
+    // Not worth more than every player sent.
+    expect(isIdeaShape([rbMid, wrMid], [rbLow], worth)).toBe(false);
+  });
+
+  it("takes 3-for-2 when both players beat the three and play positions sent", () => {
+    expect(isIdeaShape([rbMid, wrLow, teLow], [rbHigh, teHigh], worth)).toBe(true);
+    expect(isIdeaShape([rbMid, wrLow, teLow], [rbHigh, wrMid], worth)).toBe(false);
+    expect(isIdeaShape([rbMid, wrLow, rbLow], [rbHigh, teHigh], worth)).toBe(false);
+  });
+
+  it("takes 2-for-2 crossing a star and a depth player", () => {
+    // High RB + low TE for high TE + low RB.
+    expect(isIdeaShape([rbHigh, teLow], [teHigh, rbLow], worth)).toBe(true);
+    // Two alike players for two others.
+    expect(isIdeaShape([rbMid, wrMid], [wrMid2, rbMid], worth)).toBe(false);
+    // Two stars for two alike players: neither crossed nor a consolidation.
+    expect(isIdeaShape([rbHigh, teHigh], [rbMid, wrMid], worth)).toBe(false);
+  });
+
+  it("takes 2-for-2 packing two good players into a star and a depth player", () => {
+    // Good RB + good WR for a star RB and a depth TE, and the other way round.
+    expect(isConsolidation([rbMid, wrMid], [rbHigh, teLow], worth)).toBe(true);
+    expect(isIdeaShape([rbMid, wrMid], [rbHigh, teLow], worth)).toBe(true);
+    expect(isIdeaShape([rbHigh, teLow], [rbMid, wrMid], worth)).toBe(true);
+    // The star plays neither position sent.
+    expect(isConsolidation([rbMid, wrMid], [teHigh, rbLow], worth)).toBe(false);
+    // Alike values: the "star" is barely better and the "depth" player barely worse.
+    expect(isConsolidation([wrMid2, rbMid], [wrMid, rbLow], worth)).toBe(false);
+    expect(isConsolidation([rbHigh, teHigh], [rbHigh, teLow], worth)).toBe(false);
+    // The depth player is not below both.
+    expect(isConsolidation([rbMid, wrLow], [rbHigh, wrMid2], worth)).toBe(false);
+  });
+
+  it("tells which way a deal leans", () => {
+    expect(ideaLean([rbMid, wrLow], [rbHigh], worth)).toBe("consolidate");
+    expect(ideaLean([rbHigh], [rbMid, wrLow], worth)).toBe("spread");
+    expect(ideaLean([rbMid, wrMid], [rbHigh, teLow], worth)).toBe("consolidate");
+    expect(ideaLean([rbHigh, teLow], [rbMid, wrMid], worth)).toBe("spread");
+    expect(ideaLean([rbHigh, teLow], [teHigh, rbLow], worth)).toBe("any");
+    expect(ideaLean([rbHigh], [teHigh], worth)).toBe("any");
+  });
+
+  it("never takes 3-for-1", () => {
+    expect(isIdeaShape([rbLow, wrLow, teLow], [rbHigh], worth)).toBe(false);
   });
 });
 

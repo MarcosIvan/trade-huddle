@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Team } from "@/lib/league";
-import type { FinderIdea, FinderMode, IdealRoster, Model, TradeIdea } from "@/lib/model";
+import type { FinderMode, IdealRoster, Model, TradeIdea } from "@/lib/model";
 import {
   hydrateIdeas,
   runFinder,
@@ -11,12 +11,12 @@ import {
 } from "@/lib/tradeSearch";
 
 export interface TradeFinderState {
+  /** Three deals, best first; the closest ones carry what they miss (`problems`). */
   ideas: TradeIdea[];
-  closest: FinderIdea | null;
   searching: boolean;
 }
 
-const IDLE: TradeFinderState = { ideas: [], closest: null, searching: false };
+const IDLE: TradeFinderState = { ideas: [], searching: false };
 
 /**
  * Deals around one chosen player, computed in their own Web Worker (or inline
@@ -65,13 +65,7 @@ export function useTradeFinder(
     };
     const finish = (response: FinderResponse) => {
       if (response.requestId !== requestRef.current) return; // a newer search replaced this one
-      const [closest] = response.closest ? hydrateIdeas([response.closest], model) : [];
-      setState({
-        ideas: hydrateIdeas(response.ideas, model),
-        closest:
-          closest && response.closest ? { ...closest, problems: response.closest.problems } : null,
-        searching: false,
-      });
+      setState({ ideas: hydrateIdeas(response.ideas, model), searching: false });
     };
 
     setState({ ...IDLE, searching: true });

@@ -63,8 +63,8 @@ export interface FinderRequest extends SearchRequest {
 
 export interface FinderResponse {
   requestId: number;
+  /** Three deals, best first; the closest ones carry what they miss (`problems`). */
   ideas: IdeaIds[];
-  closest: (IdeaIds & { problems: string[] }) | null;
 }
 
 const toIds = <T extends { give: Player[]; get: Player[] }>(r: T) => ({
@@ -84,7 +84,7 @@ export function runFinder({
 }: FinderRequest): FinderResponse {
   const teams = rosters.map((r) => ({ rid: r.rid, players: rosterPlayers(model, r.playerIds) }));
   const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
-  const { ideas, closest }: FinderResult = findTrades(
+  const { ideas }: FinderResult = findTrades(
     finder.mode,
     finder.playerId,
     myRid,
@@ -95,5 +95,5 @@ export function runFinder({
     new Map(tradeScores),
     ideal,
   );
-  return { requestId, ideas: ideas.map(toIds), closest: closest ? toIds(closest) : null };
+  return { requestId, ideas: ideas.map(toIds) };
 }
