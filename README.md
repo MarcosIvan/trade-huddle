@@ -63,9 +63,11 @@ league's scoring. It starts from Sleeper's preseason projection (or last
 season) and moves toward this season's games as they pile up: the prior keeps
 `8 / (8 + games)` of the weight, so 73% after 3 games and 50% after 8. Part of
 each game's points comes from the targets and carries behind them, so a lucky
-touchdown counts less. Calibrated with a backtest on 2024 and 2025
+touchdown counts less, and 30% comes from Sleeper's projection for his next
+game when he is expected to play it. Calibrated with a backtest on 2024 and 2025
 ([ADR 0001](docs/adr/0001-value-model-calibration.md),
-[ADR 0003](docs/adr/0003-market-prior.md)).
+[ADR 0003](docs/adr/0003-market-prior.md),
+[ADR 0011](docs/adr/0011-next-game-projection.md)).
 
 **Trade value (1 to 40, one decimal)**: what a player is worth in a trade. It
 combines several measures, each compared across the league

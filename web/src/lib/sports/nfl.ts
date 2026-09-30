@@ -33,6 +33,7 @@ export const PROTOTYPE_MODEL: ModelParams = {
   projScale: 1,
   teammateReturn: 0,
   keyTeammatePpg: 10,
+  nextGameBlend: {},
   matchupWeight: 0,
   matchupShrinkGames: 4,
   similarWeight: 0,
@@ -95,11 +96,15 @@ export const NFL: SportConfig = {
     recentAfterWindow: true,
     // 30% of each game's points come from what its targets and carries usually produce.
     usageBlend: 0.3,
+    // 30% of the expected points come from Sleeper's projection for the next game,
+    // when he is expected to play it (backtest: docs/adr/0011-next-game-projection.md).
+    nextGameBlend: { QB: 0.3, RB: 0.3, WR: 0.3, TE: 0.3 },
     // No team: a quarter of the value (he may sign somewhere) and never started.
     noTeamMult: 0.25,
-    // Weekly lineup (docs/adr/0005-weekly-lineup.md): 75% Sleeper's weekly projection,
-    // 25% our value adjusted for what the opponent allows to the position.
-    weekProjWeight: 0.75,
+    // Weekly lineup (docs/adr/0005-weekly-lineup.md): 65% Sleeper's weekly projection,
+    // 35% our value adjusted for what the opponent allows to the position. Our value
+    // already holds 30% of that projection (nextGameBlend), so it weighs about 75%.
+    weekProjWeight: 0.65,
     matchupWeight: 0.5,
     matchupShrinkGames: 2,
     // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).

@@ -16,6 +16,8 @@ export interface ValueInputs {
   noTeam?: boolean;
   /** Preseason projection, points per game under the league's scoring. */
   projPpg?: number | null;
+  /** Sleeper's projection for the next game, under the league's scoring. */
+  nextGamePpg?: number | null;
 }
 
 function projection(pl: Pick<ValueInputs, "projPpg">, params: ModelParams): number | null {
@@ -94,9 +96,15 @@ export function estimate(
     if (pl.g === 0 && !hasPrev) wRepl = 1;
   }
   const replVal = repl ? (repl[pl.pos] ?? 0) : 0;
-  const raw = (1 - wRepl) * base + wRepl * replVal;
+  let raw = (1 - wRepl) * base + wRepl * replVal;
 
   const rule = pl.inj ? params.injury[pl.inj] : undefined;
+  // Sleeper's projection for the next game, when he is expected to play it. Before the
+  // injury rule, which applies to both.
+  const wNext = params.nextGameBlend[pl.pos] ?? 0;
+  if (wNext > 0 && pl.nextGamePpg != null && pl.nextGamePpg > 0 && (rule?.startable ?? true)) {
+    raw = (1 - wNext) * raw + wNext * pl.nextGamePpg;
+  }
   const noTeam = Boolean(pl.noTeam) && params.noTeamMult !== null;
   const mult = (rule?.mult ?? 1) * (noTeam ? (params.noTeamMult ?? 1) : 1);
   const k = 1 - wRepl;

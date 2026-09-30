@@ -86,6 +86,12 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
   const supported = (x: string | undefined): x is string =>
     x !== undefined && sport.positions.includes(x);
 
+  // The next game: the lineup week, once it comes after every week played so far.
+  const nextWeek =
+    stats.lineup_week != null && stats.lineup_week > Math.max(0, ...stats.weeks)
+      ? stats.lineup_week
+      : null;
+
   const players: Record<string, Player> = {};
   const games = new Map<string, Games>();
   for (const [id, p] of Object.entries(stats.players)) {
@@ -105,6 +111,7 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
     });
     games.set(id, played);
     const prevG = p.prev ? p.prev.g : 0;
+    const nextGame = nextWeek === null ? undefined : p.wp?.[String(nextWeek)];
     players[id] = {
       id,
       name: p.n || `Player ${id}`,
@@ -122,6 +129,7 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
       prevG,
       prevPpg: prevG && p.prev ? score(p.prev.s) / prevG : null,
       projPpg: p.proj ? score(p.proj) / (stats.season_games ?? DEFAULT_SEASON_GAMES) : null,
+      nextGamePpg: nextGame ? score(nextGame) : null,
       value: 0,
       vorp: 0,
       startable: true,

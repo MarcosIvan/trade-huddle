@@ -28,6 +28,10 @@ export function truncate(stats: StatsFile, week: number): StatsFile {
       const w = p.w
         ? Object.fromEntries(Object.entries(p.w).filter(([wk]) => Number(wk) <= week))
         : undefined;
+      // Only the next week's projection existed then; later ones were made later.
+      const wp = p.wp?.[String(week + 1)]
+        ? { [String(week + 1)]: p.wp[String(week + 1)]! }
+        : undefined;
       const tw = p.tw
         ? Object.fromEntries(Object.entries(p.tw).filter(([wk]) => Number(wk) <= week))
         : undefined;
@@ -35,10 +39,15 @@ export function truncate(stats: StatsFile, week: number): StatsFile {
       const missedLast = !p.w?.[week];
       const returnsLater = Object.keys(p.w ?? {}).some((wk) => Number(wk) > week);
       const i = playedBefore && missedLast && returnsLater ? "Questionable" : p.i;
-      return [id, { ...p, w, tw, i }];
+      return [id, { ...p, w, tw, i, wp }];
     }),
   );
-  return { ...stats, weeks: stats.weeks.filter((w) => w <= week), players };
+  return {
+    ...stats,
+    weeks: stats.weeks.filter((w) => w <= week),
+    lineup_week: week + 1,
+    players,
+  };
 }
 
 /** Actual points per game after week N, for players with enough games left. */
