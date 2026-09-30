@@ -3,14 +3,14 @@
 - Status: accepted
 - Date: 2026-09-28
 - Supersedes: the "Level / Form / usage bonus" parts of ADR 0006
-- Amended by: ADR 0008 (refills, bench depth, match weights, three ideas)
+- Amended by: ADR 0008 (refills, bench depth, match weights, three ideas),
+  ADR 0010 (trade value weights calibrated against the market)
 
 ## Context
 
 Trade value was points per game above replacement (VORP). In a simulated
 12-team half-PPR league drafted by ADP, 48 of 180 rostered players had a
-trade value of 0, including starting quarterbacks (Drake Maye, Bo Nix,
-Justin Herbert) and injured stars. Injured players were penalized twice:
+trade value of 0, including starting quarterbacks and injured stars. Injured players were penalized twice:
 the injury multiplier cut their points per game, and replacement level was
 then subtracted from what was left. The scale also had cliffs that market
 analyzers (for example FantasySP's 1-100 rating, where anything above about
@@ -97,15 +97,11 @@ sound. The trade analyzer shows the same position warnings in words.
 
 ## Calibration
 
-The weights were set against the owner's own reading of week 3 of 2026 and
-checked against the market:
-
-- Tuten (RB) 19.3 > Adams 18.9 > Washington 17.9 > Egbuka 17.6: three
-  receivers close together, the running back above them;
-- Gibbs 40, Bijan Robinson 39.2, Olave 24.1, London 21.1 > Adams, Tyreek Hill
-  (no team) 1.0;
-- rank correlation with half-PPR ADP among rostered players: 0.78 with
-  VORP, 0.86 with the composite value; no rostered player at 0.
+The weights were set against the owner's reading of week 3 of 2026 and
+checked against the market: rank correlation with half-PPR ADP among
+rostered players rose from 0.78 with VORP to 0.86 with the composite value,
+no rostered player is at 0, and players without a team sit near the floor.
+They were recalibrated in ADR 0010.
 
 ## Consequences
 

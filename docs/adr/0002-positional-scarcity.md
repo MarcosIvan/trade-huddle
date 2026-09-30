@@ -46,8 +46,8 @@ scarcest of those. The market's own top 36 varies by year (12 to 17 running
 backs), so both settings are within what drafts show.
 
 Market data and the trade value agree on the known exceptions: elite
-quarterbacks and tight ends (Josh Allen, Trey McBride, Brock Bowers) still
-rank high, and tight ends stay slightly above quarterbacks as a group.
+quarterbacks and tight ends still rank high, and tight ends stay slightly
+above quarterbacks as a group.
 
 ## Evidence on predictions
 
@@ -63,9 +63,8 @@ players without a track record start. The rest-of-season backtest
 
 ## Consequences
 
-- In a real one-quarterback league after week 3 of 2026: Bijan Robinson ranks
-  3rd overall by trade value, Brock Purdy 30th; 13 of the top 24 are running
-  backs.
+- In a real one-quarterback league after week 3 of 2026, the elite running
+  backs rank at the top by trade value and 13 of the top 24 are running backs.
 - Replacement level is still simulated from the whole player pool. Using the
   league's actual free agents is a separate change (it also lets the site name
   the free agent to pick up after an uneven trade).

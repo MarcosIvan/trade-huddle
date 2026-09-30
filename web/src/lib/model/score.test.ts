@@ -165,8 +165,44 @@ describe("trade value", () => {
   });
 });
 
+describe("reputation lift", () => {
+  // Four receivers: a hot one drafted late, a steady one, a star off to a slow start
+  // (drafted first) and a player drafted past the star range.
+  const scores = (starGames: number, starAdp = 5) => {
+    const players = {
+      hot: player("hot", "WR", 20, 8),
+      steady: player("steady", "WR", 16, 5),
+      star: player("star", "WR", 12, 3, { g: starGames }),
+      late: player("late", "WR", 9, 1),
+    };
+    const adp: Record<string, number> = { star: starAdp, steady: 20, hot: 30, late: 90 };
+    const stats: StatsFile = {
+      ...emptyStats,
+      players: Object.fromEntries(
+        Object.keys(players).map((id) => [id, { n: id, adp: { ppr: adp[id]! } }]),
+      ),
+    };
+    const model: Model = { players, repl: { WR: 9 }, slots: ["WR"], teams: 1, adpFormat: "ppr" };
+    return playerScores(model, stats, [], NFL);
+  };
+
+  it("lifts a star below his draft rank's value, and nobody else", () => {
+    const s = scores(3);
+    expect(s.get("star")!.reputation).toBeGreaterThan(0);
+    // Drafted first among receivers: lifted toward the best receiver, not past him.
+    expect(s.get("star")!.trade).toBeGreaterThan(scores(3, 70).get("star")!.trade);
+    expect(s.get("star")!.trade).toBeLessThan(s.get("hot")!.trade);
+    // Above their draft rank, or drafted past the star range: never lowered, never lifted.
+    for (const id of ["hot", "steady", "late"]) expect(s.get(id)!.reputation).toBe(0);
+  });
+
+  it("fades as games pile up", () => {
+    expect(scores(12).get("star")!.reputation).toBeLessThan(scores(3).get("star")!.reputation);
+  });
+});
+
 describe("usage bonus", () => {
-  // One offense: 30 targets + 30 carries per game. The RB takes 21, WR1 8, WR2 5, WR3 4, WR4 1.
+  // One offense: 30 targets + 30 carries per game. The workhorse RB takes 34, WR1 8, WR2 5, WR3 4, WR4 1.
   const keys = ["rec_tgt", "rush_att"];
   const game = (tgt: number, att: number) => ({ "1": [0, tgt, 1, att] });
   const stats: StatsFile = {
@@ -176,7 +212,7 @@ describe("usage bonus", () => {
     team_weeks: { AAA: { "1": [30, 30, 0] } },
     players: Object.fromEntries(
       [
-        ["rb", 3, 18],
+        ["rb", 6, 28],
         ["wr1", 8, 0],
         ["wr2", 5, 0],
         ["wr3", 4, 0],

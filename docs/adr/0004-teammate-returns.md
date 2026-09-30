@@ -6,9 +6,9 @@
 ## Context
 
 While a star is out, his teammates get more targets and carries; when he
-returns they lose them. A real example after week 3 of 2026: with Puka
-Nacua out after week 1, Davante Adams went from 6 to 10 to 13 targets. The
-product owner asked for values to account for that.
+returns they lose them. In 2026, for example, a receiver went from 6 to 10 to
+13 targets after his team's top target got hurt in week 1. The product owner
+asked for values to account for that.
 
 ## What was built
 

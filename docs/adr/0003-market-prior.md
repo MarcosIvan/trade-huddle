@@ -52,9 +52,9 @@ usage 0.2 to 0.4 within 0.01 MAE).
 
 ## Consequences
 
-- A real league after week 3 of 2026: Drake London (projection 14.7, 14.6
-  so far) now ranks above Davante Adams (projection 11.3, 22.6 so far, while
-  a teammate is out), and both above Emeka Egbuka and Jaylen Waddle.
+- In a real league after week 3 of 2026, a receiver with a strong projection
+  and steady production now ranks above one with a weak projection whose hot
+  start came while a teammate was out.
 - The site now depends on Sleeper publishing projections. Without them it
   falls back to last season, as before.
 - Sleeper's projection for the current season may be updated during the

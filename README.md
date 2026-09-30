@@ -69,21 +69,24 @@ touchdown counts less. Calibrated with a backtest on 2024 and 2025
 
 **Trade value (1 to 40, one decimal)**: what a player is worth in a trade. It
 combines several measures, each compared across the league
-([ADR 0007](docs/adr/0007-composite-trade-value.md)):
+([ADR 0007](docs/adr/0007-composite-trade-value.md),
+[ADR 0010](docs/adr/0010-market-calibrated-trade-value.md)):
 
 | Part                                              | Weight |
 | ------------------------------------------------- | ------ |
-| Proven base (preseason projection or last season) | 15     |
-| Draft market (ADP; fades as games are played)     | 15     |
-| Expected points per game                          | 15     |
-| This season                                       | 10     |
-| Last 3 games                                      | 10     |
-| Edge over the average starter at his position     | 10     |
-| Points above a free agent (scarcity)              | 10     |
+| Expected points per game                          | 30     |
+| Points above a free agent (scarcity)              | 25     |
 | Share of his NFL offense's targets and carries    | 15     |
+| This season                                       | 10     |
+| Draft market (ADP; fades as games are played)     | 10     |
+| Last 3 games                                      | 5      |
+| Proven base (preseason projection or last season) | 5      |
 
 Scarce positions are scaled up (running backs, and quarterbacks in superflex),
-injured players keep part of their value, and nobody goes below 1. The
+injured players keep part of their value, and nobody goes below 1. A star
+(drafted in the top 60) off to a slow start keeps part of the value of his
+draft rank at his position, less as games are played. The weights were
+calibrated against a market of real trade values. The
 **Player Score** (0-100, next to each name) adds how important the player is
 to his fantasy team.
 
