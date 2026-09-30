@@ -2,6 +2,8 @@
 
 - Status: accepted
 - Date: 2026-09-28
+- Amended by: ADR 0011 (the projection's own weight is now 0.65, as our value
+  already holds 30% of it)
 
 ## Context
 
@@ -38,11 +40,11 @@ Week-ahead backtest (`npm run backtest:weekly`): with data through week N,
 predict week N+1, for N = 3..16 of 2024 and 2025, half-PPR and PPR, over the
 top of each position by prediction (QB 24, RB 48, WR 60, TE 24):
 
-| Model | MAE (pts) | Rank correlation |
-|---|---|---|
-| Our value only | 5.60 | 0.37 |
-| Sleeper's weekly projection only | 5.58 | 0.39 |
-| **75% Sleeper + 25% value × matchup^0.5** | **5.53** | **0.38** |
+| Model                                     | MAE (pts) | Rank correlation |
+| ----------------------------------------- | --------- | ---------------- |
+| Our value only                            | 5.60      | 0.37             |
+| Sleeper's weekly projection only          | 5.58      | 0.39             |
+| **75% Sleeper + 25% value × matchup^0.5** | **5.53**  | **0.38**         |
 
 - The blend is the most accurate. Single weeks are noisy, so gains are small.
 - Our own matchup factor adds little on top of Sleeper's projection, which

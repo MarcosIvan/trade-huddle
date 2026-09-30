@@ -64,6 +64,7 @@ function player(
     prevG: 16,
     prevPpg: value,
     projPpg: null,
+    nextGamePpg: null,
     injMult: 1,
     weights: { prev: 0, season: 0, recent: 0, repl: 0 },
     context: null,

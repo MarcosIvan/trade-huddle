@@ -62,6 +62,11 @@ export interface ModelParams {
   teammateReturn: number;
   /** A teammate counts as key when his prior is at least this many points per game. */
   keyTeammatePpg: number;
+  /**
+   * Weight, by position, of Sleeper's projection for the next game in the
+   * expected points per game from here on (0 or missing leaves it out).
+   */
+  nextGameBlend: Readonly<Record<string, number>>;
 
   /** Weekly lineup: exponent on the opponent's points-allowed factor (0 ignores matchups). */
   matchupWeight: number;

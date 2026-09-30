@@ -41,6 +41,7 @@ function player(id: string, pos: string, value: number, extra: Partial<Player> =
     prevG: 0,
     prevPpg: null,
     projPpg: null,
+    nextGamePpg: null,
     injMult: 1,
     weights: { prev: 0, season: 0, recent: 0, repl: 0 },
     context: null,
@@ -457,6 +458,31 @@ describe("the preseason outlook", () => {
 
   it("is ignored by the prototype settings", () => {
     expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, P).value).toBe(10);
+  });
+});
+
+describe("the next game's projection", () => {
+  const C = NFL_LIVE.model;
+  const w = C.nextGameBlend.WR!;
+  const vet = (extra: Partial<ValueInputs> = {}) =>
+    inputs({ g: 4, seasonAvg: 10, lastAvg: 10, prevG: 16, prevPpg: 10, projPpg: null, ...extra });
+
+  it("takes its share of the expected points", () => {
+    const without = estimate(vet(), null, C).value;
+    const withNext = estimate(vet({ nextGamePpg: 20 }), null, C).value;
+    expect(withNext).toBeCloseTo((1 - w) * without + w * 20);
+  });
+
+  it("is left out when he is not expected to play or has no projection", () => {
+    const without = estimate(vet(), null, C).value;
+    expect(estimate(vet({ nextGamePpg: 0 }), null, C).value).toBeCloseTo(without);
+    const onIr = (extra: Partial<ValueInputs>) =>
+      estimate(vet({ inj: "IR", ...extra }), null, C).value;
+    expect(onIr({ nextGamePpg: 20 })).toBeCloseTo(onIr({}));
+  });
+
+  it("is ignored by the prototype settings", () => {
+    expect(estimate(vet({ nextGamePpg: 20 }), null, P).value).toBe(estimate(vet(), null, P).value);
   });
 });
 

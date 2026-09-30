@@ -102,6 +102,8 @@ export interface Player extends Valued {
   prevPpg: number | null;
   /** Sleeper's preseason projection, points per game under the league's scoring. */
   projPpg: number | null;
+  /** Sleeper's projection for his next game (the lineup week), under the league's scoring. */
+  nextGamePpg: number | null;
   injMult: number;
   weights: ValueWeights;
   /** Set when the value accounts for a key teammate expected back from absence. */
