@@ -148,6 +148,10 @@ value, points per game and the last 3 games (received minus sent).
 
 ## For developers
 
+How the pieces fit together: [docs/architecture.md](docs/architecture.md).
+Why the model works the way it does: [decision records](docs/adr/README.md).
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Run it locally
 
 Requirements: Python 3.12 and Node 22.
@@ -258,9 +262,10 @@ web/                       the website (Next.js, React, TypeScript; static expor
   scripts/backtest/        backtests of the value model
 pipeline/                  stats builder (Python package, run by GitHub Actions)
 tools/                     demo league generator, optional Google Sheets export
+docs/architecture.md       how the site, the model and the pipeline fit together
 docs/adr/                  architecture decision records
 docs/                      the original prototype (HTML/CSS/JS), kept as reference
-.github/workflows/         build and deploy workflow
+.github/workflows/         CI, deploy, CodeQL and Scorecard workflows
 ```
 
 ## License
