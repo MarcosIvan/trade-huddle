@@ -21,6 +21,7 @@ import { NFL } from "@/lib/sports/nfl";
 import { storage } from "@/lib/storage";
 import { IdealRoster, IDEAL_MAX } from "./IdealRoster";
 import { WeeklyLineup, weekLineup } from "./WeeklyLineup";
+import { NewsProvider } from "./News";
 import { Notices } from "./Notices";
 import { Section } from "./Section";
 import { TeamLineup } from "./TeamLineup";
@@ -175,112 +176,115 @@ export function LeagueScreen({
 
   return (
     <ScoreContext.Provider value={scores}>
-      <div className="container">
-        <header className={styles.header}>
-          <div className={styles.titleBlock}>
-            <h1 className={styles.title}>
-              {league.name}
-              {demo && <span className={styles.demoTag}>Fictional data</span>}
-            </h1>
-          </div>
-          <div className={styles.controls}>
-            <div className="field">
-              <label htmlFor={teamFieldId}>View as</label>
-              <select
-                id={teamFieldId}
-                className="select"
-                value={myRid}
-                onChange={(e) => onTeam(Number(e.target.value))}
-              >
-                {sortedTeams.map((t) => (
-                  <option key={t.rid} value={t.rid}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+      {/* News is for real players: the demo league is fictional. */}
+      <NewsProvider sport={NFL.id} enabled={!demo}>
+        <div className="container">
+          <header className={styles.header}>
+            <div className={styles.titleBlock}>
+              <h1 className={styles.title}>
+                {league.name}
+                {demo && <span className={styles.demoTag}>Fictional data</span>}
+              </h1>
             </div>
-            <div className={styles.buttons}>
-              {!demo && (
-                <button className="btn" type="button" onClick={onRefresh} disabled={refreshing}>
-                  {refreshing ? "Refreshing…" : "Refresh rosters"}
+            <div className={styles.controls}>
+              <div className="field">
+                <label htmlFor={teamFieldId}>View as</label>
+                <select
+                  id={teamFieldId}
+                  className="select"
+                  value={myRid}
+                  onChange={(e) => onTeam(Number(e.target.value))}
+                >
+                  {sortedTeams.map((t) => (
+                    <option key={t.rid} value={t.rid}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.buttons}>
+                {!demo && (
+                  <button className="btn" type="button" onClick={onRefresh} disabled={refreshing}>
+                    {refreshing ? "Refreshing…" : "Refresh rosters"}
+                  </button>
+                )}
+                <button className="btn" type="button" onClick={onLeave}>
+                  Change league
                 </button>
-              )}
-              <button className="btn" type="button" onClick={onLeave}>
-                Change league
-              </button>
+              </div>
             </div>
+          </header>
+
+          <Notices kinds={notices} />
+
+          <div className={styles.grid}>
+            {week && thisWeek ? (
+              <Section
+                id="team"
+                title={`Your best team for week ${week}`}
+                aside={
+                  <span className={styles.projected}>
+                    <b>{fmt(thisWeek.lineup.total)}</b> projected pts
+                  </span>
+                }
+              >
+                <WeeklyLineup model={model} week={week} rated={thisWeek} />
+              </Section>
+            ) : (
+              <Section id="team" title="Your team" subtitle="Best lineup by current value">
+                <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+              </Section>
+            )}
+            <Section id="ideas" title="Trade ideas">
+              <IdealRoster
+                key={`${idealKey}-${JSON.stringify(ideal)}`}
+                applied={ideal}
+                defaults={defaults}
+                counts={myCounts.active}
+                onIr={myCounts.ir}
+                onApply={applyIdeal}
+              />
+              <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
+            </Section>
           </div>
-        </header>
 
-        <Notices kinds={notices} />
-
-        <div className={styles.grid}>
-          {week && thisWeek ? (
-            <Section
-              id="team"
-              title={`Your best team for week ${week}`}
-              aside={
-                <span className={styles.projected}>
-                  <b>{fmt(thisWeek.lineup.total)}</b> projected pts
-                </span>
-              }
-            >
-              <WeeklyLineup model={model} week={week} rated={thisWeek} />
-            </Section>
-          ) : (
-            <Section id="team" title="Your team" subtitle="Best lineup by current value">
-              <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
-            </Section>
-          )}
-          <Section id="ideas" title="Trade ideas">
-            <IdealRoster
-              key={`${idealKey}-${JSON.stringify(ideal)}`}
-              applied={ideal}
-              defaults={defaults}
-              counts={myCounts.active}
-              onIr={myCounts.ir}
-              onApply={applyIdeal}
+          <Section id="finder" title="Trade finder">
+            <TradeFinder
+              model={model}
+              teams={teams}
+              myRid={myRid}
+              tradeScores={tradeScores}
+              ideal={ideal}
+              mode={finder.mode}
+              playerId={finder.forRid === myRid ? finder.playerId : null}
+              onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
+              onPlayer={(playerId) => setFinder({ ...finder, forRid: myRid, playerId })}
+              onOpen={openIdea}
             />
-            <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
+          </Section>
+
+          <Section id="analyzer" title="Trade analyzer" className={styles.analyzer}>
+            <TradeAnalyzer
+              model={model}
+              teams={teams}
+              myRid={myRid}
+              partnerRid={partnerRid}
+              give={current.give}
+              get={partnerRid === current.partnerRid ? current.get : new Set()}
+              pool={pool}
+              tradeScores={tradeScores}
+              ideal={ideal}
+              onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
+              onToggleGive={(id) =>
+                setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })
+              }
+              onToggleGet={(id) =>
+                setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
+              }
+            />
           </Section>
         </div>
-
-        <Section id="finder" title="Trade finder">
-          <TradeFinder
-            model={model}
-            teams={teams}
-            myRid={myRid}
-            tradeScores={tradeScores}
-            ideal={ideal}
-            mode={finder.mode}
-            playerId={finder.forRid === myRid ? finder.playerId : null}
-            onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
-            onPlayer={(playerId) => setFinder({ ...finder, forRid: myRid, playerId })}
-            onOpen={openIdea}
-          />
-        </Section>
-
-        <Section id="analyzer" title="Trade analyzer" className={styles.analyzer}>
-          <TradeAnalyzer
-            model={model}
-            teams={teams}
-            myRid={myRid}
-            partnerRid={partnerRid}
-            give={current.give}
-            get={partnerRid === current.partnerRid ? current.get : new Set()}
-            pool={pool}
-            tradeScores={tradeScores}
-            ideal={ideal}
-            onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
-            onToggleGive={(id) =>
-              setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })
-            }
-            onToggleGet={(id) =>
-              setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
-            }
-          />
-        </Section>
-      </div>
+      </NewsProvider>
     </ScoreContext.Provider>
   );
 }

@@ -63,7 +63,10 @@ with the hash of every inline script to each page
    ([`workers/trades.worker.ts`](../web/src/workers/trades.worker.ts)) so
    the page never freezes; players cross the worker boundary as IDs
    ([`lib/tradeSearch.ts`](../web/src/lib/tradeSearch.ts)).
-6. **Storage.** Only small preferences are kept, in the visitor's own
+6. **News.** The newspaper icon beside a player's name asks Sleeper for that
+   player's latest news (`/players/<sport>/<id>/news`) only when clicked
+   ([ADR 0012](adr/0012-player-news.md), [`components/News.tsx`](../web/src/components/News.tsx)).
+7. **Storage.** Only small preferences are kept, in the visitor's own
    `localStorage` (username, last league, chosen team, ideal roster, theme),
    and every access is guarded ([`lib/storage.ts`](../web/src/lib/storage.ts)).
 

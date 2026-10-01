@@ -17,7 +17,30 @@ export const HOSTILE = {
   league: `<img src=x onerror="window.__xss='league'">Hostile League`,
   team: `<script>window.__xss='team'</script><b>Evil</b> Team`,
   owner: `"><svg onload="window.__xss='owner'">`,
+  headline: `<img src=x onerror="window.__xss='news'">Hostile headline`,
 };
+
+/** A player on the demo league's "my team", with news in the mocked news file. */
+export const NEWS_PLAYER = { id: "1009", name: "Rafael Valadares" };
+/** A player on the same team whose news request fails. */
+export const NEWS_DOWN = { id: "1057", name: "Milo Valadares" };
+
+/** Sleeper's news for NEWS_PLAYER: a hostile headline, a script link and an item without one. */
+function playerNews() {
+  const hoursAgo = (h: number) => Date.now() - h * 3_600_000;
+  const item = (title: string, h: number, url?: string) => ({
+    metadata: { title, description: `${title}: details`, ...(url ? { url } : {}) },
+    source: "rotoballer",
+    sport: "nfl",
+    player_id: NEWS_PLAYER.id,
+    published: hoursAgo(h),
+  });
+  return [
+    item("Script link", 3, "javascript:window.__xss='link'"),
+    item(HOSTILE.headline, 1, "https://example.com/story"),
+    item("Practice report", 2),
+  ];
+}
 
 const demo = JSON.parse(readFileSync("public/data/nfl/demo_league.json", "utf8")) as {
   league: Record<string, unknown>;
@@ -57,6 +80,11 @@ export async function mockSleeper(page: Page): Promise<void> {
   };
   await page.route("https://api.sleeper.app/**", (route) => {
     const path = new URL(route.request().url()).pathname;
+    const news = /^\/players\/nfl\/([^/]+)\/news$/.exec(path);
+    if (news) {
+      if (news[1] === NEWS_DOWN.id) return route.fulfill({ status: 404, json: null });
+      return route.fulfill({ json: news[1] === NEWS_PLAYER.id ? playerNews() : [] });
+    }
     // Like Sleeper: an unknown username is a 200 with null; anything else unmocked is a 404.
     if (!(path in routes)) {
       const unknownUser = /^\/v1\/user\/[^/]+$/.test(path);

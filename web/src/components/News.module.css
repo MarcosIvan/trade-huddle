@@ -1,0 +1,101 @@
+/* The newspaper button beside a name: small, but with a 32 px hit area. */
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: -6px -4px -6px 2px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--accent);
+  vertical-align: middle;
+  cursor: pointer;
+}
+.icon:hover {
+  background: var(--accent-soft);
+}
+.icon svg {
+  display: block;
+}
+
+.dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 30%);
+}
+.dialog::backdrop {
+  background: rgb(5 12 24 / 55%);
+}
+
+.panel {
+  padding: 18px 20px 16px;
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.title {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1.15;
+}
+.kicker {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.close {
+  flex: none;
+  width: 44px;
+  padding: 0;
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.list li {
+  display: grid;
+  gap: 3px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.headline {
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+a.headline {
+  color: var(--accent);
+  text-underline-offset: 2px;
+}
+.summary {
+  margin: 2px 0 0;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.meta {
+  font-size: 14px;
+  color: var(--muted);
+}
+.status {
+  margin: 16px 0 4px;
+  color: var(--ink-2);
+}

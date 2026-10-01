@@ -1,6 +1,15 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { HOSTILE, USERNAME, expect, ideasReady, mockSleeper, test } from "./fixtures";
+import {
+  HOSTILE,
+  NEWS_DOWN,
+  NEWS_PLAYER,
+  USERNAME,
+  expect,
+  ideasReady,
+  mockSleeper,
+  test,
+} from "./fixtures";
 
 /** WCAG 2.1 A and AA problems on the page, as "rule: first element" lines. */
 async function accessibilityProblems(page: Page): Promise<string[]> {
@@ -64,6 +73,68 @@ test.describe("hostile names from Sleeper", () => {
     // Nothing from the names became an element or ran.
     expect(await page.locator("main img, main svg[onload], main script").count()).toBe(0);
     expect(await page.evaluate(() => (window as { __xss?: string }).__xss)).toBeUndefined();
+  });
+});
+
+test.describe("player news", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockSleeper(page);
+    await page.goto("./");
+    await page.getByLabel("Sleeper username").fill(USERNAME);
+    await page.getByRole("button", { name: "Find my leagues" }).click();
+    await page.getByRole("button", { name: /Hostile League/ }).click();
+    await ideasReady(page);
+  });
+
+  test("opens a player's latest news, newest first, links in a new tab", async ({ page }) => {
+    await page
+      .getByRole("button", { name: `News about ${NEWS_PLAYER.name}` })
+      .first()
+      .click();
+    const dialog = page.getByRole("dialog", { name: new RegExp(NEWS_PLAYER.name) });
+    await expect(dialog).toBeVisible();
+
+    // Newest first; items without a (safe) link show as plain text.
+    const items = dialog.getByRole("listitem");
+    await expect(items).toHaveCount(3);
+    await expect(items.nth(0)).toContainText("RotoBaller · 1 h ago");
+    await expect(items.nth(1)).toContainText("Practice report: details");
+    await expect(items.nth(2)).toContainText("Script link");
+
+    // The hostile headline is text; the javascript: link was dropped.
+    const links = dialog.getByRole("link");
+    await expect(links).toHaveCount(1);
+    await expect(links.first()).toContainText(HOSTILE.headline);
+    await expect(links.first()).toHaveAttribute("href", "https://example.com/story");
+    await expect(links.first()).toHaveAttribute("target", "_blank");
+    await expect(links.first()).toHaveAttribute("rel", "noopener noreferrer");
+    expect(await accessibilityProblems(page)).toEqual([]);
+    expect(await page.evaluate(() => (window as { __xss?: string }).__xss)).toBeUndefined();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  });
+
+  test("says so when a player has no news, or Sleeper fails", async ({ page }) => {
+    // Any player of yours but the two with mocked news.
+    await page.getByRole("button", { name: "News about Enzo Coutinho" }).first().click();
+    await expect(page.getByRole("dialog")).toContainText("No recent news about Enzo Coutinho.");
+    await page.getByRole("button", { name: "Close" }).click();
+    await expect(page.getByRole("dialog")).toBeHidden();
+
+    await page
+      .getByRole("button", { name: `News about ${NEWS_DOWN.name}` })
+      .first()
+      .click();
+    await expect(page.getByRole("dialog")).toContainText("Could not load the news from Sleeper.");
+  });
+
+  test("doesn't pick the player in the analyzer", async ({ page }) => {
+    const analyzer = page.locator("#analyzer");
+    const row = analyzer.locator("label", { hasText: NEWS_PLAYER.name });
+    await row.getByRole("button", { name: /News about/ }).click();
+    await page.keyboard.press("Escape");
+    await expect(row.getByRole("checkbox")).not.toBeChecked();
   });
 });
 
@@ -139,6 +210,10 @@ test.describe("demo league", () => {
       expect(await accessibilityProblems(page)).toEqual([]);
     });
   }
+
+  test("shows no news icons: its players are fictional", async ({ page }) => {
+    await expect(page.getByRole("button", { name: /news about/i })).toHaveCount(0);
+  });
 
   test("fits a phone screen", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });

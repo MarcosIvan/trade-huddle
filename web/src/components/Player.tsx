@@ -2,6 +2,7 @@ import { fmt, signed, trend } from "@/lib/format";
 import type { Player, PlayerScore } from "@/lib/model";
 import { SCORE_WEIGHTS, TRADE_VALUE_MAX } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
+import { NewsButton } from "./News";
 import styles from "./Player.module.css";
 import { usePlayerScore } from "./ScoreContext";
 
@@ -95,6 +96,7 @@ export function PlayerCell({
           {last}
           {showScore && <ScorePill id={player.id} />}
           <InjuryBadge status={player.inj} />
+          <NewsButton id={player.id} name={player.name} pos={player.pos} />
         </span>
       </div>
       <div className={styles.sub}>

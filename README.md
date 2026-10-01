@@ -23,6 +23,8 @@ For your league, Trade Huddle:
    to sell, or one from another team to get, and see the best deals around him.
 4. **Analyzes any trade you build**, player by player, with a fairness
    traffic light.
+5. **Shows each player's latest news**: the newspaper icon beside a name
+   opens the 5 most recent reports from Sleeper (practice, injuries, games).
 
 Every number is computed under **your league's own scoring rules**.
 
