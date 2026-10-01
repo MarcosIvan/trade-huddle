@@ -18,5 +18,6 @@ later one changes it, the later one says what it replaces.
 | [0009](0009-content-security-policy.md)       | Content Security Policy by hash, in a meta tag                       |
 | [0010](0010-market-calibrated-trade-value.md) | Trade value calibrated against the market, with a reputation lift    |
 | [0011](0011-next-game-projection.md)          | Sleeper's next-game projection in the expected points                |
+| [0012](0012-player-news.md)                   | Player news from Sleeper, fetched when asked                         |
 
 How the pieces fit together: [architecture.md](../architecture.md).
