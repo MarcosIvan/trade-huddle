@@ -25,6 +25,11 @@ For your league, Trade Huddle:
    traffic light.
 5. **Shows each player's latest news**: the newspaper icon beside a name
    opens the 5 most recent reports from Sleeper (practice, injuries, games).
+6. **Opens a player card**: click a name to see his season week by week,
+   with fantasy points under your league's scoring, rushing and receiving
+   (passing for QBs), each number colored against what the position
+   usually does, and every opponent, past and to come, marked as a good,
+   neutral or tough matchup, as in the weekly lineup.
 
 Every number is computed under **your league's own scoring rules**.
 

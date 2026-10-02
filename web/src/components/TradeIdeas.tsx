@@ -9,6 +9,7 @@ import {
 } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
 import { NewsButton } from "./News";
+import { PlayerName } from "./PlayerCard";
 import { Delta, PosBadge, TRADE_VALUE_HINT, TradeValue } from "./Player";
 import styles from "./TradeIdeas.module.css";
 
@@ -57,7 +58,7 @@ function Side({ label, players }: { label: string; players: Player[] }) {
             <span className={styles.playerName}>
               <PosBadge pos={p.pos} />
               <span>
-                {p.name}
+                <PlayerName player={p} />
                 <NewsButton id={p.id} name={p.name} pos={p.pos} />
               </span>
             </span>

@@ -542,15 +542,22 @@ function dedicatedSlots(slots: readonly string[], sport: SportConfig): Record<st
   return out;
 }
 
-const starterLines = new WeakMap<Model, Record<string, number>>();
+const starterLines = new WeakMap<Model, Map<number, Record<string, number>>>();
 
 /**
  * The value a starter needs at each position: the Nth best player there, N
  * being the league's teams times the slots only that position fills (the 24th
- * running back in a 12-team league with two RB slots).
+ * running back in a 12-team league with two RB slots). `depth` multiplies N
+ * (2: starters and as many backups).
  */
-export function starterLine(model: Model, sport: SportConfig): Readonly<Record<string, number>> {
-  const cached = starterLines.get(model);
+export function starterLine(
+  model: Model,
+  sport: SportConfig,
+  depth = 1,
+): Readonly<Record<string, number>> {
+  const byDepth = starterLines.get(model) ?? new Map<number, Record<string, number>>();
+  starterLines.set(model, byDepth);
+  const cached = byDepth.get(depth);
   if (cached) return cached;
   const out: Record<string, number> = {};
   for (const [pos, k] of Object.entries(dedicatedSlots(model.slots, sport))) {
@@ -558,9 +565,9 @@ export function starterLine(model: Model, sport: SportConfig): Readonly<Record<s
       .filter((p) => p.pos === pos && p.startable)
       .map((p) => p.value)
       .sort((a, b) => b - a);
-    out[pos] = values[Math.min(values.length, model.teams * k) - 1] ?? 0;
+    out[pos] = values[Math.min(values.length, model.teams * k * depth) - 1] ?? 0;
   }
-  starterLines.set(model, out);
+  byDepth.set(depth, out);
   return out;
 }
 

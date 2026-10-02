@@ -3,6 +3,7 @@ import type { Player, PlayerScore } from "@/lib/model";
 import { SCORE_WEIGHTS, TRADE_VALUE_MAX } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import { NewsButton } from "./News";
+import { PlayerName } from "./PlayerCard";
 import styles from "./Player.module.css";
 import { usePlayerScore } from "./ScoreContext";
 
@@ -79,21 +80,21 @@ export function ScorePill({ id }: { id: string }) {
 export function PlayerCell({
   player,
   showScore = true,
+  link = true,
 }: {
   player: Player;
   /** The Player Score pill next to the name. */
   showScore?: boolean;
+  /** The name opens the player card (off where a click picks the player). */
+  link?: boolean;
 }) {
-  const words = player.name.split(" ");
-  const last = words.pop();
-  const first = words.join(" ");
   return (
     <div>
       <div className={styles.name}>
-        {first && `${first} `}
-        {/* The badges stick to the last word, so they never drop to a line of their own. */}
+        <PlayerName player={player} link={link} />
+        {/* A word joiner keeps the badges on the name's last line. */}
+        {"\u2060"}
         <span className={styles.nowrap}>
-          {last}
           {showScore && <ScorePill id={player.id} />}
           <InjuryBadge status={player.inj} />
           <NewsButton id={player.id} name={player.name} pos={player.pos} />

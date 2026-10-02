@@ -109,6 +109,23 @@ export interface ModelParams {
   slightDiff: number;
 }
 
+/** One stat column of a player's game log: a stats-file key and its header. */
+export interface StatColumn {
+  key: string;
+  /** Short header (Att, Yds, TD). */
+  label: string;
+  /** What the header means, for the tooltip and screen readers. */
+  title: string;
+  /** Fewer is better (interceptions). */
+  lowerIsBetter?: boolean;
+}
+
+/** A group of game log columns under one heading (Rushing, Receiving...). */
+export interface StatGroup {
+  label: string;
+  columns: readonly StatColumn[];
+}
+
 export interface SportConfig {
   id: string;
   /** Positions the model values. */
@@ -125,5 +142,7 @@ export interface SportConfig {
   tradePositions?: readonly string[];
   /** Number of teams assumed when a league does not say. */
   defaultTeams: number;
+  /** The player card's game log: stat groups shown for each position, in order. */
+  gameLog: Readonly<Record<string, readonly StatGroup[]>>;
   model: ModelParams;
 }

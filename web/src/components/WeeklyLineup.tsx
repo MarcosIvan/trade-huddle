@@ -2,6 +2,7 @@ import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import {
   bestLineup,
+  matchupLevel,
   onIr,
   rosterPlayers,
   type Lineup,
@@ -29,7 +30,7 @@ function Matchup({ o, pos, noTeam }: { o: WeeklyOutlook; pos: string; noTeam: bo
     );
   }
   const diff = o.matchup - 1;
-  const kind = diff >= 0.08 ? "good" : diff <= -0.08 ? "tough" : "neutral";
+  const kind = matchupLevel(o.matchup);
   const label = { good: "Good", tough: "Tough", neutral: "Neutral" }[kind];
   const icon = { good: "▲", tough: "▼", neutral: "●" }[kind];
   const pct = Math.round(Math.abs(diff) * 100);
