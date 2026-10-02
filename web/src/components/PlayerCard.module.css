@@ -149,11 +149,11 @@
   font-weight: 700;
   white-space: nowrap;
 }
-.easy {
+.good {
   background: var(--good-soft);
   color: var(--good);
 }
-.hard {
+.tough {
   background: var(--bad-soft);
   color: var(--bad);
 }

@@ -8,17 +8,17 @@ import { starterLine } from "./trades";
 import type { Model, Player, StatsFile } from "./types";
 import { opponents } from "./weekly";
 
-/** How a defense treats a position: easy allows more than average, hard fewer. */
-export type MatchupLevel = "easy" | "neutral" | "hard";
+/** How a defense treats a position: good allows more than average, tough fewer. */
+export type MatchupLevel = "good" | "neutral" | "tough";
 
-/** A defense allowing at least this share more (or fewer) points than average is easy (or hard). */
+/** A defense allowing at least this share more (or fewer) points than average is good (or tough). */
 export const MATCHUP_EDGE = 0.08;
 
 export function matchupLevel(factor: number): MatchupLevel {
   // A hair of tolerance, so 0.92 counts as 8% below average despite floating point.
   const diff = factor - 1;
   const edge = MATCHUP_EDGE - 1e-9;
-  return diff >= edge ? "easy" : diff <= -edge ? "hard" : "neutral";
+  return diff >= edge ? "good" : diff <= -edge ? "tough" : "neutral";
 }
 
 /** Defense factors by team and position (1 = average), as from defenseFactors. */

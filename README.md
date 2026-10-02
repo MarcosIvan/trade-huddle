@@ -28,8 +28,8 @@ For your league, Trade Huddle:
 6. **Opens a player card**: click a name to see his season week by week,
    with fantasy points under your league's scoring, rushing and receiving
    (passing for QBs), each number colored against what the position
-   usually does, and every opponent, past and to come, marked as an easy,
-   neutral or hard matchup.
+   usually does, and every opponent, past and to come, marked as a good,
+   neutral or tough matchup, as in the weekly lineup.
 
 Every number is computed under **your league's own scoring rules**.
 

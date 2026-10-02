@@ -83,11 +83,11 @@ describe("player card", () => {
   });
 
   it("rates every game, played or to come, by what the defense allows to the position", () => {
-    expect(card.games.map((g) => g.level)).toEqual(["easy", "hard"]);
+    expect(card.games.map((g) => g.level)).toEqual(["good", "tough"]);
     expect(card.upcoming.map((g) => [g.week, g.opponent, g.bye, g.level])).toEqual([
       [3, "DDD", false, "neutral"],
       [4, null, true, null],
-      [5, "CCC", false, "hard"],
+      [5, "CCC", false, "tough"],
     ]);
   });
 
@@ -111,12 +111,12 @@ describe("player card", () => {
     expect(playerCard({ ...p, noTeam: true, team: "" }, stats, factors, NFL).upcoming).toEqual([]);
   });
 
-  it("calls a matchup easy or hard from 8% off the average", () => {
+  it("calls a matchup good or tough from 8% off the average", () => {
     expect([1.08, 1.07, 0.93, 0.92].map(matchupLevel)).toEqual([
-      "easy",
+      "good",
       "neutral",
       "neutral",
-      "hard",
+      "tough",
     ]);
   });
 });

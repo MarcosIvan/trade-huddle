@@ -7,7 +7,7 @@
 
 The product owner asked for a player card like Sleeper's: click a player
 and see his scoring (rushing and receiving) and his upcoming games, with
-each matchup marked as easy, neutral or hard.
+each matchup marked by how hard it is.
 
 ## Decision
 
@@ -26,9 +26,9 @@ each matchup marked as easy, neutral or hard.
 - **Matchups use the weekly lineup's measure** (`defenseFactors`, ADR 0005):
   what each defense has allowed to the position this season, per game,
   against the league average, shrunk toward average by
-  `matchupShrinkGames`. Easy means 8% or more above average, hard 8% or more
-  below (`MATCHUP_EDGE`, `matchupLevel`), the same cut the weekly lineup
-  already used for good and tough. Past games are rated with the season's
+  `matchupShrinkGames`. Good means 8% or more above average, tough 8% or more
+  below (`MATCHUP_EDGE`, `matchupLevel`): the cut and the labels the weekly
+  lineup already used, which now calls the same function. Past games are rated with the season's
   numbers so far, which include that game. A defense with no data shows a
   dash.
 - **Every number is colored** against what the position usually does per

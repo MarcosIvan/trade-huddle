@@ -30,9 +30,7 @@ function Matchup({ o, pos, noTeam }: { o: WeeklyOutlook; pos: string; noTeam: bo
     );
   }
   const diff = o.matchup - 1;
-  const kind = ({ easy: "good", hard: "tough", neutral: "neutral" } as const)[
-    matchupLevel(o.matchup)
-  ];
+  const kind = matchupLevel(o.matchup);
   const label = { good: "Good", tough: "Tough", neutral: "Neutral" }[kind];
   const icon = { good: "▲", tough: "▼", neutral: "●" }[kind];
   const pct = Math.round(Math.abs(diff) * 100);

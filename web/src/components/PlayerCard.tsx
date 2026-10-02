@@ -94,12 +94,12 @@ export function PlayerCardProvider({
 }
 
 const LEVELS: Record<MatchupLevel, { label: string; icon: string }> = {
-  easy: { label: "Easy", icon: "▲" },
+  good: { label: "Good", icon: "▲" },
   neutral: { label: "Neutral", icon: "●" },
-  hard: { label: "Hard", icon: "▼" },
+  tough: { label: "Tough", icon: "▼" },
 };
 
-/** Easy, neutral or hard: icon and word, so it reads without color; the number in the tooltip. */
+/** Good, neutral or tough (as in the weekly lineup): icon and word, so it reads without color; the number in the tooltip. */
 function MatchupBadge({ game, pos }: { game: CardGame; pos: string }) {
   if (game.level === null || game.factor === null || !game.opponent) {
     return <span className="muted">–</span>;
