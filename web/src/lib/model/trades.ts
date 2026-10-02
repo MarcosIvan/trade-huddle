@@ -178,8 +178,12 @@ export function withFreeAgents(
 
 const sumVorp = (list: readonly Valued[]) => list.reduce((s, p) => s + p.vorp, 0);
 
-/** Weight of each player on a side of a trade, best first: extra players count less. */
-export const SIDE_DEPTH = [1, 0.85, 0.7] as const;
+/**
+ * Weight of each player on a side of a trade, best first: extra players count
+ * less. Fitted so that trades of 2 or 3 players for fewer stay as fair as on
+ * the linear trade value scale (ADR 0013).
+ */
+export const SIDE_DEPTH = [1, 0.55, 0.4] as const;
 
 /** A side's trade value: best player in full, the next ones discounted. */
 export function sideValue(values: readonly number[]): number {
@@ -308,8 +312,8 @@ export interface PositionNeeds {
  */
 export type IdealRoster = Readonly<Record<string, number>>;
 
-/** On injured reserve. */
-export const onIr = (p: Valued): boolean => (p as Partial<Player>).inj === "IR";
+/** In an injured reserve slot: as the league says, or else listed on IR. */
+export const onIr = (p: Valued): boolean => p.irSlot ?? (p as Partial<Player>).inj === "IR";
 
 /** Injured reserve spots each team has outside its roster. */
 export const IR_SLOTS = 3;
@@ -339,16 +343,36 @@ export function idealCounts(list: readonly Valued[]): Record<string, number> {
 /** Bench players the default ideal roster adds above the starters (RB and WR include the flex backup). */
 export const IDEAL_BENCH = { QB: 1, RB: 2, WR: 2, TE: 1 } as const;
 
-/** Most players an ideal roster may ask for, all positions together. */
-export const IDEAL_MAX_PLAYERS = 13;
+/** Ideal roster size when the league's roster is unknown (a 15-spot roster minus K and DEF). */
+export const DEFAULT_IDEAL_PLAYERS = 13;
+
+/**
+ * Players an ideal roster asks for, all traded positions together: the
+ * league's roster spots that can hold them, bench included (kickers,
+ * defenses and IDP slots left out; IR spots are not roster spots).
+ */
+export function idealPlayers(rosterPositions: readonly string[], sport: SportConfig): number {
+  const traded = sport.tradePositions ?? sport.positions;
+  const n = rosterPositions.filter(
+    (slot) =>
+      slot === "BN" || (sport.slotEligibility[slot] ?? []).some((pos) => traded.includes(pos)),
+  ).length;
+  return n || DEFAULT_IDEAL_PLAYERS;
+}
 
 /**
  * The ideal roster before the owner changes it, from the league's lineup:
- * 2 QB, 4 RB, 5 WR and 2 TE in a standard one-flex league. Past
- * IDEAL_MAX_PLAYERS, bench spots come off the position with the most of them
- * (running backs first on a tie).
+ * 2 QB, 4 RB, 5 WR and 2 TE in a standard one-flex league with 13 spots. It
+ * always adds up to `size` (idealPlayers): past it, bench spots come off the
+ * position with the most of them (running backs first on a tie), then
+ * players off the largest position; short of it, receivers and running backs
+ * are added in turn.
  */
-export function defaultIdealRoster(slots: readonly string[], sport: SportConfig): IdealRoster {
+export function defaultIdealRoster(
+  slots: readonly string[],
+  sport: SportConfig,
+  size = DEFAULT_IDEAL_PLAYERS,
+): IdealRoster {
   const { min } = positionNeeds(slots, sport);
   const out: Record<string, number> = {};
   const bench: Record<string, number> = {};
@@ -359,12 +383,22 @@ export function defaultIdealRoster(slots: readonly string[], sport: SportConfig)
   }
   const total = () => Object.values(out).reduce((s, n) => s + n, 0);
   const order = ["RB", "WR", ...Object.keys(out)].filter((pos) => pos in out);
-  while (total() > IDEAL_MAX_PLAYERS) {
+  while (total() > size) {
     const pos = order.reduce((a, b) => ((bench[b] ?? 0) > (bench[a] ?? 0) ? b : a));
     const spare = bench[pos] ?? 0;
     if (!spare) break;
     bench[pos] = spare - 1;
     out[pos] = (out[pos] ?? 0) - 1;
+  }
+  // A roster too small for the starters and their backups.
+  while (total() > size) {
+    const pos = order.reduce((a, b) => ((out[b] ?? 0) > (out[a] ?? 0) ? b : a));
+    out[pos] = (out[pos] ?? 0) - 1;
+  }
+  const grow = ["WR", "RB"].filter((pos) => pos in out);
+  for (let i = 0; grow.length && total() < size; i++) {
+    const pos = grow[i % grow.length]!;
+    out[pos] = (out[pos] ?? 0) + 1;
   }
   return out;
 }
@@ -764,8 +798,11 @@ export function suggestTrades(
 export const isSamePositionSwap = (give: readonly Player[], get: readonly Player[]): boolean =>
   give.length === 1 && get.length === 1 && give[0]!.pos === get[0]!.pos;
 
-/** In a 2-for-2 idea, the lesser player on each side is worth at most this share of the better one. */
-export const IDEA_DEPTH_SHARE = 0.75;
+/**
+ * In a 2-for-2 idea, the lesser player on each side is worth at most this share
+ * of the better one (0.75 on the linear scale, raised to TRADE_VALUE_CURVE).
+ */
+export const IDEA_DEPTH_SHARE = 0.79;
 
 const byWorth = (list: readonly Player[], worth: (p: Player) => number) =>
   [...list].sort((a, b) => worth(b) - worth(a));
@@ -815,8 +852,11 @@ export function isIdeaShape(
   return false;
 }
 
-/** In a 2-for-2 consolidation, the star is worth at least this many times the better of the two. */
-export const STAR_EDGE = 1.15;
+/**
+ * In a 2-for-2 consolidation, the star is worth at least this many times the
+ * better of the two (1.15 on the linear scale, raised to TRADE_VALUE_CURVE).
+ */
+export const STAR_EDGE = 1.12;
 
 /**
  * Two good players for a star and a depth player: the two are alike (neither

@@ -4,6 +4,7 @@ export { replacementLevels } from "./replacement";
 export {
   playerScores,
   SCORE_WEIGHTS,
+  TRADE_VALUE_CURVE,
   TRADE_VALUE_MAX,
   TRADE_VALUE_WEIGHTS,
   type PlayerScore,
@@ -23,7 +24,8 @@ export {
   fairnessLevel,
   hasEdge,
   defaultIdealRoster,
-  IDEAL_MAX_PLAYERS,
+  DEFAULT_IDEAL_PLAYERS,
+  idealPlayers,
   idealCounts,
   inIrSlots,
   IR_SLOTS,

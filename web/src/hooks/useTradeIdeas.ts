@@ -46,7 +46,7 @@ export function useTradeIdeas(
     const request: SearchRequest = {
       requestId,
       model,
-      rosters: teams.map((t) => ({ rid: t.rid, playerIds: t.playerIds })),
+      rosters: teams.map((t) => ({ rid: t.rid, playerIds: t.playerIds, reserveIds: t.reserveIds })),
       myRid,
       tradeScores: [...tradeScores],
       ideal,

@@ -118,6 +118,8 @@ export interface SleeperRoster {
   owner_id: string | null;
   co_owners: string[];
   players: string[];
+  /** Players in the injured reserve slots; null when the data does not say (not Sleeper's empty null). */
+  reserve: string[] | null;
   wins: number;
   losses: number;
   ties: number;
@@ -136,6 +138,7 @@ export function parseRosters(x: unknown): SleeperRoster[] {
         owner_id: id(r.owner_id) ?? null,
         co_owners: strings(r.co_owners),
         players: strings(r.players),
+        reserve: r.reserve === undefined ? null : strings(r.reserve),
         wins: num(s.wins) ?? 0,
         losses: num(s.losses) ?? 0,
         ties: num(s.ties) ?? 0,

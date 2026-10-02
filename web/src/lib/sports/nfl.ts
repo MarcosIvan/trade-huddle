@@ -31,6 +31,7 @@ export const PROTOTYPE_MODEL: ModelParams = {
   benchDepth: {},
   projWeight: 0,
   projScale: 1,
+  injuredPriorGames: 0,
   teammateReturn: 0,
   keyTeammatePpg: 10,
   nextGameBlend: {},
@@ -88,6 +89,9 @@ export const NFL: SportConfig = {
     // conservative), or last season when there is none (docs/adr/0003-market-prior.md).
     projWeight: 1,
     projScale: 1.05,
+    // Out long term (IR, PUP...) after a full enough last season: last season is the
+    // prior, since the season projection already leaves out his missed games.
+    injuredPriorGames: 8,
     // The prior's weight is 8 / (8 + games): 73% after 3 games, 50% after 8.
     wPrevStart: 1,
     wPrevMin: 0,

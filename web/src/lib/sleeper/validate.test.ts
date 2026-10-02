@@ -80,9 +80,16 @@ describe("response validation", () => {
 
   it("reads rosters and skips malformed ones", () => {
     const rosters = parseRosters([
-      { roster_id: 1, owner_id: "u1", players: ["10", 11], settings: { wins: 3, losses: 1 } },
+      {
+        roster_id: 1,
+        owner_id: "u1",
+        players: ["10", 11],
+        reserve: ["10"],
+        settings: { wins: 3, losses: 1 },
+      },
       { roster_id: "2" },
-      { roster_id: 3, owner_id: null, players: null },
+      { roster_id: 3, owner_id: null, players: null, reserve: null },
+      { roster_id: 4, owner_id: null, players: [] },
     ]);
     expect(rosters).toEqual([
       {
@@ -90,11 +97,32 @@ describe("response validation", () => {
         owner_id: "u1",
         co_owners: [],
         players: ["10", "11"],
+        reserve: ["10"],
         wins: 3,
         losses: 1,
         ties: 0,
       },
-      { roster_id: 3, owner_id: null, co_owners: [], players: [], wins: 0, losses: 0, ties: 0 },
+      // Sleeper's null means no one in the IR slots; a missing field means unknown.
+      {
+        roster_id: 3,
+        owner_id: null,
+        co_owners: [],
+        players: [],
+        reserve: [],
+        wins: 0,
+        losses: 0,
+        ties: 0,
+      },
+      {
+        roster_id: 4,
+        owner_id: null,
+        co_owners: [],
+        players: [],
+        reserve: null,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+      },
     ]);
     expect(() => parseRosters({})).toThrow(ResponseShapeError);
   });

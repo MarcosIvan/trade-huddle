@@ -20,17 +20,20 @@ export interface ValueInputs {
   nextGamePpg?: number | null;
 }
 
-function projection(pl: Pick<ValueInputs, "projPpg">, params: ModelParams): number | null {
+type PriorInputs = Pick<ValueInputs, "projPpg" | "prevG" | "prevPpg" | "inj">;
+
+function projection(pl: PriorInputs, params: ModelParams): number | null {
+  // Out long term with a full enough last season: the season projection
+  // already leaves out the games he will miss, so it is not used.
+  const out = pl.inj ? params.injury[pl.inj]?.startable === false : false;
+  if (out && params.injuredPriorGames > 0 && pl.prevG >= params.injuredPriorGames) return null;
   return params.projWeight > 0 && pl.projPpg != null && pl.projPpg > 0
     ? pl.projPpg * params.projScale
     : null;
 }
 
 /** What we believe before this season's games: the projection, last season, or a blend. */
-export function priorPpg(
-  pl: Pick<ValueInputs, "projPpg" | "prevG" | "prevPpg">,
-  params: ModelParams,
-): number | null {
+export function priorPpg(pl: PriorInputs, params: ModelParams): number | null {
   const proj = projection(pl, params);
   const lastSeason = pl.prevG > 0 ? (pl.prevPpg ?? 0) : null;
   if (proj === null) return lastSeason;

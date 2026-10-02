@@ -21,9 +21,13 @@
  * rank at his position is lifted part of the way toward the value of that
  * rank (REPUTATION_GAMES), so a slow start does not sink him; the lift fades
  * as games pile up. Values are relative to the best player in the league
- * (40). Every player keeps at least 1: nobody is worth nothing in a trade.
+ * (40), on a curve (TRADE_VALUE_CURVE) that keeps lesser players closer to the
+ * top, like trade markets do. Every player keeps at least 1: nobody is worth
+ * nothing in a trade, and a player with no games, projection or draft
+ * position is worth exactly that.
  *
- * Calibrated in ADR 0010 against a market of real trade values.
+ * Calibrated in ADR 0010 against a market of real trade values; scale shape
+ * in ADR 0013.
  *
  * Player Score, 0 to 100, adds his importance to his fantasy team:
  *   80 points × trade value / 40 + 20 points × his value / the best value on his roster.
@@ -76,6 +80,12 @@ export const TRADE_VALUE_WEIGHTS = {
 /** Top of the trade value scale (the league's best player). */
 export const TRADE_VALUE_MAX = 40;
 
+/**
+ * Trade value is TRADE_VALUE_MAX × (value / best) ** TRADE_VALUE_CURVE: below 1,
+ * lesser players sit closer to the top. The order does not change.
+ */
+export const TRADE_VALUE_CURVE = 0.8;
+
 /** Player Score = `trade` points × trade value / TRADE_VALUE_MAX + `importance` points × team importance. */
 export const SCORE_WEIGHTS = { trade: 80, importance: 20 } as const;
 
@@ -86,7 +96,7 @@ const USAGE_GAMES = 4;
 /** Players averaged to find each position's elite level. */
 const ELITE = 3;
 /** Production ratios are raised to this power, so production gaps still count. */
-const SPREAD = 1.5;
+const SPREAD = 1.2;
 /** Scarcity only moves trade value between this floor and 1, so positions stay comparable. */
 const SCARCITY_FLOOR = 0.5;
 /** The position's scarcity ratio is raised to this power: below 1, positions sit closer together. */
@@ -205,13 +215,27 @@ export function playerScores(
     { value: number; parts: TradeValueParts; avail: number; lift: number }
   >();
   for (const p of players) {
+    const adp = model.adpFormat ? stats.players[p.id]?.adp?.[model.adpFormat] : undefined;
+    // Nothing known about him (often a retired player still listed with a team).
+    if (p.g === 0 && p.prevG === 0 && p.projPpg === null && adp === undefined) {
+      const parts = {
+        base: 0,
+        market: 0,
+        expected: 0,
+        season: 0,
+        recent: 0,
+        scarcity: 0,
+        usage: 0,
+      };
+      raw.set(p.id, { value: 0, parts, avail: availability(p, sport), lift: 0 });
+      continue;
+    }
     const r = ref.get(p.pos)!;
     const production = (ppg: number) => clamp01(Math.max(0, ppg) / r.elite) ** SPREAD;
     const expected = healthyPpg(p);
     const season = p.seasonAvg ?? expected;
     const recent = p.lastAvg ?? season;
     const share = shares.get(p.id);
-    const adp = model.adpFormat ? stats.players[p.id]?.adp?.[model.adpFormat] : undefined;
     const parts: TradeValueParts = {
       base: production(priorPpg(p, sport.model) ?? expected),
       market: adp === undefined ? 0 : 1 / (1 + (adp / ADP_HALF) ** ADP_CURVE),
@@ -276,7 +300,10 @@ export function playerScores(
   for (const p of players) {
     const r = raw.get(p.id)!;
     // One decimal: players can tie, and nobody goes below 1.
-    const trade = Math.max(1, Math.round((10 * TRADE_VALUE_MAX * r.value) / best) / 10);
+    const trade = Math.max(
+      1,
+      Math.round(10 * TRADE_VALUE_MAX * (r.value / best) ** TRADE_VALUE_CURVE) / 10,
+    );
     const imp = importance.get(p.id) ?? 0;
     out.set(p.id, {
       total: Math.min(

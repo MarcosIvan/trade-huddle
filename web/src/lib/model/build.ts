@@ -220,10 +220,22 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
   return { players, repl, slots, teams, adpFormat: adpFormat(league, slots) };
 }
 
-/** The model's players on a roster, skipping positions the model does not value. */
-export function rosterPlayers(model: Model, playerIds: readonly string[]): Player[] {
+/**
+ * The model's players on a roster, skipping positions the model does not value.
+ * With the roster's injured reserve slots (`reserveIds`), the players in them
+ * and the ones on IR outside them are marked (`irSlot`).
+ */
+export function rosterPlayers(
+  model: Model,
+  playerIds: readonly string[],
+  reserveIds?: readonly string[] | null,
+): Player[] {
+  const reserve = reserveIds ? new Set(reserveIds) : null;
   return playerIds.flatMap((id) => {
     const p = model.players[id];
-    return p ? [p] : [];
+    if (!p) return [];
+    if (!reserve) return [p];
+    if (reserve.has(id)) return [{ ...p, irSlot: true }];
+    return [p.inj === "IR" ? { ...p, irSlot: false } : p];
   });
 }

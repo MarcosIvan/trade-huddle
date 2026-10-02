@@ -74,7 +74,8 @@ game when he is expected to play it. Calibrated with a backtest on 2024 and 2025
 **Trade value (1 to 40, one decimal)**: what a player is worth in a trade. It
 combines several measures, each compared across the league
 ([ADR 0007](docs/adr/0007-composite-trade-value.md),
-[ADR 0010](docs/adr/0010-market-calibrated-trade-value.md)):
+[ADR 0010](docs/adr/0010-market-calibrated-trade-value.md),
+[ADR 0013](docs/adr/0013-trade-value-scale.md)):
 
 | Part                                              | Weight |
 | ------------------------------------------------- | ------ |
@@ -87,7 +88,12 @@ combines several measures, each compared across the league
 | Proven base (preseason projection or last season) | 5      |
 
 Scarce positions are scaled up (running backs, and quarterbacks in superflex),
-injured players keep part of their value, and nobody goes below 1. A star
+injured players keep part of their value, and nobody goes below 1. A player
+out long term (IR, PUP) is judged on last season rather than on a preseason
+projection that already left out the games he misses, so his absence is
+discounted once. Values sit on a curve that keeps lesser players closer to the
+top, as trade markets do: a player worth a quarter of the best player's raw
+value shows about a third of 40. A star
 (drafted in the top 60) off to a slow start keeps part of the value of his
 draft rank at his position, less as games are played. The weights were
 calibrated against a market of real trade values. The
@@ -95,7 +101,7 @@ calibrated against a market of real trade values. The
 to his fantasy team.
 
 **Fairness** compares trade value on each side; a side's second and third
-players count 85% and 70%, so two good players do not add up to a star.
+players count 55% and 40%, so two good players do not add up to a star.
 Green is fair (90% or more), yellow could work (75-89%), red means don't.
 
 ## Trade ideas and the trade finder
@@ -112,12 +118,12 @@ A deal is suggested only if:
   short of starters, and nobody piles up a position (no third QB in a one-QB
   league). Kickers and defenses are not traded.
 - it **respects your ideal roster**: how many QBs, RBs, WRs and TEs you want,
-  bench included, at most 13 in total (2, 4, 5 and 2 by default in a one-flex
-  league; in superflex one more QB and one fewer WR). Players on injured
-  reserve don't count: each team has 3 IR spots outside the roster. From a
-  fourth player on IR on, the extra ones take a roster spot and count (the
-  least valuable first). You can change it with the − and + buttons above the
-  trade ideas and press **Update trade ideas**. A deal may keep a position
+  bench included, exactly as many as your league's roster has spots for them
+  (all spots but kickers, defenses and IR; 13 in a 15-spot league, by default
+  2, 4, 5 and 2 with one flex, and in superflex one more QB and one fewer WR). Players in your
+  league's IR spots don't count, as Sleeper lists them; a player listed on IR
+  but kept on the roster does. You can change it with the − and + buttons
+  above the trade ideas and press **Update trade ideas**. A deal may keep a position
   below or above the ideal as it is, but never takes it further away, and
   positions below the ideal count as needs when ranking. It is saved in your
   browser for each league and team.

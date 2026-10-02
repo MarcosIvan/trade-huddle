@@ -4,7 +4,8 @@
 - Date: 2026-09-28
 - Supersedes: the "Level / Form / usage bonus" parts of ADR 0006
 - Amended by: ADR 0008 (refills, bench depth, match weights, three ideas),
-  ADR 0010 (trade value weights calibrated against the market)
+  ADR 0010 (trade value weights calibrated against the market),
+  ADR 0013 (side weights, idea shapes, ideal roster the size of the league's roster)
 
 ## Context
 

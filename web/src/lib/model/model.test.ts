@@ -459,6 +459,21 @@ describe("the preseason outlook", () => {
   it("is ignored by the prototype settings", () => {
     expect(estimate(inputs({ prevG: 16, prevPpg: 10, projPpg: 14 }), null, P).value).toBe(10);
   });
+
+  it("gives way to last season for a player out long term, whose projection leaves out missed games", () => {
+    // On IR, projected at 6 a game because he misses half the season; 15 a game last season.
+    const hurt = estimate(inputs({ prevG: 16, prevPpg: 15, projPpg: 6, inj: "IR" }), null, C);
+    expect(hurt.value / hurt.injMult).toBeCloseTo(15);
+    // Only out long term, and only after a full enough last season.
+    const doubtful = estimate(
+      inputs({ prevG: 16, prevPpg: 15, projPpg: 6, inj: "Doubtful" }),
+      null,
+      C,
+    );
+    expect(doubtful.value / doubtful.injMult).toBeCloseTo(6 * C.projScale);
+    const short = estimate(inputs({ prevG: 5, prevPpg: 15, projPpg: 6, inj: "IR" }), null, C);
+    expect(short.value / short.injMult).toBeCloseTo(6 * C.projScale);
+  });
 });
 
 describe("the next game's projection", () => {
