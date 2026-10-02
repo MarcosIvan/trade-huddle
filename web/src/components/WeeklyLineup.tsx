@@ -2,6 +2,7 @@ import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import {
   bestLineup,
+  onIr,
   rosterPlayers,
   type Lineup,
   type Model,
@@ -81,11 +82,11 @@ function Group({ label }: { label: string }) {
   );
 }
 
-/** A team's best lineup for this week's games, its bench and who is not playing. */
+/** A team's best lineup for this week's games, its bench and its injured reserve, as on Sleeper. */
 export interface WeekLineup {
   lineup: Lineup<Rated>;
   bench: Rated[];
-  out: Rated[];
+  ir: Rated[];
 }
 
 /** Rates every player on the team by this week's projection and picks the best lineup. */
@@ -94,7 +95,7 @@ export function weekLineup(
   team: Team | undefined,
   outlook: ReadonlyMap<string, WeeklyOutlook>,
 ): WeekLineup {
-  const rated: Rated[] = rosterPlayers(model, team?.playerIds ?? []).map((p) => {
+  const rated: Rated[] = rosterPlayers(model, team?.playerIds ?? [], team?.reserveIds).map((p) => {
     const o = outlook.get(p.id) ?? {
       pts: 0,
       opponent: null,
@@ -105,16 +106,20 @@ export function weekLineup(
     };
     return { ...p, player: p, outlook: o, value: o.pts, startable: !o.bye && o.availability > 0 };
   });
-  const lineup = bestLineup(rated, model.slots, NFL);
-  const rest = rated.filter((r) => !lineup.used.has(r.id)).sort((a, b) => b.value - a.value);
-  return { lineup, bench: rest.filter((r) => r.startable), out: rest.filter((r) => !r.startable) };
+  // Players in the team's IR slots never start; everyone else not starting sits on the bench,
+  // bye weeks and injuries included.
+  const ir = rated.filter((r) => onIr(r));
+  const active = rated.filter((r) => !onIr(r));
+  const lineup = bestLineup(active, model.slots, NFL);
+  const bench = active.filter((r) => !lineup.used.has(r.id)).sort((a, b) => b.value - a.value);
+  return { lineup, bench, ir };
 }
 
 /** The best lineup for this week's games: projected points, opponent and matchup. */
 export function WeeklyLineup({
   model,
   week,
-  rated: { lineup, bench, out },
+  rated: { lineup, bench, ir },
 }: {
   model: Model;
   week: number;
@@ -149,9 +154,9 @@ export function WeeklyLineup({
             {bench.map((r) => (
               <Row key={r.id} slot="BN" r={r} />
             ))}
-            {out.length > 0 && <Group label="Not playing this week" />}
-            {out.map((r) => (
-              <Row key={r.id} slot={r.player.noTeam ? "FA" : r.outlook.bye ? "BYE" : "OUT"} r={r} />
+            {ir.length > 0 && <Group label="Injured reserve" />}
+            {ir.map((r) => (
+              <Row key={r.id} slot="IR" r={r} />
             ))}
           </tbody>
         </table>

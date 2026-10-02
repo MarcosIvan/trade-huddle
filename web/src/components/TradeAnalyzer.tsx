@@ -286,16 +286,6 @@ export function TradeAnalyzer({
                 players={result.get}
               />
             </div>
-            {(result.myNeedPos || result.theirNeedPos) && (
-              <p className={styles.fits}>
-                {result.myNeedPos && (
-                  <span className={styles.fit}>Fills your need at {result.myNeedPos}</span>
-                )}
-                {result.theirNeedPos && (
-                  <span className={styles.fit}>Fills their need at {result.theirNeedPos}</span>
-                )}
-              </p>
-            )}
             {result.warnings.map((w) => (
               <p key={w} className={`hint ${styles.warning}`}>
                 <span aria-hidden="true">⚠ </span>

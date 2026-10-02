@@ -131,6 +131,8 @@ export { expect };
 
 /** Waits until the trade ideas (Web Worker) have finished searching. */
 export async function ideasReady(page: Page): Promise<void> {
-  await expect(page.getByText("Ideal roster")).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole("heading", { name: "Trade ideas" })).toBeVisible({
+    timeout: 60_000,
+  });
   await expect(page.locator('#ideas [aria-busy="true"]')).toHaveCount(0, { timeout: 60_000 });
 }

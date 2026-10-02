@@ -81,7 +81,8 @@
   font-weight: 700;
   color: var(--ink);
 }
-.analyzer {
+/* Full-width sections below the grid, apart from it and from each other. */
+.spaced {
   margin-top: 48px;
 }
 

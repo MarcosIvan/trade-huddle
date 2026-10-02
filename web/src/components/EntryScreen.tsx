@@ -156,11 +156,11 @@ const FEATURES = [
   },
   {
     name: "Trade finder",
-    text: "Choose one player to sell or to get and see the three best fair deals around him, from 1-for-1 to 3-for-2.",
+    text: "Choose one player to sell or to get and see the three best fair deals around him, 1-for-1 or 2-for-2.",
   },
   {
     name: "Trade ideas",
-    text: "Three fair trades that improve both teams, built around the ideal roster you set: how many QBs, RBs, WRs and TEs you want.",
+    text: "Three fair, even trades that improve both teams and keep both rosters balanced.",
   },
   {
     name: "Weekly lineup",

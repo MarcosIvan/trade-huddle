@@ -17,6 +17,9 @@ import {
   hasEdge,
   ideaProblems,
   isIdeaShape,
+  positionShift,
+  starterGaps,
+  starterLine,
   isConsolidation,
   depthLeans,
   ideaLean,
@@ -361,7 +364,6 @@ describe("fairness and match", () => {
       ],
       model,
       sport,
-      undefined,
       scores,
     );
     expect(ideas.length).toBeGreaterThan(0);
@@ -369,8 +371,15 @@ describe("fairness and match", () => {
     for (const r of ideas.filter((r) => !r.problems?.length)) {
       expect(fairnessLevel(r.fairness)).not.toBe("red");
     }
-    expect(ideas[0]!.problems ?? []).toEqual([]);
-    expect(fairnessLevel(ideas[0]!.fairness)).toBe("green");
+    // Deals that pass every rule come before near misses, and fair (green) ones first among them.
+    const firstNear = ideas.findIndex((r) => r.problems);
+    for (const r of ideas.slice(firstNear < 0 ? ideas.length : firstNear)) {
+      expect(r.problems!.length).toBeGreaterThan(0);
+    }
+    const levels = ideas.filter((r) => !r.problems).map((r) => fairnessLevel(r.fairness));
+    expect(levels).toEqual(
+      [...levels].sort((a, b) => Number(b === "green") - Number(a === "green")),
+    );
   });
 });
 
@@ -494,20 +503,22 @@ describe("trade ideas put value first and keep positions sound", () => {
     ],
     model,
     sport,
-    undefined,
     values,
   );
 
+  // Near misses may fill the list; the rules hold for the ideas that pass.
+  const passing = ideas.filter((r) => !r.problems);
+
   it("never costs me more than 10% of the value I send", () => {
-    expect(ideas.length).toBeGreaterThan(0);
-    for (const r of ideas) {
+    expect(passing.length).toBeGreaterThan(0);
+    for (const r of passing) {
       expect(r.sGet).toBeGreaterThanOrEqual(0.9 * r.sGive);
       expect(r.fairness).toBeGreaterThanOrEqual(0.85);
     }
   });
 
   it("never brings in a third QB and always refills what I send", () => {
-    for (const r of ideas) {
+    for (const r of passing) {
       expect(r.positionsOk && r.theirPositionsOk).toBe(true);
       expect(r.positionFit).toBe(1);
       expect(r.get.some((p) => p.id === "tQb") && !r.give.some((p) => p.pos === "QB")).toBe(false);
@@ -577,8 +588,6 @@ describe("trade ideas that fit both sides' needs", () => {
     );
     expect(r.myNeedFit).toBe(1);
     expect(r.theirNeedFit).toBe(1);
-    expect(r.myNeedPos).toBe("WR");
-    expect(r.theirNeedPos).toBe("RB");
   });
 });
 
@@ -614,7 +623,7 @@ describe("trade finder", () => {
   ];
   const values = new Map(Object.values(all).map((p) => [p.id, p.value * 2] as const));
   const find = (mode: FinderMode, id: string) =>
-    findTrades(mode, id, 1, rosters, model, sport, undefined, values);
+    findTrades(mode, id, 1, rosters, model, sport, values);
   const shape = (r: TradeIdea) => [r.give.length, r.get.length];
 
   it("sells a chosen player to different teams, always including him", () => {
@@ -661,7 +670,7 @@ describe("trade finder", () => {
   it("shows the closest deals and what they miss when none passes", () => {
     // Their best receiver priced far above anything I could send: no fair package exists.
     const pricey = new Map(values).set("tWr1", 200);
-    const { ideas } = findTrades("get", "tWr1", 1, rosters, model, sport, undefined, pricey);
+    const { ideas } = findTrades("get", "tWr1", 1, rosters, model, sport, pricey);
     expect(ideas).toHaveLength(3);
     for (const r of ideas) {
       expect(r.problems!.length).toBeGreaterThan(0);
@@ -671,7 +680,7 @@ describe("trade finder", () => {
   });
 
   it("always shows three trade ideas: passing ones first, near misses with what they miss", () => {
-    const ideas = suggestTrades(1, rosters, model, sport, undefined, values);
+    const ideas = suggestTrades(1, rosters, model, sport, values);
     expect(ideas).toHaveLength(3);
     const firstNear = ideas.findIndex((r) => r.problems);
     if (firstNear >= 0) {
@@ -709,7 +718,7 @@ describe("trade finder", () => {
     expect(listable.length).toBeGreaterThan(0);
 
     // …but trade ideas never suggest one.
-    const ideas = suggestTrades(1, teams, m, sport, undefined, vals);
+    const ideas = suggestTrades(1, teams, m, sport, vals);
     expect(ideas.some((r) => isSamePositionSwap(r.give, r.get))).toBe(false);
   });
 
@@ -754,41 +763,34 @@ describe("trade idea shapes", () => {
   const rbMid = p("rbMid", "RB", 20);
   const wrLow = p("wrLow", "WR", 14);
 
-  it("takes 1-for-1 deals only at different positions", () => {
+  it("takes 1-for-1 deals only at different positions and with very close values", () => {
     expect(isIdeaShape([rbHigh], [teHigh], worth)).toBe(true);
     expect(isIdeaShape([rbHigh], [rbMid], worth)).toBe(false);
+    // Different positions, but 20 is far from 30.
+    expect(isIdeaShape([rbHigh], [wrMid], worth)).toBe(false);
   });
 
-  it("takes 2-for-1 when the single player beats both and plays a position sent", () => {
-    expect(isIdeaShape([rbMid, wrLow], [rbHigh], worth)).toBe(true);
-    // The other way round, for a team that needs more players.
-    expect(isIdeaShape([rbHigh], [rbMid, wrLow], worth)).toBe(true);
-    // A position neither side sends back.
-    expect(isIdeaShape([wrMid, wrLow], [rbHigh], worth)).toBe(false);
-    // Not worth more than every player sent.
-    expect(isIdeaShape([rbMid, wrMid], [rbLow], worth)).toBe(false);
+  it("never takes uneven deals or more than two players a side", () => {
+    expect(isIdeaShape([rbMid, wrLow], [rbHigh], worth)).toBe(false);
+    expect(isIdeaShape([rbHigh], [rbMid, wrLow], worth)).toBe(false);
+    expect(isIdeaShape([rbMid, wrLow, teLow], [rbHigh, teHigh], worth)).toBe(false);
+    expect(isIdeaShape([rbMid, wrLow, teLow], [rbHigh, teHigh, wrMid2], worth)).toBe(false);
   });
 
-  it("takes 3-for-2 when both players beat the three and play positions sent", () => {
-    expect(isIdeaShape([rbMid, wrLow, teLow], [rbHigh, teHigh], worth)).toBe(true);
-    expect(isIdeaShape([rbMid, wrLow, teLow], [rbHigh, wrMid], worth)).toBe(false);
-    expect(isIdeaShape([rbMid, wrLow, rbLow], [rbHigh, teHigh], worth)).toBe(false);
-  });
-
-  it("takes 2-for-2 crossing a star and a depth player", () => {
+  it("takes 2-for-2 that gives value at one position and gets it at another", () => {
     // High RB + low TE for high TE + low RB.
     expect(isIdeaShape([rbHigh, teLow], [teHigh, rbLow], worth)).toBe(true);
-    // Two alike players for two others.
-    expect(isIdeaShape([rbMid, wrMid], [wrMid2, rbMid], worth)).toBe(false);
-    // Two stars for two alike players: neither crossed nor a consolidation.
-    expect(isIdeaShape([rbHigh, teHigh], [rbMid, wrMid], worth)).toBe(false);
-  });
-
-  it("takes 2-for-2 packing two good players into a star and a depth player", () => {
-    // Good RB + good WR for a star RB and a depth TE, and the other way round.
-    expect(isConsolidation([rbMid, wrMid], [rbHigh, teLow], worth)).toBe(true);
+    // Two good players for a star and a lesser player that balances the values.
     expect(isIdeaShape([rbMid, wrMid], [rbHigh, teLow], worth)).toBe(true);
     expect(isIdeaShape([rbHigh, teLow], [rbMid, wrMid], worth)).toBe(true);
+    // Two alike players for two others at the same positions: nothing really moves.
+    expect(isIdeaShape([rbMid, wrMid], [wrMid2, rbMid], worth)).toBe(false);
+    expect(positionShift([rbMid, wrMid], [wrMid2, rbMid], worth)).toBe(0);
+    expect(positionShift([rbHigh, teLow], [teHigh, rbLow], worth)).toBe(18);
+  });
+
+  it("knows a consolidation: two good players for a star and a depth player", () => {
+    expect(isConsolidation([rbMid, wrMid], [rbHigh, teLow], worth)).toBe(true);
     // The star plays neither position sent.
     expect(isConsolidation([rbMid, wrMid], [teHigh, rbLow], worth)).toBe(false);
     // Alike values: the "star" is barely better and the "depth" player barely worse.
@@ -866,7 +868,7 @@ describe("ideal roster", () => {
 
   it("warns when a trade takes a position further below the ideal", () => {
     const warnings = check([roster[3]!], [player("wr3", "WR", 12, 3)], { RB: 4 });
-    expect(warnings).toEqual(["Leaves you 2 RBs (the ideal roster has 4)"]);
+    expect(warnings).toEqual(["Leaves you 2 RBs (a balanced roster has 4)"]);
   });
 
   it("lets a position below the ideal stay as it is", () => {
@@ -875,7 +877,7 @@ describe("ideal roster", () => {
 
   it("warns when a trade piles a position above the ideal", () => {
     const warnings = check([roster[5]!], [player("rb4", "RB", 11, 3)], { RB: 3 });
-    expect(warnings).toEqual(["You would carry 4 RBs (the ideal roster has 3)"]);
+    expect(warnings).toEqual(["You would carry 4 RBs (a balanced roster has 3)"]);
   });
 
   it("leaves players on injured reserve out of the ideal roster count", () => {
@@ -947,14 +949,14 @@ describe("ideal roster", () => {
       3 - r.give.filter((p) => p.pos === "RB").length + r.get.filter((p) => p.pos === "RB").length;
 
     // Without an ideal, selling a running back for a receiver is the natural deal here.
-    const free = suggestTrades(1, rosters, model, sport, undefined, values);
+    const free = suggestTrades(1, rosters, model, sport, values);
     expect(free.some((r) => !r.problems && rbs(r) < 3)).toBe(true);
 
     // With three running backs as the ideal, no passing deal leaves fewer.
     const ideal = { RB: 3, WR: 5 };
-    const kept = suggestTrades(1, rosters, model, sport, undefined, values, ideal);
+    const kept = suggestTrades(1, rosters, model, sport, values, ideal);
     for (const r of kept.filter((r) => !r.problems)) expect(rbs(r)).toBeGreaterThanOrEqual(3);
-    const sold = findTrades("sell", "myRb2", 1, rosters, model, sport, undefined, values, ideal);
+    const sold = findTrades("sell", "myRb2", 1, rosters, model, sport, values, ideal);
     for (const r of sold.ideas) expect(rbs(r)).toBeGreaterThanOrEqual(3);
   });
 });
@@ -1089,5 +1091,74 @@ describe("free agent for an open roster spot", () => {
     // No free agent improves the lineup, so the pick is about depth.
     const { added } = withFreeAgents(roster, 1, model, NFL, undefined, new Set(), true);
     expect(added[0]!.pos).toBe("RB");
+  });
+});
+
+describe("even trade ideas", () => {
+  const slots = ["RB", "RB", "WR", "WR", "TE"];
+  const sport: SportConfig = { ...NFL, freeAgentPositions: ["RB", "WR", "TE"] };
+  // Starter line with 2 teams: the 4th best RB and WR, the 2nd best TE.
+  const mine = [
+    player("myRb1", "RB", 16, 8),
+    player("myRb2", "RB", 14, 6),
+    player("myRb3", "RB", 12, 4), // a starter-level spare
+    player("myWr1", "WR", 13, 5),
+    player("myWr2", "WR", 9, 1),
+    player("myTe", "TE", 10, 3),
+  ];
+  const theirs = [
+    player("tRb1", "RB", 11, 3),
+    player("tRb2", "RB", 8, 0),
+    player("tWr1", "WR", 15, 7),
+    player("tWr2", "WR", 14, 6),
+    player("tWr3", "WR", 12, 4),
+    player("tTe", "TE", 9, 2),
+  ];
+  const fa = player("faWr", "WR", 11, 3);
+  const all = Object.fromEntries([...mine, ...theirs, fa].map((p) => [p.id, p]));
+  const model: Model = { players: all, repl: { RB: 8, WR: 9, TE: 7 }, slots, teams: 2 };
+  const rosters = [
+    { rid: 1, players: mine },
+    { rid: 2, players: theirs },
+  ];
+  const values = new Map(Object.values(all).map((p) => [p.id, onCurve(p.value * 2, 40)] as const));
+
+  it("draws the starter line from the league's teams and lineup slots", () => {
+    expect(starterLine(model, sport)).toMatchObject({ RB: 11, WR: 12, TE: 9 });
+  });
+
+  it("asks a team sending a starter to keep a starter-level player at his position", () => {
+    const gaps = (give: Player[], get: Player[], list: Player[]) => {
+      const ids = new Set(give.map((p) => p.id));
+      const after = list.filter((p) => !ids.has(p.id)).concat(get);
+      return starterGaps(list, after, give, get, model, sport, "they");
+    };
+    // They keep two starter-level receivers after sending one.
+    expect(gaps([theirs[2]!], [mine[0]!], theirs)).toEqual([]);
+    // Their only starter-level tight end leaves and none comes back.
+    expect(gaps([theirs[5]!], [mine[3]!], theirs)).toEqual([
+      "They have no starter-level TE left to replace the one they send",
+    ]);
+    // A tight end coming back covers the position.
+    expect(gaps([theirs[5]!], [mine[5]!], theirs)).toEqual([]);
+  });
+
+  it("only suggests even deals and never adds a free agent", () => {
+    const ideas = suggestTrades(1, rosters, model, sport, values);
+    expect(ideas.length).toBeGreaterThan(0);
+    for (const r of ideas) {
+      expect(r.give.length).toBe(r.get.length);
+      expect(r.give.length).toBeLessThanOrEqual(2);
+      expect(r.myPickups).toEqual([]);
+      expect(r.theirPickups).toEqual([]);
+      expect(r.myBackups).toEqual([]);
+      expect(r.theirBackups).toEqual([]);
+    }
+    for (const mode of ["sell", "get"] as const) {
+      const id = mode === "sell" ? "myRb3" : "tWr1";
+      for (const r of findTrades(mode, id, 1, rosters, model, sport, values).ideas) {
+        expect(r.give.length).toBe(r.get.length);
+      }
+    }
   });
 });

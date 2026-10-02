@@ -186,27 +186,17 @@ test.describe("demo league", () => {
     }
   });
 
-  test("reruns the ideas with a new ideal roster the size of the league's roster", async ({
-    page,
-  }) => {
-    const update = page.getByRole("button", { name: "Update trade ideas" });
-    await page.getByRole("button", { name: "One more RB" }).click();
-    await page.getByRole("button", { name: "One more WR" }).click();
-    // The demo roster holds 14: 16 players are blocked, with the reason on hover.
-    await expect(update).toHaveAttribute("aria-disabled", "true");
-    await update.hover();
-    await expect(page.getByRole("tooltip")).toContainText("Remove 2 players");
-    await page.getByRole("button", { name: "One fewer RB" }).click();
-    await page.getByRole("button", { name: "One fewer WR" }).click();
-    await page.getByRole("button", { name: "One fewer TE" }).click();
-    // 13 players: blocked too.
-    await expect(update).toHaveAttribute("aria-disabled", "true");
-    await update.hover();
-    await expect(page.getByRole("tooltip")).toContainText("Add 1 player");
-    await page.getByRole("button", { name: "One more WR" }).click();
-    await update.click();
-    await ideasReady(page);
-    await expect(page.locator("#ideas article")).toHaveCount(3);
+  test("suggests only even trades, with no ideal roster editor", async ({ page }) => {
+    await expect(page.getByText("Ideal roster")).toHaveCount(0);
+    const cards = page.locator("#ideas article");
+    await expect(cards).toHaveCount(3);
+    for (const card of await cards.all()) {
+      const [give = 0, get = 0] = await card
+        .locator("ul")
+        .evaluateAll((lists) => lists.map((ul) => ul.querySelectorAll("li").length));
+      expect(give).toBe(get);
+      expect(give).toBeLessThanOrEqual(2);
+    }
   });
 
   test("builds the analyzer card only as players are picked", async ({ page }) => {
@@ -221,13 +211,11 @@ test.describe("demo league", () => {
     await expectNoEmptySpace(page);
   });
 
-  test("shows the same needs a trade idea fills in the analyzer", async ({ page }) => {
-    const idea = page.locator("#ideas article", { hasText: /Fills (your|their) need/ }).first();
-    const fills = await idea.getByText(/^Fills (your|their) need at /).allInnerTexts();
-    expect(fills.length).toBeGreaterThan(0);
-    await idea.getByRole("button", { name: "Open in analyzer" }).click();
-    const analyzer = page.locator("#analyzer");
-    for (const text of fills) await expect(analyzer.getByText(text)).toBeVisible();
+  test("keeps the cards simple: no need badges and no list of what is missing", async ({
+    page,
+  }) => {
+    await expect(page.getByText(/Fills (your|their) need/)).toHaveCount(0);
+    await expect(page.getByText("What is missing")).toHaveCount(0);
   });
 
   test("finds deals for a chosen player", async ({ page }) => {

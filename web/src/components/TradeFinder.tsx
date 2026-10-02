@@ -23,8 +23,7 @@ const MODES: { mode: FinderMode; label: string }[] = [
 /**
  * Deals around one chosen player: sell one of yours to any team, or get one
  * from another team. Shows three deals, best first, with every true match
- * starred; when too few pass every rule, the closest ones fill in with what
- * they are missing.
+ * starred; when too few pass every rule, the closest ones fill in.
  */
 export function TradeFinder({
   model,
@@ -135,8 +134,7 @@ export function TradeFinder({
           <div className={styles.list}>
             {ideas.every((r) => r.problems) && (
               <p className={`card ${styles.status}`}>
-                <b>No deal for {chosen.name} passes every rule.</b> These are the closest ones and
-                what they are missing.
+                <b>No deal for {chosen.name} passes every rule.</b> These are the closest ones.
               </p>
             )}
             {ideas.map((idea, i) => (
@@ -153,7 +151,6 @@ export function TradeFinder({
                       ? "closest"
                       : null
                 }
-                problems={idea.problems}
                 onOpen={() => onOpen(idea)}
               />
             ))}

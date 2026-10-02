@@ -1,10 +1,10 @@
 /**
  * The only things the site keeps, in the visitor's own browser: their Sleeper
- * username and user ID, their last league, the ideal roster set for each team and their light/dark choice.
+ * username and user ID, their last league and their light/dark choice.
  * Storage can be blocked (private mode), so every access is guarded.
  * public/theme-init.js reads "th:theme" too.
  */
-type Key = "user" | "uid" | "league" | "theme" | `ideal:${string}`;
+type Key = "user" | "uid" | "league" | "theme";
 
 const PREFIX = "th:";
 
