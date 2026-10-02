@@ -3,6 +3,7 @@
 - Status: accepted
 - Date: 2026-09-30
 - Amends: ADR 0007 (trade value weights and parts)
+- Amended by: ADR 0013 (scale curve, production power, long-term injured prior)
 
 ## Context
 

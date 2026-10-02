@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
 import type { SportConfig } from "../sports/types";
 import { bestLineup } from "./lineup";
-import { playerScores, SCORE_WEIGHTS, TRADE_VALUE_MAX, usageShares } from "./score";
+import {
+  playerScores,
+  SCORE_WEIGHTS,
+  TRADE_VALUE_CURVE,
+  TRADE_VALUE_MAX,
+  usageShares,
+} from "./score";
 import {
   evaluateTrade,
   fairnessLevel,
@@ -28,14 +34,18 @@ import {
   benchDepth,
   defaultIdealRoster,
   DEPTH_WEIGHT,
-  IDEAL_MAX_PLAYERS,
+  idealPlayers,
   idealCounts,
   inIrSlots,
   IR_SLOTS,
   idealNeeds,
   withIdeal,
 } from "./trades";
+import { rosterPlayers } from "./build";
 import type { Model, Player, StatsFile } from "./types";
+
+/** A value from a linear scale topped at `top`, put on the trade value curve. */
+const onCurve = (v: number, top: number) => top * (v / top) ** TRADE_VALUE_CURVE;
 
 function player(
   id: string,
@@ -101,6 +111,34 @@ describe("playerScores", () => {
     expect(scores.get("star")!.trade).toBe(TRADE_VALUE_MAX);
     // At replacement level or below, a player is still worth something.
     expect(scores.get("rep")!.trade).toBeGreaterThan(scores.get("scrub")!.trade);
+  });
+
+  it("puts trade value on a curve that keeps lesser players closer to the top", () => {
+    // The star's twin on IR keeps 70% of his value; the curve shows 0.7 ** TRADE_VALUE_CURVE.
+    const twin = player("twin", "RB", 11, 14, {
+      inj: "IR",
+      injMult: 0.5,
+      seasonAvg: 22,
+      lastAvg: 22,
+      prevPpg: 22,
+    });
+    const s = playerScores({ ...model, players: { ...players, twin } }, emptyStats, [], NFL);
+    expect(s.get("twin")!.availability).toBeCloseTo(0.7);
+    expect(s.get("twin")!.trade).toBeCloseTo(TRADE_VALUE_MAX * 0.7 ** TRADE_VALUE_CURVE, 1);
+  });
+
+  it("gives 1 to a player nothing is known about (no games, projection or draft)", () => {
+    const ghost = player("ghost", "RB", 8, 0, {
+      g: 0,
+      prevG: 0,
+      prevPpg: null,
+      seasonAvg: null,
+      lastAvg: null,
+    });
+    const m: Model = { ...model, players: { ...players, ghost } };
+    const s = playerScores(m, emptyStats, [], NFL);
+    expect(s.get("ghost")!.trade).toBe(1);
+    expect(s.get("rep")!.trade).toBeGreaterThan(1);
   });
 
   it("orders players by what they produce", () => {
@@ -267,7 +305,9 @@ describe("fairness and match", () => {
     theirRb2: player("theirRb2", "RB", 11, 3),
   };
   const model: Model = { players, repl: { WR: 9, RB: 8 }, slots, teams: 2 };
-  const scores = new Map(Object.values(players).map((p) => [p.id, p.vorp * 5] as const));
+  const scores = new Map(
+    Object.values(players).map((p) => [p.id, onCurve(p.vorp * 5, 50)] as const),
+  );
   const mine = [players.myWr1, players.myWr2, players.myWr3, players.myRb];
   const theirs = [players.star, players.theirWr, players.theirRb, players.theirRb2];
 
@@ -284,7 +324,7 @@ describe("fairness and match", () => {
       undefined,
       scores,
     );
-    expect(r.fairness).toBeCloseTo(25 / 50);
+    expect(r.fairness).toBeCloseTo((25 / 50) ** TRADE_VALUE_CURVE);
     expect(fairnessLevel(r.fairness)).toBe("red");
     expect(fairnessLevel(0.92)).toBe("green");
     expect(fairnessLevel(0.8)).toBe("yellow");
@@ -325,7 +365,11 @@ describe("fairness and match", () => {
       scores,
     );
     expect(ideas.length).toBeGreaterThan(0);
-    for (const r of ideas) expect(fairnessLevel(r.fairness)).not.toBe("red");
+    // Near misses (with problems) may fill the list; the real ideas are never red.
+    for (const r of ideas.filter((r) => !r.problems?.length)) {
+      expect(fairnessLevel(r.fairness)).not.toBe("red");
+    }
+    expect(ideas[0]!.problems ?? []).toEqual([]);
     expect(fairnessLevel(ideas[0]!.fairness)).toBe("green");
   });
 });
@@ -333,8 +377,8 @@ describe("fairness and match", () => {
 describe("side value", () => {
   it("counts the best player in full and the next ones less", () => {
     expect(sideValue([50])).toBe(50);
-    expect(sideValue([20, 40])).toBeCloseTo(40 + 0.85 * 20);
-    expect(sideValue([10, 30, 20])).toBeCloseTo(30 + 0.85 * 20 + 0.7 * 10);
+    expect(sideValue([20, 40])).toBeCloseTo(40 + 0.55 * 20);
+    expect(sideValue([10, 30, 20])).toBeCloseTo(30 + 0.55 * 20 + 0.4 * 10);
   });
 
   it("keeps two good players from adding up to a star", () => {
@@ -425,21 +469,23 @@ describe("trade ideas put value first and keep positions sound", () => {
   ];
   const all = Object.fromEntries([...mine, ...theirs].map((p) => [p.id, p]));
   const model: Model = { players: all, repl: { QB: 16, RB: 8, WR: 9 }, slots, teams: 2 };
-  const values = new Map<string, number>([
-    ["myQb", 40],
-    ["myQb2", 25],
-    ["myRb", 60],
-    ["myRb2", 35],
-    ["myRb3", 20],
-    ["myRb4", 12],
-    ["myWr", 30],
-    ["myWr2", 22],
-    ["tQb", 55],
-    ["tRb2", 15],
-    ["tWr", 58],
-    ["tWr2", 36],
-    ["tHot", 44],
-  ]);
+  const values = new Map<string, number>(
+    [
+      ["myQb", 40],
+      ["myQb2", 25],
+      ["myRb", 60],
+      ["myRb2", 35],
+      ["myRb3", 20],
+      ["myRb4", 12],
+      ["myWr", 30],
+      ["myWr2", 22],
+      ["tQb", 55],
+      ["tRb2", 15],
+      ["tWr", 58],
+      ["tWr2", 36],
+      ["tHot", 44],
+    ].map(([id, v]) => [id as string, onCurve(v as number, 60)]),
+  );
   const ideas = suggestTrades(
     1,
     [
@@ -767,12 +813,34 @@ describe("trade idea shapes", () => {
 });
 
 describe("ideal roster", () => {
-  it("defaults to 2 QB, 4 RB, 5 WR and 2 TE in a one-flex league, at most 13 players", () => {
+  it("is as large as the league's roster spots for QB, RB, WR and TE", () => {
+    const starters = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"];
+    const bench = (n: number) => Array<string>(n).fill("BN");
+    expect(idealPlayers([...starters, ...bench(6)], NFL)).toBe(13);
+    expect(idealPlayers([...starters, "SUPER_FLEX", "DL", "LB", ...bench(7)], NFL)).toBe(15);
+    expect(idealPlayers([], NFL)).toBe(13);
+  });
+
+  it("adds up to the roster size, small or large", () => {
+    const slots = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"];
+    const sum = (r: Record<string, number>) => Object.values(r).reduce((s, n) => s + n, 0);
+    expect(defaultIdealRoster(slots, NFL, 16)).toEqual({ QB: 2, RB: 6, WR: 6, TE: 2 });
+    expect(sum(defaultIdealRoster(slots, NFL, 8))).toBe(8);
+  });
+
+  it("defaults to 2 QB, 4 RB, 5 WR and 2 TE in a one-flex league, exactly 13 players", () => {
     const slots = ["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"];
     expect(defaultIdealRoster(slots, NFL)).toEqual({ QB: 2, RB: 4, WR: 5, TE: 2 });
     const threeWide = defaultIdealRoster([...slots, "WR"], NFL);
-    expect(Object.values(threeWide).reduce((s, n) => s + n, 0)).toBe(IDEAL_MAX_PLAYERS);
-    // Superflex adds a QB; a receiver comes off so the total stays within the limit.
+    expect(Object.values(threeWide).reduce((s, n) => s + n, 0)).toBe(13);
+    // No flex: bench spots go to receivers and running backs until there are 13.
+    expect(defaultIdealRoster(["QB", "RB", "RB", "WR", "WR", "TE", "K", "DEF"], NFL)).toEqual({
+      QB: 2,
+      RB: 4,
+      WR: 5,
+      TE: 2,
+    });
+    // Superflex adds a QB; a receiver comes off so the total stays at 13.
     expect(defaultIdealRoster([...slots, "SUPER_FLEX"], NFL)).toEqual({
       QB: 3,
       RB: 4,
@@ -830,6 +898,19 @@ describe("ideal roster", () => {
     expect(idealCounts([...roster, ...hurt.slice(0, IR_SLOTS)]).RB).toBe(3);
     // A fourth player on IR takes a roster spot.
     expect(idealCounts([...roster, ...hurt]).RB).toBe(4);
+  });
+
+  it("follows the league's IR slots when it knows them", () => {
+    // In an IR slot while out (PUP): left out; listed on IR but on the roster: counted.
+    const pup = player("rbPup", "RB", 10, 1, { inj: "PUP" });
+    const ir = player("rbIr", "RB", 14, 6, { inj: "IR" });
+    const all = { ...Object.fromEntries(roster.map((p) => [p.id, p])), rbPup: pup, rbIr: ir };
+    const m: Model = { players: all, repl: {}, slots: [], teams: 1 };
+    const ids = Object.keys(all);
+    expect(idealCounts(rosterPlayers(m, ids)).RB).toBe(4); // unknown slots: IR status decides
+    expect(idealCounts(rosterPlayers(m, ids, ["rbPup"])).RB).toBe(4);
+    expect(idealCounts(rosterPlayers(m, ids, ["rbPup", "rbIr"])).RB).toBe(3);
+    expect(idealCounts(rosterPlayers(m, ids, [])).RB).toBe(5);
   });
 
   it("wants players where the roster is below the ideal and sells where it is above", () => {

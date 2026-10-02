@@ -12,6 +12,7 @@ const roster = (
   owner_id: owner,
   co_owners: [],
   players: [],
+  reserve: null,
   wins: 0,
   losses: 0,
   ties: 0,

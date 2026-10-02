@@ -77,6 +77,11 @@ export interface Valued {
   value: number;
   vorp: number;
   startable: boolean;
+  /**
+   * In one of his fantasy team's injured reserve slots. Unset when the league
+   * data does not say: then a player listed on IR is taken to be there.
+   */
+  irSlot?: boolean;
 }
 
 export interface WeekPoints {

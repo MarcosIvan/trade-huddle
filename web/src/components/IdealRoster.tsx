@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { IDEAL_MAX_PLAYERS, type IdealRoster as Ideal } from "@/lib/model";
+import { type IdealRoster as Ideal } from "@/lib/model";
 import styles from "./IdealRoster.module.css";
 
 /** Most players of one position the form accepts. */
@@ -12,17 +12,20 @@ const plural = (n: number) => (n === 1 ? "player" : "players");
 /**
  * How many players the owner wants at each position, bench included. Starts
  * from the applied ideal; the trade ideas only change when "Update trade ideas"
- * is pressed, and only while the total stays within IDEAL_MAX_PLAYERS.
+ * is pressed, and only when the total is exactly `size` (the IR spots apart).
  */
 export function IdealRoster({
   applied,
   defaults,
+  size,
   counts,
   onIr,
   onApply,
 }: {
   applied: Ideal;
   defaults: Ideal;
+  /** Players the ideal must add up to: the league's roster spots for these positions. */
+  size: number;
   /** How many players the team has now at each position, the IR spots left out. */
   counts: Readonly<Record<string, number>>;
   /** Players in the IR spots at each position: shown apart, never counted. */
@@ -33,10 +36,13 @@ export function IdealRoster({
   const [draft, setDraft] = useState<Record<string, number>>({ ...applied });
   const positions = Object.keys(defaults);
   const total = positions.reduce((s, pos) => s + (draft[pos] ?? 0), 0);
-  const excess = total - IDEAL_MAX_PLAYERS;
+  const off = total - size;
   const changed = !same(draft, applied);
   const set = (pos: string, n: number) => setDraft({ ...draft, [pos]: clamp(n) });
-  const tooMany = `At most ${IDEAL_MAX_PLAYERS} players in total. Remove ${excess} ${plural(excess)} to update.`;
+  const limit =
+    off > 0
+      ? `Exactly ${size} players in total, IR apart. Remove ${off} ${plural(off)} to update.`
+      : `Exactly ${size} players in total, IR apart. Add ${-off} ${plural(-off)} to update.`;
 
   return (
     <form
@@ -44,7 +50,7 @@ export function IdealRoster({
       aria-labelledby={`${baseId}-title`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (changed && excess <= 0) onApply(draft);
+        if (changed && off === 0) onApply(draft);
       }}
     >
       <h3 className={styles.title} id={`${baseId}-title`}>
@@ -105,15 +111,15 @@ export function IdealRoster({
           <button
             className="btn btn-primary"
             type="submit"
-            disabled={!changed && excess <= 0}
-            aria-disabled={excess > 0 || undefined}
-            aria-describedby={excess > 0 ? `${baseId}-limit` : undefined}
+            disabled={!changed && off === 0}
+            aria-disabled={off !== 0 || undefined}
+            aria-describedby={off !== 0 ? `${baseId}-limit` : undefined}
           >
             Update trade ideas
           </button>
-          {excess > 0 && (
+          {off !== 0 && (
             <span id={`${baseId}-limit`} role="tooltip" className={styles.tooltip}>
-              {tooMany}
+              {limit}
             </span>
           )}
         </span>

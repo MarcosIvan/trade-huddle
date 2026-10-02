@@ -19,7 +19,7 @@ import { NFL } from "./sports/nfl";
 export interface SearchRequest {
   requestId: number;
   model: Model;
-  rosters: { rid: number; playerIds: string[] }[];
+  rosters: { rid: number; playerIds: string[]; reserveIds: string[] | null }[];
   myRid: number;
   /** Trade score per player (Player Score without team importance). */
   tradeScores: [string, number][];
@@ -42,7 +42,10 @@ export function runSearch({
   tradeScores,
   ideal,
 }: SearchRequest): SearchResponse {
-  const teams = rosters.map((r) => ({ rid: r.rid, players: rosterPlayers(model, r.playerIds) }));
+  const teams = rosters.map((r) => ({
+    rid: r.rid,
+    players: rosterPlayers(model, r.playerIds, r.reserveIds),
+  }));
   const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
   const ideas = suggestTrades(myRid, teams, model, NFL, pool, new Map(tradeScores), ideal);
   return {
@@ -82,7 +85,10 @@ export function runFinder({
   ideal,
   finder,
 }: FinderRequest): FinderResponse {
-  const teams = rosters.map((r) => ({ rid: r.rid, players: rosterPlayers(model, r.playerIds) }));
+  const teams = rosters.map((r) => ({
+    rid: r.rid,
+    players: rosterPlayers(model, r.playerIds, r.reserveIds),
+  }));
   const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
   const { ideas }: FinderResult = findTrades(
     finder.mode,

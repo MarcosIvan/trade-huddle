@@ -9,6 +9,8 @@ export interface Team {
   ownerId: string | null;
   coOwners: string[];
   playerIds: string[];
+  /** Players in the injured reserve slots; null when unknown. */
+  reserveIds: string[] | null;
   record: string;
 }
 
@@ -25,6 +27,7 @@ export function buildTeams(rosters: SleeperRoster[], users: SleeperLeagueUser[])
       ownerId: r.owner_id,
       coOwners: r.co_owners,
       playerIds: r.players,
+      reserveIds: r.reserve,
       record: `${r.wins}-${r.losses}${r.ties ? `-${r.ties}` : ""}`,
     };
   });

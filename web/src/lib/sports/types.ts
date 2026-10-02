@@ -56,6 +56,13 @@ export interface ModelParams {
   /** Projections run conservative; they are multiplied by this before use. */
   projScale: number;
   /**
+   * A player out long term (an injury rule that is not startable) with at
+   * least this many games last season takes last season as his prior instead
+   * of the projection: the season projection already leaves out the games he
+   * will miss, and his availability discounts them once more. 0 turns it off.
+   */
+  injuredPriorGames: number;
+  /**
    * Chance that an absent key teammate plays the rest of the season (0 turns
    * the teammate adjustment off). Longer absences (IR, PUP) get 60% of it.
    */

@@ -191,16 +191,22 @@ export function TradeAnalyzer({
 }) {
   const partnerId = useId();
   const partner = teams.find((t) => t.rid === partnerRid);
-  const mine = useMemo(
-    () => rosterPlayers(model, teams.find((t) => t.rid === myRid)?.playerIds ?? []),
-    [model, teams, myRid],
+  const mine = useMemo(() => {
+    const team = teams.find((t) => t.rid === myRid);
+    return rosterPlayers(model, team?.playerIds ?? [], team?.reserveIds);
+  }, [model, teams, myRid]);
+  const theirs = useMemo(
+    () => rosterPlayers(model, partner?.playerIds ?? [], partner?.reserveIds),
+    [model, partner],
   );
-  const theirs = useMemo(() => rosterPlayers(model, partner?.playerIds ?? []), [model, partner]);
   // Each team's needs by position, as in trade ideas; yours follow your ideal roster.
   const needs = useMemo(
     () =>
       teamNeeds(
-        teams.map((t) => ({ rid: t.rid, players: rosterPlayers(model, t.playerIds) })),
+        teams.map((t) => ({
+          rid: t.rid,
+          players: rosterPlayers(model, t.playerIds, t.reserveIds),
+        })),
         model,
         NFL,
       ),
