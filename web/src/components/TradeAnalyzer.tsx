@@ -48,7 +48,7 @@ function PickList({
           return (
             <label key={p.id} className={`${styles.pick} ${on ? styles.on : ""}`}>
               <input type="checkbox" checked={on} onChange={() => onToggle(p.id)} />
-              <PlayerCell player={p} />
+              <PlayerCell player={p} showScore={false} />
               <span className={`num ${styles.value}`} title={TRADE_VALUE_HINT}>
                 <TradeValue player={p} />
               </span>
@@ -136,7 +136,7 @@ function TradeSide({
               {players.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <PlayerCell player={p} />
+                    <PlayerCell player={p} showScore={false} />
                   </td>
                   <td className={`num ${styles.value}`}>
                     <TradeValue player={p} />
