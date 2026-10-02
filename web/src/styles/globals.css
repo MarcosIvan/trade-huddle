@@ -113,8 +113,34 @@ main {
   border-radius: var(--radius-sm);
   background: var(--surface);
 }
+/*
+ * Our own arrow: a chevron drawn as two diagonal strokes, its right end 12px
+ * from the edge like the text on the left; it points up while the menu is open.
+ */
 .select {
-  padding-right: 32px;
+  --chevron-down-l: linear-gradient(
+    45deg,
+    transparent calc(50% - 1px),
+    var(--ink-2) calc(50% - 1px) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  --chevron-down-r: linear-gradient(
+    135deg,
+    transparent calc(50% - 1px),
+    var(--ink-2) calc(50% - 1px) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+  appearance: none;
+  padding-right: 36px;
+  background-image: var(--chevron-down-l), var(--chevron-down-r);
+  background-position:
+    right 18px center,
+    right 12px center;
+  background-size: 7px 7px;
+  background-repeat: no-repeat;
+}
+.select:open {
+  background-image: var(--chevron-down-r), var(--chevron-down-l);
 }
 .btn {
   display: inline-flex;

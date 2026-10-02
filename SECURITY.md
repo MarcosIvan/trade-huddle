@@ -75,8 +75,7 @@ or apps belong to Sleeper.
 
 ## What the site stores
 
-Only your Sleeper username, your user ID, your last league, which team you
-view in each league, the ideal roster you set for each team and your
-light/dark choice, in your own browser's local storage, so you don't have to
+Only your Sleeper username, your user ID, your last league, the ideal roster
+you set for each team and your light/dark choice, in your own browser's local storage, so you don't have to
 pick them again. Nothing is sent
 anywhere except Sleeper's API.

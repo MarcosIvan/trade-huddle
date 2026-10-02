@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buildTeams, leagueNotices, pickMyTeam, type NoticeKind, type Team } from "@/lib/league";
 import { buildModel, type Model, type StatsFile } from "@/lib/model";
-import { fetchLeague, UserError, type LeagueData } from "@/lib/sleeper/client";
+import {
+  allUserLeagues,
+  fetchLeague,
+  UserError,
+  type LeagueData,
+  type UserLeague,
+} from "@/lib/sleeper/client";
 import {
   isLeagueId,
   parseLeague,
@@ -59,7 +65,9 @@ function setUrl(search: string) {
 
 export function useLeague() {
   const [status, setStatus] = useState<LeagueStatus>({ kind: "starting" });
-  const [myRid, setMyRidState] = useState<number | null>(null);
+  const [myRid, setMyRid] = useState<number | null>(null);
+  /** The visitor's leagues in every sport, for the league picker; null until known. */
+  const [leagues, setLeagues] = useState<UserLeague[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const loadRef = useRef(0);
 
@@ -74,7 +82,7 @@ export function useLeague() {
         model: buildModel(stats, data.league, NFL),
         notices: leagueNotices(data.league, NFL, demo),
       };
-      setMyRidState((current) =>
+      setMyRid((current) =>
         pickMyTeam(teams, preferred ?? current, demo ? null : storage.get("uid")),
       );
       setStatus({ kind: "ready", view });
@@ -95,9 +103,8 @@ export function useLeague() {
         if (load !== loadRef.current) return;
         storage.set("league", leagueId);
         setUrl(`?league=${encodeURIComponent(leagueId)}`);
-        const saved = Number(storage.get(`team:${leagueId}`));
-        setMyRidState(null);
-        show(data, stats, false, Number.isInteger(saved) && saved > 0 ? saved : null);
+        setMyRid(null);
+        show(data, stats, false, null);
       } catch (error) {
         if (load === loadRef.current) setStatus({ kind: "entry", error: friendlyError(error) });
       }
@@ -112,7 +119,7 @@ export function useLeague() {
       const [stats, demo] = await Promise.all([loadStats(NFL.id, true), loadDemo()]);
       if (load !== loadRef.current) return;
       setUrl("?demo");
-      setMyRidState(null);
+      setMyRid(null);
       show(demo, stats, true, demo.myRid);
     } catch (error) {
       if (load === loadRef.current) {
@@ -142,15 +149,16 @@ export function useLeague() {
     setStatus({ kind: "entry", error: null });
   }, []);
 
-  const setMyRid = useCallback(
-    (rid: number) => {
-      setMyRidState(rid);
-      if (status.kind === "ready" && !status.view.demo) {
-        storage.set(`team:${status.view.league.league_id}`, String(rid));
-      }
-    },
-    [status],
-  );
+  // A league opened straight from the URL or storage: fetch the visitor's
+  // leagues for the picker. Without them the picker just stays hidden.
+  const needLeagues = status.kind === "ready" && !status.view.demo && leagues === null;
+  useEffect(() => {
+    const uid = storage.get("uid");
+    if (!needLeagues || !uid) return;
+    const controller = new AbortController();
+    allUserLeagues(uid, controller.signal).then(setLeagues, () => {});
+    return () => controller.abort();
+  }, [needLeagues]);
 
   // First visit: ?demo, ?league=<id>, the last league, or the entry screen.
   // The URL and storage only exist in the browser (the page is prerendered as
@@ -166,5 +174,15 @@ export function useLeague() {
   }, [openDemo, openLeague]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  return { status, myRid, setMyRid, refreshing, openLeague, openDemo, refresh, leave };
+  return {
+    status,
+    myRid,
+    leagues,
+    setLeagues,
+    refreshing,
+    openLeague,
+    openDemo,
+    refresh,
+    leave,
+  };
 }

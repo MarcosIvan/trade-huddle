@@ -41,6 +41,7 @@ export function App() {
               key={status.kind === "entry" ? (status.error ?? "") : ""}
               error={status.kind === "entry" ? status.error : null}
               onOpenLeague={league.openLeague}
+              onLeagues={league.setLeagues}
               onOpenDemo={league.openDemo}
             />
           </div>
@@ -49,10 +50,10 @@ export function App() {
           <LeagueScreen
             view={status.view}
             myRid={league.myRid}
+            leagues={league.leagues}
             refreshing={league.refreshing}
-            onTeam={league.setMyRid}
+            onLeague={league.openLeague}
             onRefresh={league.refresh}
-            onLeave={league.leave}
           />
         )}
       </main>
