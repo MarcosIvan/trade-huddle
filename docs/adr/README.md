@@ -20,5 +20,6 @@ later one changes it, the later one says what it replaces.
 | [0011](0011-next-game-projection.md)          | Sleeper's next-game projection in the expected points                   |
 | [0012](0012-player-news.md)                   | Player news from Sleeper, fetched when asked                            |
 | [0013](0013-trade-value-scale.md)             | A flatter trade value scale, one injury discount and Sleeper's IR spots |
+| [0014](0014-even-trade-ideas.md)              | Even trade ideas, no free agents and no ideal roster setting            |
 
 How the pieces fit together: [architecture.md](../architecture.md).

@@ -20,7 +20,10 @@ function pickupText(p: Valued): string {
 
 const list = (players: Valued[]) => players.map(pickupText).join(" and ");
 
-/** What happens to roster spots in an uneven trade, naming the free agents to add. */
+/**
+ * What happens to roster spots in an uneven trade, naming the free agents to
+ * add. Only the analyzer builds such trades: ideas are always even.
+ */
 export function rosterNotes(r: TradeResult, partnerName: string): string[] {
   const notes: string[] = [];
   if (r.myOpen) {
@@ -73,7 +76,6 @@ export function IdeaCard({
   index,
   partner,
   star,
-  problems,
   idPrefix = "idea",
   onOpen,
 }: {
@@ -82,14 +84,11 @@ export function IdeaCard({
   partner: Team | undefined;
   /** "match" for a true match, "closest" for the nearest one when none is. */
   star: "match" | "closest" | null;
-  /** What keeps the deal from being suggested, when it is shown anyway. */
-  problems?: string[];
   /** Keeps heading ids unique when several lists of cards share the page. */
   idPrefix?: string;
   onOpen: () => void;
 }) {
   const name = partner?.name ?? "Unknown team";
-  const notes = rosterNotes(idea, name);
   const titleId = `${idPrefix}-${index}-title`;
   return (
     <article
@@ -123,32 +122,11 @@ export function IdeaCard({
             Your bench <Delta value={idea.depthMe} />
           </span>
         )}
-        {idea.myNeedPos && (
-          <span className={`${styles.chip} ${styles.plus}`}>
-            Fills your need at {idea.myNeedPos}
-          </span>
-        )}
-        {idea.theirNeedPos && (
-          <span className={`${styles.chip} ${styles.plus}`}>
-            Fills their need at {idea.theirNeedPos}
-          </span>
-        )}
         {idea.benchShare >= 0.25 && (
           <span className={`${styles.chip} ${styles.plus}`}>Sends a player from your bench</span>
         )}
       </div>
       <BalanceMeter sGive={idea.sGive} sGet={idea.sGet} fairness={idea.fairness} />
-      {problems && problems.length > 0 && (
-        <div className={styles.problems}>
-          <span className="label">What is missing</span>
-          <ul>
-            {problems.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {notes.length > 0 && <p className="hint">{notes.join(" ")}</p>}
       <div className={styles.foot}>
         <button type="button" className={`btn ${styles.openBtn}`} onClick={onOpen}>
           Open in analyzer
@@ -195,7 +173,6 @@ export function TradeIdeas({
                     ? "closest"
                     : null
               }
-              problems={idea.problems}
               key={`${idea.partner}-${idea.give.map((p) => p.id).join()}-${idea.get.map((p) => p.id).join()}`}
               idea={idea}
               index={i}

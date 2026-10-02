@@ -115,14 +115,3 @@
   color: var(--good);
   font-weight: 600;
 }
-
-.problems {
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  background: var(--warn-soft);
-  color: var(--warn);
-}
-.problems ul {
-  margin: 4px 0 0;
-  padding-left: 18px;
-}

@@ -6,7 +6,6 @@ import {
   findTrades,
   type FinderMode,
   type FinderResult,
-  freeAgentPool,
   rosterPlayers,
   suggestTrades,
   type IdealRoster,
@@ -46,8 +45,7 @@ export function runSearch({
     rid: r.rid,
     players: rosterPlayers(model, r.playerIds, r.reserveIds),
   }));
-  const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
-  const ideas = suggestTrades(myRid, teams, model, NFL, pool, new Map(tradeScores), ideal);
+  const ideas = suggestTrades(myRid, teams, model, NFL, new Map(tradeScores), ideal);
   return {
     requestId,
     ideas: ideas.map((r) => ({ ...r, give: r.give.map((p) => p.id), get: r.get.map((p) => p.id) })),
@@ -89,7 +87,6 @@ export function runFinder({
     rid: r.rid,
     players: rosterPlayers(model, r.playerIds, r.reserveIds),
   }));
-  const pool = freeAgentPool(model, new Set(rosters.flatMap((r) => r.playerIds)));
   const { ideas }: FinderResult = findTrades(
     finder.mode,
     finder.playerId,
@@ -97,7 +94,6 @@ export function runFinder({
     teams,
     model,
     NFL,
-    pool,
     new Map(tradeScores),
     ideal,
   );

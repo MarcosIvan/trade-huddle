@@ -9,19 +9,14 @@ import {
   defaultIdealRoster,
   idealPlayers,
   freeAgentPool,
-  idealCounts,
-  inIrSlots,
   playerScores,
   rosterPlayers,
   weeklyOutlook,
   type FinderMode,
-  type IdealRoster as Ideal,
   type TradeIdea,
 } from "@/lib/model";
 import { ScoreContext } from "./ScoreContext";
 import { NFL } from "@/lib/sports/nfl";
-import { storage } from "@/lib/storage";
-import { IdealRoster, IDEAL_MAX } from "./IdealRoster";
 import { WeeklyLineup, weekLineup } from "./WeeklyLineup";
 import { NewsProvider } from "./News";
 import { Notices } from "./Notices";
@@ -39,23 +34,6 @@ interface AnalyzerState {
 }
 
 const EMPTY: AnalyzerState = { partnerRid: null, give: new Set(), get: new Set() };
-
-/** The saved ideal roster for one team, over the defaults; anything unreadable is ignored. */
-function loadIdeal(key: `ideal:${string}`, defaults: Ideal, size: number): Ideal {
-  try {
-    const saved: unknown = JSON.parse(storage.get(key) ?? "null");
-    if (!saved || typeof saved !== "object") return defaults;
-    const out: Record<string, number> = { ...defaults };
-    for (const pos of Object.keys(defaults)) {
-      const n = (saved as Record<string, unknown>)[pos];
-      if (typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= IDEAL_MAX) out[pos] = n;
-    }
-    // An ideal saved under an older rule (any total up to the limit) starts over.
-    return Object.values(out).reduce((s, n) => s + n, 0) === size ? out : defaults;
-  } catch {
-    return defaults;
-  }
-}
 
 function toggle(set: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(set);
@@ -88,33 +66,12 @@ export function LeagueScreen({
     [scores],
   );
 
-  // Your ideal roster, saved per league and team; the league's default until you change it.
-  const idealSize = useMemo(() => idealPlayers(league.roster_positions ?? [], NFL), [league]);
-  const defaults = useMemo(
-    () => defaultIdealRoster(model.slots, NFL, idealSize),
-    [model, idealSize],
-  );
-  const idealKey = `ideal:${league.league_id}:${myRid}` as const;
-  const [changedIdeal, setChangedIdeal] = useState<{ key: string; ideal: Ideal } | null>(null);
+  // The roster shape trades keep you close to: the league's roster size spread over the
+  // positions (starters plus backups). Not shown; it keeps positions balanced.
   const ideal = useMemo(
-    () =>
-      changedIdeal?.key === idealKey
-        ? changedIdeal.ideal
-        : loadIdeal(idealKey, defaults, idealSize),
-    [changedIdeal, idealKey, defaults, idealSize],
+    () => defaultIdealRoster(model.slots, NFL, idealPlayers(league.roster_positions ?? [], NFL)),
+    [model, league],
   );
-  function applyIdeal(next: Ideal) {
-    storage.set(idealKey, JSON.stringify(next));
-    setChangedIdeal({ key: idealKey, ideal: next });
-  }
-  // What you have now at each position, players in the IR spots apart (they don't count).
-  const myCounts = useMemo(() => {
-    const team = teams.find((t) => t.rid === myRid);
-    const mine = rosterPlayers(model, team?.playerIds ?? [], team?.reserveIds);
-    const ir: Record<string, number> = {};
-    for (const p of inIrSlots(mine)) ir[p.pos] = (ir[p.pos] ?? 0) + 1;
-    return { active: idealCounts(mine), ir };
-  }, [model, teams, myRid]);
 
   const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal);
 
@@ -227,20 +184,11 @@ export function LeagueScreen({
               </Section>
             )}
             <Section id="ideas" title="Trade ideas">
-              <IdealRoster
-                key={`${idealKey}-${JSON.stringify(ideal)}`}
-                applied={ideal}
-                defaults={defaults}
-                size={idealSize}
-                counts={myCounts.active}
-                onIr={myCounts.ir}
-                onApply={applyIdeal}
-              />
               <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
             </Section>
           </div>
 
-          <Section id="finder" title="Trade finder">
+          <Section id="finder" title="Trade finder" className={styles.spaced}>
             <TradeFinder
               model={model}
               teams={teams}
@@ -255,7 +203,7 @@ export function LeagueScreen({
             />
           </Section>
 
-          <Section id="analyzer" title="Trade analyzer" className={styles.analyzer}>
+          <Section id="analyzer" title="Trade analyzer" className={styles.spaced}>
             <TradeAnalyzer
               model={model}
               teams={teams}

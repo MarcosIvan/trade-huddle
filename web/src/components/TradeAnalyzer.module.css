@@ -139,18 +139,3 @@
   color: var(--warn);
   font-weight: 600;
 }
-.fits {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0;
-}
-/* Same look as the need chips on trade idea cards. */
-.fit {
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--good-soft);
-  color: var(--good);
-  font-size: 14px;
-  font-weight: 600;
-}

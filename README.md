@@ -117,37 +117,36 @@ A deal is suggested only if:
   back in the deal or is covered by a spare you already have, nobody is left
   short of starters, and nobody piles up a position (no third QB in a one-QB
   league). Kickers and defenses are not traded.
-- it **respects your ideal roster**: how many QBs, RBs, WRs and TEs you want,
-  bench included, exactly as many as your league's roster has spots for them
-  (all spots but kickers, defenses and IR; 13 in a 15-spot league, by default
-  2, 4, 5 and 2 with one flex, and in superflex one more QB and one fewer WR). Players in your
-  league's IR spots don't count, as Sleeper lists them; a player listed on IR
-  but kept on the roster does. You can change it with the − and + buttons
-  above the trade ideas and press **Update trade ideas**. A deal may keep a position
-  below or above the ideal as it is, but never takes it further away, and
-  positions below the ideal count as needs when ranking. It is saved in your
-  browser for each league and team.
+- it **keeps your roster balanced**: no position drops further below, or
+  climbs further above, a balanced roster of your league's size (all spots but
+  kickers, defenses and IR; 13 in a 15-spot league: 2 QB, 4 RB, 5 WR and 2 TE
+  with one flex, and in superflex one more QB and one fewer WR). Players in
+  your league's IR spots don't count, as Sleeper lists them.
+- a team sending a **starter** at a position it gets nobody back at keeps a
+  **starter-level** player there (as good as the league's last starter at that
+  position).
 
-Trade ideas only suggest the deals worth a second look:
+Deals are always **even**, so nobody needs a free agent to fill a spot:
 
-- **1-for-1** at different positions (never RB for RB);
-- **2-for-1 or 3-for-2**, either way: the side sending fewer players gets
-  better ones, at positions the other side sends;
-- **2-for-2 crossed**: a star and a depth player for a star and a depth
-  player at the opposite positions (high RB + low TE for high TE + low RB);
-- **2-for-2 consolidation**: two alike good players for a clearly better star
-  and a depth player, or the other way round.
+- **2-for-2**, the usual real trade and the first choice: you give some value
+  at one position and get about as much at another (high RB + low TE for high
+  TE + low RB, or two good players for a star and a lesser bench player that
+  balances the values);
+- **1-for-1** at different positions (never RB for RB), with trade values
+  within 90% of each other.
 
-Two players of alike value for two others are left out. A roster with many
-good players leans to packing them into stars; one with few leans to turning
-a star into more good players. That is a preference in the ranking, not a
-rule.
+Two players of alike value at the same positions for two others are left
+out. A roster with many good players leans to packing them into stars; one
+with few leans to turning a star into more good players. That is a
+preference in the ranking, not a rule.
 
-Trade ideas show **three** deals: fair first, then those where your starters
-gain more than the partner's, then those in your roster's lean, then the best
-matches (each side getting the best player at a position where it is weak).
-When fewer than three deals pass, the nearest ones fill the list and say what
-they are missing. The **trade finder** applies the same rules, shapes and
+Trade ideas show **three** deals: fair first, then 2-for-2 before 1-for-1,
+then those where your starters gain more than the partner's, then those in
+your roster's lean, then the best matches (each side getting the best player
+at a position where it is weak). The last card goes to the best fair 1-for-1
+when the other two are 2-for-2 and one passes every rule. When fewer than
+three deals pass, the nearest ones fill the list
+([ADR 0014](docs/adr/0014-even-trade-ideas.md)). The **trade finder** applies the same rules, shapes and
 ranking around one player and also always shows three deals, starring every
 true match ([ADR 0008](docs/adr/0008-trade-finder.md)).
 The **trade analyzer** shows any deal in one card: fairness on top, then what
