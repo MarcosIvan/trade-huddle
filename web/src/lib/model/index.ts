@@ -69,4 +69,20 @@ export {
 export type * from "./types";
 export { estimate, type Estimate } from "./value";
 export { verdict, type Verdict } from "./verdict";
-export { weeklyOutlook, type WeeklyOutlook } from "./weekly";
+export { defenseFactors, weeklyOutlook, type WeeklyOutlook } from "./weekly";
+export {
+  MATCHUP_EDGE,
+  matchupLevel,
+  BENCHMARK_DEPTH,
+  playerCard,
+  PTS_KEY,
+  STAT_EDGE,
+  statBenchmarks,
+  statLevel,
+  type CardGame,
+  type DefenseFactors,
+  type MatchupLevel,
+  type PlayerCard,
+  type StatBenchmarks,
+  type StatLevel,
+} from "./playerCard";

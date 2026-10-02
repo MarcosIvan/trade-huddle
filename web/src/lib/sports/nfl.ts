@@ -1,4 +1,4 @@
-import type { ModelParams, SportConfig } from "./types";
+import type { ModelParams, SportConfig, StatGroup } from "./types";
 
 /**
  * The model exactly as the original prototype had it. Kept so tests can prove
@@ -62,6 +62,34 @@ export const PROTOTYPE_MODEL: ModelParams = {
   slightDiff: 0.25,
 };
 
+const PASSING: StatGroup = {
+  label: "Passing",
+  columns: [
+    { key: "pass_cmp", label: "Cmp", title: "Completions" },
+    { key: "pass_att", label: "Att", title: "Pass attempts" },
+    { key: "pass_yd", label: "Yds", title: "Passing yards" },
+    { key: "pass_td", label: "TD", title: "Passing touchdowns" },
+    { key: "pass_int", label: "Int", title: "Interceptions", lowerIsBetter: true },
+  ],
+};
+const RUSHING: StatGroup = {
+  label: "Rushing",
+  columns: [
+    { key: "rush_att", label: "Att", title: "Carries" },
+    { key: "rush_yd", label: "Yds", title: "Rushing yards" },
+    { key: "rush_td", label: "TD", title: "Rushing touchdowns" },
+  ],
+};
+const RECEIVING: StatGroup = {
+  label: "Receiving",
+  columns: [
+    { key: "rec_tgt", label: "Tgt", title: "Targets" },
+    { key: "rec", label: "Rec", title: "Receptions" },
+    { key: "rec_yd", label: "Yds", title: "Receiving yards" },
+    { key: "rec_td", label: "TD", title: "Receiving touchdowns" },
+  ],
+};
+
 export const NFL: SportConfig = {
   id: "nfl",
   positions: ["QB", "RB", "WR", "TE", "K", "DEF"],
@@ -82,6 +110,12 @@ export const NFL: SportConfig = {
   freeAgentPositions: ["QB", "RB", "WR", "TE"],
   tradePositions: ["QB", "RB", "WR", "TE"],
   defaultTeams: 12,
+  gameLog: {
+    QB: [PASSING, RUSHING],
+    RB: [RUSHING, RECEIVING],
+    WR: [RECEIVING, RUSHING],
+    TE: [RECEIVING, RUSHING],
+  },
   model: {
     ...PROTOTYPE_MODEL,
     // Calibrated by backtest on 2024 and 2025 (docs/adr/0001-value-model-calibration.md).

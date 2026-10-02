@@ -232,6 +232,29 @@ test.describe("demo league", () => {
     });
   }
 
+  test("opens a player's card with his season, week by week", async ({ page }) => {
+    await page
+      .locator("#team")
+      .getByRole("button", { name: /^Milo Valadares$/ })
+      .first()
+      .click();
+    const card = page.getByRole("dialog", { name: /Milo Valadares/ });
+    await expect(card.getByRole("columnheader", { name: "Rushing", exact: true })).toBeVisible();
+    await expect(card.getByRole("columnheader", { name: "Receiving", exact: true })).toBeVisible();
+    await expect(card.getByRole("row", { name: /^Total/ })).toBeVisible();
+    expect(await accessibilityProblems(page)).toEqual([]);
+    await card.getByRole("button", { name: "Close" }).click();
+    await expect(card).toBeHidden();
+  });
+
+  test("keeps names in the analyzer's pick lists for picking, not for the card", async ({
+    page,
+  }) => {
+    await expect(page.locator("#analyzer label button[title^='Stats and schedule']")).toHaveCount(
+      0,
+    );
+  });
+
   test("shows no news icons: its players are fictional", async ({ page }) => {
     await expect(page.getByRole("button", { name: /news about/i })).toHaveCount(0);
   });
