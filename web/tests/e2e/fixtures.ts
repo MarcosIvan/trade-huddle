@@ -74,6 +74,10 @@ export async function mockSleeper(page: Page): Promise<void> {
       { league_id: LEAGUE_ID, name: HOSTILE.league, total_rosters: rosters.length },
       { league_id: "9876543210987654321", name: "Second League", total_rosters: 10 },
     ],
+    "/v1/state/nba": { season: "2026", league_season: "2026" },
+    [`/v1/user/${me}/leagues/nba/2026`]: [
+      { league_id: "5555555555555555555", name: "Hoops League", total_rosters: 12 },
+    ],
     [`/v1/league/${LEAGUE_ID}`]: league,
     [`/v1/league/${LEAGUE_ID}/rosters`]: rosters,
     [`/v1/league/${LEAGUE_ID}/users`]: users,

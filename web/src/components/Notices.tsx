@@ -6,7 +6,7 @@ const TEXT: Record<NoticeKind, ReactNode> = {
   demo: (
     <>
       <b>Demo league.</b> Players, teams and numbers are fictional. To use your own league, choose
-      Change league and enter your Sleeper username.
+      Trade Huddle at the top and enter your Sleeper username.
     </>
   ),
   dynasty: (

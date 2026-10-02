@@ -64,21 +64,50 @@ export async function findUser(username: string, signal?: AbortSignal): Promise<
   return user;
 }
 
-export async function currentSeason(signal?: AbortSignal): Promise<string> {
-  return parseState(await get("/state/nfl", signal)).season;
+/** The Sleeper sports whose leagues are listed; only the supported ones can be opened. */
+export const LEAGUE_SPORTS = ["nfl", "nba"] as const;
+export type LeagueSport = (typeof LEAGUE_SPORTS)[number];
+export const SUPPORTED_SPORTS: ReadonlySet<LeagueSport> = new Set(["nfl"]);
+
+export async function currentSeason(sport: LeagueSport, signal?: AbortSignal): Promise<string> {
+  return parseState(await get(`/state/${sport}`, signal)).season;
 }
 
 export async function userLeagues(
   userId: string,
+  sport: LeagueSport,
   season: string,
   signal?: AbortSignal,
 ): Promise<LeagueSummary[]> {
   return parseLeagueList(
     await get(
-      `/user/${encodeURIComponent(userId)}/leagues/nfl/${encodeURIComponent(season)}`,
+      `/user/${encodeURIComponent(userId)}/leagues/${sport}/${encodeURIComponent(season)}`,
       signal,
     ),
   );
+}
+
+export interface UserLeague extends LeagueSummary {
+  sport: LeagueSport;
+  season: string;
+}
+
+/**
+ * The user's leagues in the current season of every listed sport. A sport
+ * that fails is left out; the error only shows when every sport fails.
+ */
+export async function allUserLeagues(userId: string, signal?: AbortSignal): Promise<UserLeague[]> {
+  const results = await Promise.allSettled(
+    LEAGUE_SPORTS.map(async (sport) => {
+      const season = await currentSeason(sport, signal);
+      const list = await userLeagues(userId, sport, season, signal);
+      return list.map((l) => ({ ...l, sport, season }));
+    }),
+  );
+  const found = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+  const failed = results.find((r) => r.status === "rejected");
+  if (failed && !results.some((r) => r.status === "fulfilled")) throw failed.reason;
+  return found;
 }
 
 export interface LeagueData {

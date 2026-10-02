@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import {
   HOSTILE,
+  LEAGUE_ID,
   NEWS_DOWN,
   NEWS_PLAYER,
   USERNAME,
@@ -65,14 +66,39 @@ test.describe("hostile names from Sleeper", () => {
     await hostileLeague.click();
     await ideasReady(page);
 
-    // The league title and the hostile team (in the team picker) are text, not markup.
+    // The league title and the hostile team (in the analyzer's partner picker) are text, not markup.
     await expect(page.getByRole("heading", { level: 1 })).toContainText(HOSTILE.league);
-    await expect(page.locator("header select option", { hasText: "Evil" })).toHaveText(
-      HOSTILE.team,
-    );
+    await expect(
+      page.getByLabel("Trade with").locator("option", { hasText: "Evil" }),
+    ).toContainText(HOSTILE.team);
     // Nothing from the names became an element or ran.
     expect(await page.locator("main img, main svg[onload], main script").count()).toBe(0);
     expect(await page.evaluate(() => (window as { __xss?: string }).__xss)).toBeUndefined();
+  });
+});
+
+test.describe("league picker", () => {
+  test("lists the user's NFL and NBA leagues; NBA not openable yet", async ({ page }) => {
+    await mockSleeper(page);
+    await page.goto("./");
+    await page.getByLabel("Sleeper username").fill(USERNAME);
+    await page.getByRole("button", { name: "Find my leagues" }).click();
+
+    // NBA leagues are listed but can't be opened until the site supports NBA.
+    await expect(page.getByRole("button", { name: /Hoops League/ })).toBeDisabled();
+    await page.getByRole("button", { name: /Hostile League/ }).click();
+    await ideasReady(page);
+
+    // No team picker and no "Change league": one league picker, leagues grouped by sport.
+    await expect(page.getByLabel("View as")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Change league" })).toHaveCount(0);
+    const picker = page.getByLabel("League", { exact: true });
+    await expect(picker.locator("option")).toHaveCount(3);
+    await expect(picker.locator("optgroup")).toHaveCount(2);
+    await expect(picker.locator("optgroup").nth(1)).toHaveAttribute("label", "NBA (coming soon)");
+    await expect(picker.locator("option", { hasText: "Hoops League" })).toBeDisabled();
+    await expect(picker).toHaveValue(LEAGUE_ID);
+    expect(await accessibilityProblems(page)).toEqual([]);
   });
 });
 

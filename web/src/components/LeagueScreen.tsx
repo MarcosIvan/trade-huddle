@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import type { LeagueView } from "@/hooks/useLeague";
 import { useTradeIdeas } from "@/hooks/useTradeIdeas";
 import { fmt } from "@/lib/format";
+import { SUPPORTED_SPORTS, type UserLeague } from "@/lib/sleeper/client";
 import {
   defaultIdealRoster,
   idealPlayers,
@@ -66,19 +67,19 @@ function toggle(set: ReadonlySet<string>, id: string): Set<string> {
 export function LeagueScreen({
   view,
   myRid,
+  leagues,
   refreshing,
-  onTeam,
+  onLeague,
   onRefresh,
-  onLeave,
 }: {
   view: LeagueView;
   myRid: number;
+  /** The visitor's leagues in every sport; null while unknown (and in the demo). */
+  leagues: UserLeague[] | null;
   refreshing: boolean;
-  onTeam: (rid: number) => void;
+  onLeague: (leagueId: string) => void;
   onRefresh: () => void;
-  onLeave: () => void;
 }) {
-  const teamFieldId = useId();
   const { stats, league, teams, model, demo, notices } = view;
   // Player Scores (0-100); the owner-independent trade value (1-40) drives fairness.
   const scores = useMemo(() => playerScores(model, stats, teams, NFL), [model, stats, teams]);
@@ -168,11 +169,6 @@ export function LeagueScreen({
     [model, teams],
   );
 
-  const sortedTeams = useMemo(
-    () => [...teams].sort((a, b) => a.name.localeCompare(b.name)),
-    [teams],
-  );
-
   function openIdea(idea: TradeIdea) {
     setAnalyzer({
       forRid: myRid,
@@ -197,31 +193,16 @@ export function LeagueScreen({
               </h1>
             </div>
             <div className={styles.controls}>
-              <div className="field">
-                <label htmlFor={teamFieldId}>View as</label>
-                <select
-                  id={teamFieldId}
-                  className="select"
-                  value={myRid}
-                  onChange={(e) => onTeam(Number(e.target.value))}
-                >
-                  {sortedTeams.map((t) => (
-                    <option key={t.rid} value={t.rid}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className={styles.buttons}>
-                {!demo && (
+              {!demo && leagues && leagues.length > 0 && (
+                <LeaguePicker current={league} leagues={leagues} onLeague={onLeague} />
+              )}
+              {!demo && (
+                <div className={styles.buttons}>
                   <button className="btn" type="button" onClick={onRefresh} disabled={refreshing}>
                     {refreshing ? "Refreshing…" : "Refresh rosters"}
                   </button>
-                )}
-                <button className="btn" type="button" onClick={onLeave}>
-                  Change league
-                </button>
-              </div>
+                </div>
+              )}
             </div>
           </header>
 
@@ -297,5 +278,59 @@ export function LeagueScreen({
         </div>
       </NewsProvider>
     </ScoreContext.Provider>
+  );
+}
+
+/**
+ * The visitor's leagues, grouped by sport. Sports the site doesn't support yet
+ * are listed but can't be picked.
+ */
+function LeaguePicker({
+  current,
+  leagues,
+  onLeague,
+}: {
+  current: { league_id: string; name: string };
+  leagues: UserLeague[];
+  onLeague: (leagueId: string) => void;
+}) {
+  const fieldId = useId();
+  // The focus ring is for the keyboard: a mouse click that opens and closes the menu leaves none.
+  const [pointer, setPointer] = useState(false);
+  // A league opened from a shared link may not be one of the visitor's.
+  const list = leagues.some((l) => l.league_id === current.league_id)
+    ? leagues
+    : [{ ...current, total_rosters: undefined, sport: "nfl" as const, season: "" }, ...leagues];
+  const sports = [...new Set(list.map((l) => l.sport))];
+  return (
+    <div className={`field ${styles.picker}`}>
+      <label htmlFor={fieldId}>League</label>
+      <select
+        id={fieldId}
+        className={`select ${pointer ? styles.pointer : ""}`}
+        value={current.league_id}
+        onMouseDown={() => setPointer(true)}
+        onKeyDown={() => setPointer(false)}
+        onChange={(e) => onLeague(e.target.value)}
+      >
+        {sports.map((sport) => {
+          const supported = SUPPORTED_SPORTS.has(sport);
+          return (
+            <optgroup
+              key={sport}
+              label={`${sport.toUpperCase()}${supported ? "" : " (coming soon)"}`}
+            >
+              {list
+                .filter((l) => l.sport === sport)
+                .map((l) => (
+                  <option key={l.league_id} value={l.league_id} disabled={!supported}>
+                    {l.name}
+                  </option>
+                ))}
+            </optgroup>
+          );
+        })}
+      </select>
+    </div>
   );
 }

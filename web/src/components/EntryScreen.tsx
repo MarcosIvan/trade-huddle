@@ -2,29 +2,27 @@
 
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { friendlyError } from "@/hooks/useLeague";
-import { currentSeason, findUser, userLeagues } from "@/lib/sleeper/client";
-import type { LeagueSummary } from "@/lib/sleeper/validate";
+import { allUserLeagues, findUser, SUPPORTED_SPORTS, type UserLeague } from "@/lib/sleeper/client";
 import { storage } from "@/lib/storage";
 import styles from "./EntryScreen.module.css";
 
 export function EntryScreen({
   error,
   onOpenLeague,
+  onLeagues,
   onOpenDemo,
 }: {
   error: string | null;
   onOpenLeague: (leagueId: string) => void;
+  /** Hands the visitor's leagues to the league picker. */
+  onLeagues: (leagues: UserLeague[]) => void;
   onOpenDemo: () => void;
 }) {
   const userFieldId = useId();
   const [username, setUsername] = useState("");
   const [searching, setSearching] = useState(false);
   const [message, setMessage] = useState<string | null>(error);
-  const [leagues, setLeagues] = useState<{
-    owner: string;
-    season: string;
-    list: LeagueSummary[];
-  } | null>(null);
+  const [leagues, setLeagues] = useState<{ owner: string; list: UserLeague[] } | null>(null);
 
   // Remember the last username typed on this device.
   useEffect(() => {
@@ -43,14 +41,16 @@ export function EntryScreen({
       const user = await findUser(name);
       storage.set("user", name);
       storage.set("uid", user.user_id);
-      const season = await currentSeason();
-      const list = await userLeagues(user.user_id, season);
+      const list = await allUserLeagues(user.user_id);
+      const owner = user.display_name || name;
+      onLeagues(list);
+      const open = list.filter((l) => SUPPORTED_SPORTS.has(l.sport));
       if (!list.length) {
-        setMessage(`${user.display_name || name} has no NFL leagues in ${season}.`);
-      } else if (list.length === 1) {
-        onOpenLeague(list[0]!.league_id);
+        setMessage(`${owner} has no Sleeper leagues this season.`);
+      } else if (open.length === 1) {
+        onOpenLeague(open[0]!.league_id);
       } else {
-        setLeagues({ owner: user.display_name || name, season, list });
+        setLeagues({ owner, list });
       }
     } catch (err) {
       setMessage(friendlyError(err));
@@ -115,23 +115,30 @@ export function EntryScreen({
         {leagues && (
           <section aria-labelledby="league-list-title" className={styles.leagues}>
             <h2 id="league-list-title" className={styles.leaguesTitle}>
-              {leagues.owner}&apos;s leagues in {leagues.season}
+              {leagues.owner}&apos;s leagues
             </h2>
             <ul>
-              {leagues.list.map((l) => (
-                <li key={l.league_id}>
-                  <button
-                    type="button"
-                    className={`btn ${styles.league}`}
-                    onClick={() => onOpenLeague(l.league_id)}
-                  >
-                    <span>{l.name}</span>
-                    {l.total_rosters !== undefined && (
-                      <span className="muted">{l.total_rosters} teams</span>
-                    )}
-                  </button>
-                </li>
-              ))}
+              {leagues.list.map((l) => {
+                const supported = SUPPORTED_SPORTS.has(l.sport);
+                return (
+                  <li key={l.league_id}>
+                    <button
+                      type="button"
+                      className={`btn ${styles.league}`}
+                      onClick={() => onOpenLeague(l.league_id)}
+                      disabled={!supported}
+                    >
+                      <span>{l.name}</span>
+                      <span className="muted">
+                        {l.sport.toUpperCase()}
+                        {supported
+                          ? l.total_rosters !== undefined && ` · ${l.total_rosters} teams`
+                          : " · coming soon"}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
