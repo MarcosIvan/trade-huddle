@@ -109,7 +109,8 @@ Why each piece works the way it does is recorded in the
   seasons; they are run by hand, not in CI.
 - **Pipeline checks**: pytest, ruff and mypy.
 - **CI** ([`ci.yml`](../.github/workflows/ci.yml)) runs everything except the
-  backtests, plus `npm audit` and a gitleaks scan. CodeQL and OpenSSF
+  backtests, plus `npm audit` (blocking for what ships in the site, a warning
+  for dev tools, [ADR 0016](adr/0016-npm-audit-production-only.md)) and a gitleaks scan. CodeQL and OpenSSF
   Scorecard run in their own workflows. Actions are pinned by commit SHA.
 
 ## Design choices at a glance
