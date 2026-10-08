@@ -1,0 +1,19 @@
+/* The league picker: sport names as group titles, leagues indented below. */
+.picker {
+  min-width: 260px;
+}
+.pointer:focus-visible {
+  outline: none;
+}
+.picker optgroup {
+  font-family: var(--display);
+  font-weight: 700;
+  font-style: normal;
+  color: var(--ink-2);
+}
+.picker option {
+  font-family: var(--body);
+  font-weight: 400;
+  color: var(--ink);
+  background: var(--surface);
+}

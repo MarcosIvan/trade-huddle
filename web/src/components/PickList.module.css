@@ -1,0 +1,42 @@
+.picklist {
+  /* Contains the absolutely positioned screen-reader text of rows scrolled
+     out of view; without it they stretch the page far below the footer. */
+  position: relative;
+  margin-top: 6px;
+  max-height: 380px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.pick {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.pick:last-child {
+  border-bottom: none;
+}
+.pick:hover {
+  background: var(--surface-2);
+}
+.pick input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.on {
+  background: var(--accent-soft);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+.on:hover {
+  background: var(--accent-soft);
+}
+.value {
+  font-weight: 700;
+}

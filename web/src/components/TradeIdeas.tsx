@@ -1,52 +1,10 @@
-import { fmt } from "@/lib/format";
 import type { Team } from "@/lib/league";
-import {
-  isTrueMatch,
-  type Player,
-  type TradeIdea,
-  type TradeResult,
-  type Valued,
-} from "@/lib/model";
+import { isTrueMatch, type Player, type TradeIdea } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
 import { NewsButton } from "./News";
 import { PlayerName } from "./PlayerCard";
 import { Delta, PosBadge, TRADE_VALUE_HINT, TradeValue } from "./Player";
 import styles from "./TradeIdeas.module.css";
-
-function pickupText(p: Valued): string {
-  if ("freeAgent" in p) return `a free agent at ${p.pos}`;
-  const team = "team" in p && typeof p.team === "string" && p.team ? `, ${p.team}` : "";
-  return `${p.name} (${p.pos}${team}, ${fmt(p.value)} pts/g)`;
-}
-
-const list = (players: Valued[]) => players.map(pickupText).join(" and ");
-
-/**
- * What happens to roster spots in an uneven trade, naming the free agents to
- * add. Only the analyzer builds such trades: ideas are always even.
- */
-export function rosterNotes(r: TradeResult, partnerName: string): string[] {
-  const notes: string[] = [];
-  if (r.myOpen) {
-    notes.push(
-      `You open ${r.myOpen} roster spot${r.myOpen > 1 ? "s" : ""}. Best free agent to add: ${list(r.myPickups)}. The numbers include him.`,
-    );
-  }
-  if (r.theirOpen) {
-    notes.push(
-      `You get more players than you send, so you'll need to drop ${r.theirOpen}. ${partnerName} opens ${r.theirOpen} spot${r.theirOpen > 1 ? "s" : ""} and would add ${list(r.theirPickups)}.`,
-    );
-  }
-  if (r.myBackups.length) {
-    notes.push(
-      `To keep your depth, add ${list(r.myBackups)} from free agency (drop your weakest bench player).`,
-    );
-  }
-  if (r.theirBackups.length) {
-    notes.push(`${partnerName} would add ${list(r.theirBackups)} from free agency for depth.`);
-  }
-  return notes;
-}
 
 function Side({ label, players }: { label: string; players: Player[] }) {
   return (

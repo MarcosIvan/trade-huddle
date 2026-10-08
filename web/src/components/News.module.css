@@ -20,50 +20,6 @@
   display: block;
 }
 
-.dialog {
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 30%);
-}
-.dialog::backdrop {
-  background: rgb(5 12 24 / 55%);
-}
-
-.panel {
-  padding: 18px 20px 16px;
-}
-.head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-.title {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  font-family: var(--display);
-  font-size: 24px;
-  line-height: 1.15;
-}
-.kicker {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
-.close {
-  flex: none;
-  width: 44px;
-  padding: 0;
-}
-
 .list {
   display: grid;
   gap: 14px;

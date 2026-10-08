@@ -70,9 +70,10 @@ export type * from "./types";
 export { estimate, type Estimate } from "./value";
 export { verdict, type Verdict } from "./verdict";
 export { defenseFactors, weeklyOutlook, type WeeklyOutlook } from "./weekly";
+export { weekLineup, type WeekLineup, type WeekRated } from "./weekLineup";
+export { rosterNotes, sideChange, type SideChange } from "./analyzer";
+export { MATCHUP_EDGE, matchupLevel, matchupNote, type MatchupLevel } from "./matchup";
 export {
-  MATCHUP_EDGE,
-  matchupLevel,
   BENCHMARK_DEPTH,
   playerCard,
   PTS_KEY,
@@ -82,7 +83,6 @@ export {
   statLevel,
   type CardGame,
   type DefenseFactors,
-  type MatchupLevel,
   type PlayerCard,
   type SeasonRank,
   type StatBenchmarks,

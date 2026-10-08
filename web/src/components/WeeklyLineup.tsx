@@ -1,22 +1,17 @@
 import { fmt } from "@/lib/format";
-import type { Team } from "@/lib/league";
 import {
-  bestLineup,
   matchupLevel,
-  onIr,
-  rosterPlayers,
-  type Lineup,
+  matchupNote,
   type Model,
-  type Player,
-  type Valued,
+  type WeekLineup,
+  type WeekRated,
   type WeeklyOutlook,
 } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
+import { MatchupBadge } from "./MatchupBadge";
 import { PlayerCell } from "./Player";
 import styles from "./TeamLineup.module.css";
 import weekly from "./WeeklyLineup.module.css";
-
-type Rated = Valued & { player: Player; outlook: WeeklyOutlook };
 
 /** A matchup label that reads without color: icon + word, and the number in the tooltip. */
 function Matchup({ o, pos, noTeam }: { o: WeeklyOutlook; pos: string; noTeam: boolean }) {
@@ -29,28 +24,17 @@ function Matchup({ o, pos, noTeam }: { o: WeeklyOutlook; pos: string; noTeam: bo
       </span>
     );
   }
-  const diff = o.matchup - 1;
-  const kind = matchupLevel(o.matchup);
-  const label = { good: "Good", tough: "Tough", neutral: "Neutral" }[kind];
-  const icon = { good: "▲", tough: "▼", neutral: "●" }[kind];
-  const pct = Math.round(Math.abs(diff) * 100);
-  const title =
-    kind === "neutral"
-      ? `${o.opponent} allows about the average to ${pos}s`
-      : `${o.opponent} allows ${pct}% ${diff > 0 ? "more" : "fewer"} points than average to ${pos}s`;
   return (
-    <span className={weekly.matchup} title={title}>
+    <span className={weekly.matchup} title={matchupNote(o.opponent, o.matchup, pos)}>
       <span className={weekly.opp}>
         {o.home ? "vs" : "@"} {o.opponent}
       </span>
-      <span className={`${weekly.badge} ${weekly[kind]}`}>
-        <span aria-hidden="true">{icon}</span> {label}
-      </span>
+      <MatchupBadge level={matchupLevel(o.matchup)} />
     </span>
   );
 }
 
-function Row({ slot, r }: { slot: string; r: Rated | null }) {
+function Row({ slot, r }: { slot: string; r: WeekRated | null }) {
   return (
     <tr>
       <th scope="row" className={styles.slot}>
@@ -81,39 +65,6 @@ function Group({ label }: { label: string }) {
       <td colSpan={4}>{label}</td>
     </tr>
   );
-}
-
-/** A team's best lineup for this week's games, its bench and its injured reserve, as on Sleeper. */
-export interface WeekLineup {
-  lineup: Lineup<Rated>;
-  bench: Rated[];
-  ir: Rated[];
-}
-
-/** Rates every player on the team by this week's projection and picks the best lineup. */
-export function weekLineup(
-  model: Model,
-  team: Team | undefined,
-  outlook: ReadonlyMap<string, WeeklyOutlook>,
-): WeekLineup {
-  const rated: Rated[] = rosterPlayers(model, team?.playerIds ?? [], team?.reserveIds).map((p) => {
-    const o = outlook.get(p.id) ?? {
-      pts: 0,
-      opponent: null,
-      home: false,
-      matchup: 1,
-      bye: true,
-      availability: 1,
-    };
-    return { ...p, player: p, outlook: o, value: o.pts, startable: !o.bye && o.availability > 0 };
-  });
-  // Players in the team's IR slots never start; everyone else not starting sits on the bench,
-  // bye weeks and injuries included.
-  const ir = rated.filter((r) => onIr(r));
-  const active = rated.filter((r) => !onIr(r));
-  const lineup = bestLineup(active, model.slots, NFL);
-  const bench = active.filter((r) => !lineup.used.has(r.id)).sort((a, b) => b.value - a.value);
-  return { lineup, bench, ir };
 }
 
 /** The best lineup for this week's games: projected points, opponent and matchup. */

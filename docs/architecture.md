@@ -92,15 +92,39 @@ worker. The main pieces, in the order they are used:
 | `score.ts`       | Trade value (1–40) and Player Score (0–100)                                                    |
 | `verdict.ts`     | Fairness of a trade (the traffic light)                                                        |
 | `trades.ts`      | Trade ideas and the trade finder                                                               |
+| `analyzer.ts`    | What the analyzer says about a trade: each side's change, free agents for uneven trades        |
 | `weekly.ts`      | This week's outlook against the opponent                                                       |
+| `weekLineup.ts`  | This week's best lineup, bench and injured reserve                                             |
+| `matchup.ts`     | Good, neutral or tough matchup, and its tooltip                                                |
+| `playerCard.ts`  | The player card: season game by game, stat colors, season rank                                 |
 
 Why each piece works the way it does is recorded in the
 [architecture decision records](adr/README.md).
 
+## The interface (`web/src/components/`)
+
+React components that only render: every calculation comes from
+`lib/model` (or `lib/` for Sleeper, news and storage), and each component
+has its own CSS Module. Pieces shared across the page live in their own
+files ([ADR 0018](adr/0018-front-components.md)):
+
+- `Modal` and `ModalHeader`: the one dialog behind the player card and the
+  news (Escape, backdrop click and the close button all close it);
+- `MatchupBadge`: the Good / Neutral / Tough badge of the weekly lineup and
+  the player card;
+- `Player` (`PlayerCell`, `PosBadge`, `TradeValue`…), `Section`,
+  `BalanceMeter`: the building blocks of every list and card.
+
+Bigger screens are split by part: the player card is `PlayerCard`
+(provider and clickable name), `PlayerCardPanel` (totals and rank) and
+`GameLog` (the season table); the analyzer is `TradeAnalyzer`, `PickList`
+and `TradeSide`; the league header's `LeaguePicker` has its own file.
+
 ## Tests and checks
 
 - **Unit tests** (Vitest) for the model, the league logic and the response
-  validators; a reference test makes sure the TypeScript model reproduces the
+  validators, plus a few component tests (shared components rendered to
+  HTML with `react-dom/server`); a reference test makes sure the TypeScript model reproduces the
   original prototype on the demo league.
 - **End-to-end tests** (Playwright) against the real static build, with
   Sleeper's API mocked. They fail on any CSP violation or page error and run

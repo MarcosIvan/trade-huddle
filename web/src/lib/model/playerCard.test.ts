@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
-import { matchupLevel, playerCard, seasonRanks, statLevel } from "./playerCard";
+import { playerCard, seasonRanks, statLevel } from "./playerCard";
 import type { Model, Player, StatsFile } from "./types";
 
 const keys = ["rush_att", "rush_yd", "rush_td", "rec", "rec_yd", "pass_yd", "fum"];
@@ -109,15 +109,6 @@ describe("player card", () => {
   it("has no games to come without a schedule or a team", () => {
     expect(playerCard(p, { ...stats, schedule: undefined }, factors, NFL).upcoming).toEqual([]);
     expect(playerCard({ ...p, noTeam: true, team: "" }, stats, factors, NFL).upcoming).toEqual([]);
-  });
-
-  it("calls a matchup good or tough from 8% off the average", () => {
-    expect([1.08, 1.07, 0.93, 0.92].map(matchupLevel)).toEqual([
-      "good",
-      "neutral",
-      "neutral",
-      "tough",
-    ]);
   });
 });
 

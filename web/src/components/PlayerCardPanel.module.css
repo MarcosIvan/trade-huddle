@@ -1,0 +1,32 @@
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 14px 0 0;
+}
+.summary div {
+  display: grid;
+}
+.summary dt {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.summary dd {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.section {
+  margin: 20px 0 6px;
+  font-family: var(--display);
+  font-size: 18px;
+}
+.status {
+  margin: 8px 0 4px;
+  color: var(--ink-2);
+}
