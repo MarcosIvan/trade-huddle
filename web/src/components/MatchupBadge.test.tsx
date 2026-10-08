@@ -10,9 +10,11 @@ describe("MatchupBadge", () => {
   });
 
   it("labels every level", () => {
-    const text = (["good", "neutral", "tough"] as const).map((level) =>
-      renderToStaticMarkup(<MatchupBadge level={level} />).replace(/<[^>]+>/g, ""),
+    const html = (["good", "neutral", "tough"] as const).map((level) =>
+      renderToStaticMarkup(<MatchupBadge level={level} />),
     );
-    expect(text).toEqual(["▲ Good", "● Neutral", "▼ Tough"]);
+    expect(html[0]).toContain('<span aria-hidden="true">▲</span> Good</span>');
+    expect(html[1]).toContain('<span aria-hidden="true">●</span> Neutral</span>');
+    expect(html[2]).toContain('<span aria-hidden="true">▼</span> Tough</span>');
   });
 });
