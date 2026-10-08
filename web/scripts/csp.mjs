@@ -21,7 +21,7 @@ import { pathToFileURL } from "node:url";
 /** The only outside address the site talks to (from the browser). */
 export const SLEEPER_API = "https://api.sleeper.app";
 
-const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+const SCRIPT = /<script\b([^>]*)>([\s\S]*?)<\/script[^>]*>/gi;
 const CSP_META = /<meta\s+http-equiv=["']Content-Security-Policy["'][^>]*>/gi;
 const CHARSET_META = /<meta\s+charset=[^>]*>/i;
 
