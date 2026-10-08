@@ -16,7 +16,8 @@ For your league, Trade Huddle:
 
 1. **Builds your team**: your current roster, arranged into the best starting
    lineup for your league's slots, plus a **"This week"** lineup that uses each
-   player's opponent.
+   player's opponent. In the NBA it lists every game left this week and builds
+   the lineup on each player's best projected game, for lock-in scoring.
 2. **Suggests three trades** that make _your_ team and the partner's team
    better, stay fair for both sides and keep both rosters' positions balanced.
 3. **Finds deals around one player** (trade finder): pick one of your players

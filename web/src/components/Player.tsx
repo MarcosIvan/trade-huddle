@@ -1,5 +1,6 @@
 import { fmt, signed, trend } from "@/lib/format";
 import type { Player, PlayerScore } from "@/lib/model";
+import { playablePositions } from "@/lib/sports";
 import type { SportConfig } from "@/lib/sports/types";
 import { NewsButton } from "./News";
 import { PlayerName } from "./PlayerCard";
@@ -84,9 +85,7 @@ export function InjuryBadge({ status }: { status: string | null }) {
 
 /** Every position he can play (eligibility), in the sport's order, the primary one first when tied. */
 export function PosBadges({ player }: { player: Pick<Player, "pos" | "elig"> }) {
-  const order = useSport().positions;
-  const rank = (p: string) => (order.includes(p) ? order.indexOf(p) : order.length);
-  const positions = [...new Set([player.pos, ...player.elig])].sort((a, b) => rank(a) - rank(b));
+  const positions = playablePositions(player, useSport());
   return (
     <>
       {positions.map((pos) => (

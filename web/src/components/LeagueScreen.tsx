@@ -109,11 +109,11 @@ export function LeagueScreen({
     return max;
   }, [model, teams]);
 
-  // This week's projections, when the season has a week left to play. Sports with several
-  // games a week (the NBA) show the season lineup until their weekly lineup is ready.
-  const week = stats.period === "day" ? null : (stats.lineup_week ?? null);
+  // This week's projections, when the season has a week left to play.
+  const week = stats.lineup_week ?? null;
   const outlook = useMemo(
-    () => (week ? weeklyOutlook(model, stats, league, week, sport.model) : null),
+    () =>
+      week ? weeklyOutlook(model, stats, league, week, sport.model, sport.multiGameWeeks) : null,
     [model, stats, league, week, sport],
   );
   const thisWeek = useMemo(

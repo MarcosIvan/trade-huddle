@@ -27,6 +27,7 @@ const NO_GAME: WeeklyOutlook = {
   matchup: 1,
   bye: true,
   availability: 1,
+  games: [],
 };
 
 /** Rates every player on the team by this week's projection and picks the best lineup. */

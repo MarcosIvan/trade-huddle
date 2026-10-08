@@ -188,6 +188,11 @@ export interface SportConfig {
   tradePositions?: readonly string[];
   /** Number of teams assumed when a league does not say. */
   defaultTeams: number;
+  /**
+   * Teams play several games a week (the NBA): the weekly lineup lists each one,
+   * and a player's week counts his best game (his highest projected one), as Sleeper scores it.
+   */
+  multiGameWeeks?: boolean;
   /** The player card's game log: stat groups shown for each position, in order. */
   gameLog: Readonly<Record<string, readonly StatGroup[]>>;
   model: ModelParams;

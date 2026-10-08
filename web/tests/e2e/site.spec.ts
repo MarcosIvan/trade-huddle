@@ -114,6 +114,10 @@ test.describe("NBA league", () => {
 
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Hoops League");
     const team = page.locator("#team");
+    // This week's best team: each game left, and his best game's projection (lock-in scoring).
+    await expect(team.getByRole("columnheader", { name: "Games" })).toBeVisible();
+    await expect(team.getByRole("columnheader", { name: "High proj." })).toBeVisible();
+    await expect(team.getByRole("columnheader", { name: "Trade value" })).toBeVisible();
     for (const slot of ["PG", "G", "F", "UTIL"]) {
       await expect(team.getByRole("rowheader", { name: slot, exact: true }).first()).toBeVisible();
     }

@@ -63,6 +63,7 @@ export const NBA: SportConfig = {
   freeAgentPositions: POSITIONS,
   tradePositions: POSITIONS,
   defaultTeams: 12,
+  multiGameWeeks: true,
   gameLog: Object.fromEntries(POSITIONS.map((pos) => [pos, [BOX_SCORE]])),
   model: {
     ...NFL.model,

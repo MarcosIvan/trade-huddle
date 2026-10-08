@@ -154,7 +154,8 @@ export type StatLevel = "good" | "neutral" | "bad";
 export const STAT_EDGE = 0.15;
 
 /** Key for fantasy points in the benchmarks. */
-export const PTS_KEY = "pts";
+// Not "pts": that is the NBA's points stat, a key of the stats file.
+export const PTS_KEY = "fantasy_pts";
 
 /** Per-game averages by position and stat key (PTS_KEY for fantasy points). */
 export type StatBenchmarks = ReadonlyMap<string, Readonly<Record<string, number>>>;

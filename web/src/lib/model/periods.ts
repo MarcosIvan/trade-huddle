@@ -31,3 +31,8 @@ export function currentPeriod(stats: StatsFile): number {
 export function periodWeek(stats: StatsFile, period: number): number {
   return stats.period === "day" ? (stats.day_weeks?.[String(period)] ?? 0) : period;
 }
+
+/** A period's date (YYYY-MM-DD) in game-day files; null for weeks. */
+export function periodDate(stats: StatsFile, period: number): string | null {
+  return stats.period === "day" ? (stats.day_dates?.[String(period)] ?? null) : null;
+}

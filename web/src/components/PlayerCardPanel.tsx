@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { fmt } from "@/lib/format";
 import {
+  periodDate,
   playerCard,
   type DefenseFactors,
   type Player,
@@ -8,6 +9,7 @@ import {
   type StatBenchmarks,
   type StatsFile,
 } from "@/lib/model";
+import { playablePositions } from "@/lib/sports";
 import type { SportConfig } from "@/lib/sports/types";
 import { GameLog } from "./GameLog";
 import { ModalHeader } from "./Modal";
@@ -40,7 +42,10 @@ export function PlayerCardPanel({
 
   return (
     <>
-      <ModalHeader id={titleId} kicker={`${player.pos} · ${status}`}>
+      <ModalHeader
+        id={titleId}
+        kicker={`${playablePositions(player, sport).join("/")} · ${status}`}
+      >
         {player.name}
       </ModalHeader>
 
@@ -74,6 +79,7 @@ export function PlayerCardPanel({
           card={card}
           average={benchmarks.get(player.pos) ?? {}}
           sport={sport}
+          dateOf={stats.period === "day" ? (period) => periodDate(stats, period) : undefined}
         />
       ) : (
         <p className={styles.status}>No games on the schedule yet.</p>

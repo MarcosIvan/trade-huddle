@@ -27,5 +27,6 @@ later one changes it, the later one says what it replaces.
 | [0018](0018-front-components.md)               | Shared front components, logic in the model                             |
 | [0019](0019-nba-data-by-game-day.md)          | NBA stats kept by game day                                              |
 | [0020](0020-nba-model-and-sport-per-league.md) | NBA model, and the sport chosen by the league                           |
+| [0021](0021-nba-weekly-lineup.md)              | NBA weekly lineup: every game left, best game counts                    |
 
 How the pieces fit together: [architecture.md](../architecture.md).

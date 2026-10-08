@@ -1,6 +1,6 @@
 export { adpFormat, buildModel, modelSlots, rosterPlayers } from "./build";
 export { bestLineup, type Lineup } from "./lineup";
-export { currentPeriod, lineupPeriods, periodWeek, weekPeriods } from "./periods";
+export { currentPeriod, lineupPeriods, periodDate, periodWeek, weekPeriods } from "./periods";
 export { replacementLevels } from "./replacement";
 export {
   playerScores,
@@ -68,7 +68,7 @@ export {
 export type * from "./types";
 export { estimate, type Estimate } from "./value";
 export { verdict, type Verdict } from "./verdict";
-export { defenseFactors, weeklyOutlook, type WeeklyOutlook } from "./weekly";
+export { defenseFactors, weeklyOutlook, type GameOutlook, type WeeklyOutlook } from "./weekly";
 export { weekLineup, type WeekLineup, type WeekRated } from "./weekLineup";
 export { rosterNotes, sideChange, type SideChange } from "./analyzer";
 export { MATCHUP_EDGE, matchupLevel, matchupNote, type MatchupLevel } from "./matchup";

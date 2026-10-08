@@ -8,3 +8,16 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* Several games a week: two to a line, in columns, so the lines line up. */
+.games {
+  display: inline-grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 4px 12px;
+}
+.game {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
