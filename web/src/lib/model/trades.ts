@@ -410,14 +410,16 @@ export function idealNeeds(
   league: TeamNeeds | undefined,
 ): TeamNeeds | undefined {
   if (!league || !ideal) return league;
-  const out: Record<string, number> = { ...league };
+  // A Map, not property writes: the positions reach the worker in a message, and a key
+  // like "__proto__" must stay a plain entry.
+  const out = new Map(Object.entries(league));
   const counts = idealCounts(list);
   for (const [pos, want] of Object.entries(ideal)) {
-    const have = counts[pos] ?? 0;
+    const have = Object.hasOwn(counts, pos) ? counts[pos]! : 0;
     const need = have < want ? 1 : have > want ? 0 : 0.5;
-    out[pos] = ((league[pos] ?? 0.5) + need) / 2;
+    out.set(pos, ((out.get(pos) ?? 0.5) + need) / 2);
   }
-  return out;
+  return Object.fromEntries(out);
 }
 
 /**

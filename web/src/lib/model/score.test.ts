@@ -921,6 +921,15 @@ describe("ideal roster", () => {
     expect(idealNeeds(roster, { RB: 2 }, undefined)).toBeUndefined();
   });
 
+  it("keeps a position named like an object property a plain entry", () => {
+    // Positions arrive in a worker message: "__proto__" must not reach the prototype.
+    const ideal = JSON.parse('{"__proto__": 3, "RB": 2}') as Record<string, number>;
+    const needs = idealNeeds(roster, ideal, { RB: 0.5 })!;
+    expect(Object.getPrototypeOf(needs)).toBe(Object.prototype);
+    expect(Object.hasOwn(needs, "__proto__")).toBe(true);
+    expect(needs.RB).toBe(0.25);
+  });
+
   it("keeps passing trade ideas and finder deals inside the ideal roster", () => {
     const slots = ["RB", "WR"];
     const sport: SportConfig = { ...NFL, freeAgentPositions: [] };

@@ -33,6 +33,12 @@ describe("hashes", () => {
     );
     expect(inlineScripts(html)).toEqual(["a()", '{"x":1}', "\n  b();\n"]);
   });
+
+  it("ends a script at any end tag the browser accepts", () => {
+    // Browsers end a script at "</script" followed by whitespace, "/" or ">", whatever comes next.
+    const html = page("<script>a()</script\t\n bar><script>b()</SCRIPT ><script>c()</script/>");
+    expect(inlineScripts(html)).toEqual(["a()", "b()", "c()"]);
+  });
 });
 
 describe("policy", () => {
