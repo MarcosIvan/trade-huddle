@@ -71,6 +71,7 @@ describe("leagueNotices", () => {
   const league = (type: number, slots: string[] = ["QB"]): SleeperLeague => ({
     league_id: "12345",
     name: "L",
+    sport: "nfl",
     season: "2026",
     total_rosters: 12,
     roster_positions: slots,

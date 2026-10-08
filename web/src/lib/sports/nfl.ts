@@ -1,4 +1,4 @@
-import type { ModelParams, SportConfig, StatGroup } from "./types";
+import type { ModelParams, SportConfig, StatGroup, TradeValueParams } from "./types";
 
 /**
  * The model exactly as the original prototype had it. Kept so tests can prove
@@ -90,6 +90,27 @@ const RECEIVING: StatGroup = {
   ],
 };
 
+/** Trade value: calibrated in ADR 0010 against real trade values, scale shape in ADR 0013. */
+export const NFL_TRADE_VALUE: TradeValueParams = {
+  weights: { base: 5, market: 10, expected: 30, season: 10, recent: 5, scarcity: 25, usage: 15 },
+  curve: 0.8,
+  leadShare: { RB: 0.55, WR: 0.2, TE: 0.14 },
+  usageGames: 4,
+  elite: 3,
+  spread: 1.2,
+  scarcityFloor: 0.5,
+  scarcityPower: 0.6,
+  minorPositions: ["K", "DEF"],
+  minorScale: 0.3,
+  // About the 4th round in 12-team leagues.
+  adpHalf: 40,
+  adpCurve: 2,
+  reputationMaxAdp: 60,
+  reputationGames: 8,
+  injuryRecovery: 0.4,
+  positionMarket: {},
+};
+
 export const NFL: SportConfig = {
   id: "nfl",
   positions: ["QB", "RB", "WR", "TE", "K", "DEF"],
@@ -148,6 +169,7 @@ export const NFL: SportConfig = {
     // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).
     benchDepth: { QB: 0, RB: 1.5, WR: 1, TE: 0.25 },
   },
+  tradeValue: NFL_TRADE_VALUE,
 };
 
 /** NFL with the prototype's model, for regression tests. */

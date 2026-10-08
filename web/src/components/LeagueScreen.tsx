@@ -17,7 +17,7 @@ import {
   type TradeIdea,
 } from "@/lib/model";
 import { ScoreContext } from "./ScoreContext";
-import { NFL } from "@/lib/sports/nfl";
+import { SportContext } from "./SportContext";
 import { WeeklyLineup } from "./WeeklyLineup";
 import { LeaguePicker } from "./LeaguePicker";
 import { NewsProvider } from "./News";
@@ -61,9 +61,12 @@ export function LeagueScreen({
   onLeague: (leagueId: string) => void;
   onRefresh: () => void;
 }) {
-  const { stats, league, teams, model, demo, notices } = view;
+  const { sport, stats, league, teams, model, demo, notices } = view;
   // Player Scores (0-100); the owner-independent trade value (1-40) drives fairness.
-  const scores = useMemo(() => playerScores(model, stats, teams, NFL), [model, stats, teams]);
+  const scores = useMemo(
+    () => playerScores(model, stats, teams, sport),
+    [model, stats, teams, sport],
+  );
   const tradeScores = useMemo(
     () => new Map([...scores].map(([id, s]) => [id, s.trade] as const)),
     [scores],
@@ -72,11 +75,12 @@ export function LeagueScreen({
   // The roster shape trades keep you close to: the league's roster size spread over the
   // positions (starters plus backups). Not shown; it keeps positions balanced.
   const ideal = useMemo(
-    () => defaultIdealRoster(model.slots, NFL, idealPlayers(league.roster_positions ?? [], NFL)),
-    [model, league],
+    () =>
+      defaultIdealRoster(model.slots, sport, idealPlayers(league.roster_positions ?? [], sport)),
+    [model, league, sport],
   );
 
-  const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal);
+  const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal, sport);
 
   // Trade finder: sell one of your players or get one from another team.
   const [finder, setFinder] = useState<{
@@ -105,11 +109,12 @@ export function LeagueScreen({
     return max;
   }, [model, teams]);
 
-  // This week's projections, when the season has a week left to play.
-  const week = stats.lineup_week ?? null;
+  // This week's projections, when the season has a week left to play. Sports with several
+  // games a week (the NBA) show the season lineup until their weekly lineup is ready.
+  const week = stats.period === "day" ? null : (stats.lineup_week ?? null);
   const outlook = useMemo(
-    () => (week ? weeklyOutlook(model, stats, league, week, NFL.model) : null),
-    [model, stats, league, week],
+    () => (week ? weeklyOutlook(model, stats, league, week, sport.model) : null),
+    [model, stats, league, week, sport],
   );
   const thisWeek = useMemo(
     () =>
@@ -118,10 +123,10 @@ export function LeagueScreen({
             model,
             teams.find((t) => t.rid === myRid),
             outlook,
-            NFL,
+            sport,
           )
         : null,
-    [model, teams, myRid, outlook],
+    [model, teams, myRid, outlook, sport],
   );
 
   // Players on no roster in this league: who you could pick up after an uneven trade.
@@ -142,95 +147,102 @@ export function LeagueScreen({
   }
 
   return (
-    <ScoreContext.Provider value={scores}>
-      {/* News is for real players: the demo league is fictional. */}
-      <NewsProvider sport={NFL.id} enabled={!demo}>
-        <PlayerCardProvider model={model} stats={stats} sport={NFL}>
-          <div className="container">
-            <header className={styles.header}>
-              <div className={styles.titleBlock}>
-                <h1 className={styles.title}>
-                  {league.name}
-                  {demo && <span className={styles.demoTag}>Fictional data</span>}
-                </h1>
-              </div>
-              <div className={styles.controls}>
-                {!demo && leagues && leagues.length > 0 && (
-                  <LeaguePicker current={league} leagues={leagues} onLeague={onLeague} />
-                )}
-                {!demo && (
-                  <div className={styles.buttons}>
-                    <button className="btn" type="button" onClick={onRefresh} disabled={refreshing}>
-                      {refreshing ? "Refreshing…" : "Refresh rosters"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </header>
+    <SportContext.Provider value={sport}>
+      <ScoreContext.Provider value={scores}>
+        {/* News is for real players: the demo league is fictional. */}
+        <NewsProvider sport={sport.id} enabled={!demo}>
+          <PlayerCardProvider model={model} stats={stats} sport={sport}>
+            <div className="container">
+              <header className={styles.header}>
+                <div className={styles.titleBlock}>
+                  <h1 className={styles.title}>
+                    {league.name}
+                    {demo && <span className={styles.demoTag}>Fictional data</span>}
+                  </h1>
+                </div>
+                <div className={styles.controls}>
+                  {!demo && leagues && leagues.length > 0 && (
+                    <LeaguePicker current={league} leagues={leagues} onLeague={onLeague} />
+                  )}
+                  {!demo && (
+                    <div className={styles.buttons}>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={onRefresh}
+                        disabled={refreshing}
+                      >
+                        {refreshing ? "Refreshing…" : "Refresh rosters"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </header>
 
-            <Notices kinds={notices} />
+              <Notices kinds={notices} />
 
-            <div className={styles.grid}>
-              {week && thisWeek ? (
-                <Section
-                  id="team"
-                  title={`Your best team for week ${week}`}
-                  aside={
-                    <span className={styles.projected}>
-                      <b>{fmt(thisWeek.lineup.total)}</b> projected pts
-                    </span>
+              <div className={styles.grid}>
+                {week && thisWeek ? (
+                  <Section
+                    id="team"
+                    title={`Your best team for week ${week}`}
+                    aside={
+                      <span className={styles.projected}>
+                        <b>{fmt(thisWeek.lineup.total)}</b> projected pts
+                      </span>
+                    }
+                  >
+                    <WeeklyLineup model={model} week={week} rated={thisWeek} />
+                  </Section>
+                ) : (
+                  <Section id="team" title="Your team" subtitle="Best lineup by current value">
+                    <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+                  </Section>
+                )}
+                <Section id="ideas" title="Trade ideas">
+                  <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
+                </Section>
+              </div>
+
+              <Section id="finder" title="Trade finder" className={styles.spaced}>
+                <TradeFinder
+                  model={model}
+                  teams={teams}
+                  myRid={myRid}
+                  tradeScores={tradeScores}
+                  ideal={ideal}
+                  mode={finder.mode}
+                  playerId={finder.forRid === myRid ? finder.playerId : null}
+                  onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
+                  onPlayer={(playerId) => setFinder({ ...finder, forRid: myRid, playerId })}
+                  onOpen={openIdea}
+                />
+              </Section>
+
+              <Section id="analyzer" title="Trade analyzer" className={styles.spaced}>
+                <TradeAnalyzer
+                  model={model}
+                  teams={teams}
+                  myRid={myRid}
+                  partnerRid={partnerRid}
+                  give={current.give}
+                  get={partnerRid === current.partnerRid ? current.get : new Set()}
+                  pool={pool}
+                  tradeScores={tradeScores}
+                  ideal={ideal}
+                  onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
+                  onToggleGive={(id) =>
+                    setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })
                   }
-                >
-                  <WeeklyLineup model={model} week={week} rated={thisWeek} />
-                </Section>
-              ) : (
-                <Section id="team" title="Your team" subtitle="Best lineup by current value">
-                  <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
-                </Section>
-              )}
-              <Section id="ideas" title="Trade ideas">
-                <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
+                  onToggleGet={(id) =>
+                    setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
+                  }
+                />
               </Section>
             </div>
-
-            <Section id="finder" title="Trade finder" className={styles.spaced}>
-              <TradeFinder
-                model={model}
-                teams={teams}
-                myRid={myRid}
-                tradeScores={tradeScores}
-                ideal={ideal}
-                mode={finder.mode}
-                playerId={finder.forRid === myRid ? finder.playerId : null}
-                onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
-                onPlayer={(playerId) => setFinder({ ...finder, forRid: myRid, playerId })}
-                onOpen={openIdea}
-              />
-            </Section>
-
-            <Section id="analyzer" title="Trade analyzer" className={styles.spaced}>
-              <TradeAnalyzer
-                model={model}
-                teams={teams}
-                myRid={myRid}
-                partnerRid={partnerRid}
-                give={current.give}
-                get={partnerRid === current.partnerRid ? current.get : new Set()}
-                pool={pool}
-                tradeScores={tradeScores}
-                ideal={ideal}
-                onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
-                onToggleGive={(id) =>
-                  setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })
-                }
-                onToggleGet={(id) =>
-                  setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
-                }
-              />
-            </Section>
-          </div>
-        </PlayerCardProvider>
-      </NewsProvider>
-    </ScoreContext.Provider>
+          </PlayerCardProvider>
+        </NewsProvider>
+      </ScoreContext.Provider>
+    </SportContext.Provider>
   );
 }

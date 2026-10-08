@@ -48,8 +48,20 @@ export interface StatsFile {
   lineup_week?: number | null;
   /** Games in a season, for turning projected totals into points per game. */
   season_games?: number;
+  /** Sleeper's preseason projections are already per game (the NBA), not season totals. */
+  proj_per_game?: boolean;
   /** Team totals of usage_keys, by team and week number. */
   team_weeks?: Readonly<Record<string, Readonly<Record<string, readonly number[]>>>>;
+  /**
+   * What one entry of a season is: a week (the NFL, the default) or a game day
+   * (the NBA). With days, `weeks`, `w`, `tw`, `wp` and `schedule` are keyed by
+   * day number (ADR 0019); `lineup_week` is still a week.
+   */
+  period?: "week" | "day";
+  /** Game days only: each day's fantasy week. */
+  day_weeks?: Readonly<Record<string, number>>;
+  /** Game days only: each day's date (YYYY-MM-DD). */
+  day_dates?: Readonly<Record<string, string>>;
   demo?: boolean;
 }
 

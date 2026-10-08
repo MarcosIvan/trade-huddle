@@ -887,7 +887,7 @@ export const isSamePositionSwap = (give: readonly Player[], get: readonly Player
 
 /**
  * In a 2-for-2 consolidation, the depth player is worth at most this share of
- * the lesser of the two (0.75 on the linear scale, raised to TRADE_VALUE_CURVE).
+ * the lesser of the two (0.75 on the linear scale, raised to the trade value curve, 0.8 in every sport).
  */
 export const IDEA_DEPTH_SHARE = 0.79;
 
@@ -954,7 +954,7 @@ const shapeRank = (r: TradeResult) => SHAPE_PREFERENCE[r.give.length] ?? 2;
 
 /**
  * In a 2-for-2 consolidation, the star is worth at least this many times the
- * better of the two (1.15 on the linear scale, raised to TRADE_VALUE_CURVE).
+ * better of the two (1.15 on the linear scale, raised to the trade value curve, 0.8 in every sport).
  */
 export const STAR_EDGE = 1.12;
 

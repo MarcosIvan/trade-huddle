@@ -1,12 +1,11 @@
 export { adpFormat, buildModel, modelSlots, rosterPlayers } from "./build";
 export { bestLineup, type Lineup } from "./lineup";
+export { currentPeriod, lineupPeriods, periodWeek, weekPeriods } from "./periods";
 export { replacementLevels } from "./replacement";
 export {
   playerScores,
   SCORE_WEIGHTS,
-  TRADE_VALUE_CURVE,
   TRADE_VALUE_MAX,
-  TRADE_VALUE_WEIGHTS,
   type PlayerScore,
   type TradeValueParts,
 } from "./score";

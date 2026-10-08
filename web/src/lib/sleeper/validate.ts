@@ -81,6 +81,8 @@ export function parseLeagueList(x: unknown): LeagueSummary[] {
 export interface SleeperLeague {
   league_id: string;
   name: string;
+  /** Sleeper's sport id (nfl, nba); "nfl" when missing. */
+  sport: string;
   season: string;
   total_rosters: number | undefined;
   roster_positions: string[];
@@ -105,6 +107,7 @@ export function parseLeague(x: unknown): SleeperLeague | null {
   return {
     league_id: leagueId,
     name: str(x.name) ?? "Unnamed league",
+    sport: str(x.sport) ?? "nfl",
     season: id(x.season) ?? "",
     total_rosters: num(x.total_rosters),
     roster_positions: strings(x.roster_positions),

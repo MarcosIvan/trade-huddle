@@ -80,7 +80,8 @@ def player_info(meta: Mapping[str, Any], sport: SportConfig, *, current: bool) -
             info["a"] = meta["age"]
         if meta.get("injury_status"):
             info["i"] = meta["injury_status"]
-        if meta.get("status") and meta.get("status") != "Active":
+        # "Active" in the NFL directory, "ACT" in the NBA's.
+        if meta.get("status") and meta.get("status") not in ("Active", "ACT"):
             info["s"] = meta["status"]
     return info
 
@@ -342,6 +343,7 @@ def build_stats(
         "keys": keys.keys,
         "usage_keys": list(sport.usage_keys),
         "season_games": sport.season_games,
+        "proj_per_game": sport.projections_per_game,
         "schedule": compact_schedule(schedule_games, days),
         **by_day,
         "lineup_week": lineup_week(schedule_games) if current else None,

@@ -1,11 +1,9 @@
 import { useId } from "react";
 import { fmt, pct } from "@/lib/format";
 import type { Player, SideChange } from "@/lib/model";
-import { NFL } from "@/lib/sports/nfl";
-import { Delta, FormValue, PlayerCell, TRADE_VALUE_HINT, TradeValue } from "./Player";
+import { Delta, FormValue, PlayerCell, TradeValue, useTradeValueHint } from "./Player";
+import { useSport } from "./SportContext";
 import styles from "./TradeSide.module.css";
-
-const RECENT = NFL.model.recentGames;
 
 /**
  * One direction of the trade: the players you send or receive, and what the
@@ -22,6 +20,8 @@ export function TradeSide({
   players: Player[];
 }) {
   const titleId = useId();
+  const RECENT = useSport().model.recentGames;
+  const TRADE_VALUE_HINT = useTradeValueHint();
   const stats = [
     { label: "Trade value", value: change.trade, hint: TRADE_VALUE_HINT },
     { label: "Pts/g", value: change.ppg, hint: "Expected points per game" },
@@ -66,7 +66,7 @@ export function TradeSide({
               {players.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <PlayerCell player={p} showScore={false} />
+                    <PlayerCell player={p} />
                   </td>
                   <td className={`num ${styles.value}`}>
                     <TradeValue player={p} />

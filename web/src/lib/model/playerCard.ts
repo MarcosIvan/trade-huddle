@@ -5,6 +5,7 @@
  */
 import type { SportConfig } from "../sports/types";
 import { matchupLevel, type MatchupLevel } from "./matchup";
+import { currentPeriod } from "./periods";
 import { starterLine } from "./trades";
 import type { Model, Player, StatsFile } from "./types";
 import { opponents } from "./weekly";
@@ -79,7 +80,7 @@ export function playerCard(
 
   // The week to set a lineup for may be under way: a game already played there counts as
   // played, one still to come as upcoming.
-  const current = stats.lineup_week ?? Math.max(0, ...stats.weeks) + 1;
+  const current = currentPeriod(stats);
   const games = player.weekly
     .filter((w) => w.week < current || w.pts !== null)
     .map((w) =>
@@ -91,7 +92,16 @@ export function playerCard(
     .filter((w) => w >= current && !done.has(w))
     .sort((a, b) => a - b);
   const upcoming = player.noTeam ? [] : weeks.map((w) => game(w, player.team, null));
+  // By game day (the NBA), a day his team does not play is no row at all, not a bye.
+  if (stats.period === "day") {
+    const playing = (g: CardGame) => !g.bye;
+    return summary(games.filter(playing), upcoming.filter(playing));
+  }
+  return summary(games, upcoming);
+}
 
+/** The card's rows with the season totals, fantasy points and games played. */
+function summary(games: CardGame[], upcoming: CardGame[]): PlayerCard {
   const totals: Record<string, number> = {};
   for (const g of games) {
     for (const [k, v] of Object.entries(g.stats)) totals[k] = (totals[k] ?? 0) + v;

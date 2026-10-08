@@ -26,5 +26,6 @@ later one changes it, the later one says what it replaces.
 | [0017](0017-dependabot-monthly-groups.md)      | Dependabot: monthly, grouped updates; security fixes right away         |
 | [0018](0018-front-components.md)               | Shared front components, logic in the model                             |
 | [0019](0019-nba-data-by-game-day.md)          | NBA stats kept by game day                                              |
+| [0020](0020-nba-model-and-sport-per-league.md) | NBA model, and the sport chosen by the league                           |
 
 How the pieces fit together: [architecture.md](../architecture.md).

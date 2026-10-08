@@ -148,5 +148,8 @@ and `TradeSide`; the league header's `LeaguePicker` has its own file.
 - **The model is framework-free.** It can be tested, backtested and moved to a
   worker without touching the UI.
 - **Sport-agnostic edges.** Sport details live in
-  [`lib/sports/`](../web/src/lib/sports/) and the pipeline's `sports.py`, so
-  another sport can be added without rewriting the model.
+  [`lib/sports/`](../web/src/lib/sports/) (`nfl.ts`, `nba.ts`) and the
+  pipeline's `sports.py`, so another sport can be added without rewriting the
+  model. The league's sport picks the config (`sportOf`), and components read
+  it from a `SportContext`; a stats file's entries are weeks or game days
+  (`lib/model/periods.ts`, [ADR 0020](adr/0020-nba-model-and-sport-per-league.md)).

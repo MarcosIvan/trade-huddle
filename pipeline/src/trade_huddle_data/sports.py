@@ -25,6 +25,8 @@ class SportConfig:
     #: What one entry of a player's season is: a "week" (NFL, one game a week) or a
     #: game "day" (NBA, several games a week; a team plays at most once a day).
     period: str = "week"
+    #: Sleeper's preseason projections are season totals (NFL) or per-game averages (NBA).
+    projections_per_game: bool = False
 
 
 NFL = SportConfig(
@@ -111,6 +113,7 @@ NBA = SportConfig(
     adp_max=200,
     adp_keys=(("adp_std", "std"),),
     period="day",
+    projections_per_game=True,
 )
 
 SPORTS: dict[str, SportConfig] = {NFL.id: NFL, NBA.id: NBA}

@@ -7,9 +7,9 @@ import {
   type WeekRated,
   type WeeklyOutlook,
 } from "@/lib/model";
-import { NFL } from "@/lib/sports/nfl";
 import { MatchupBadge } from "./MatchupBadge";
 import { PlayerCell } from "./Player";
+import { useSport } from "./SportContext";
 import styles from "./TeamLineup.module.css";
 import weekly from "./WeeklyLineup.module.css";
 
@@ -43,7 +43,7 @@ function Row({ slot, r }: { slot: string; r: WeekRated | null }) {
       {r ? (
         <>
           <td>
-            <PlayerCell player={r.player} showScore={false} />
+            <PlayerCell player={r.player} />
           </td>
           <td>
             <Matchup o={r.outlook} pos={r.player.pos} noTeam={r.player.noTeam} />
@@ -77,6 +77,7 @@ export function WeeklyLineup({
   week: number;
   rated: WeekLineup;
 }) {
+  const sport = useSport();
   return (
     <>
       <div className="table-wrap">
@@ -98,7 +99,7 @@ export function WeeklyLineup({
             {model.slots.map((slot, i) => (
               <Row
                 key={`${slot}-${i}`}
-                slot={NFL.slotLabels[slot] ?? slot}
+                slot={sport.slotLabels[slot] ?? slot}
                 r={lineup.slots[i] ?? null}
               />
             ))}

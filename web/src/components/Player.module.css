@@ -2,11 +2,10 @@
   font-weight: 600;
   line-height: 1.5;
 }
-/* The score and injury badges flow with the name like words, so they stay beside it. */
+/* The injury badge and news icon flow with the name like words, so they stay beside it. */
 .nowrap {
   white-space: nowrap;
 }
-.name .score,
 .name .injury {
   margin-left: 6px;
   vertical-align: middle;
@@ -57,6 +56,22 @@
 .DEF {
   --c: var(--def);
 }
+/* The NBA reuses the same five position colors. */
+.PG {
+  --c: var(--qb);
+}
+.SG {
+  --c: var(--wr);
+}
+.SF {
+  --c: var(--rb);
+}
+.PF {
+  --c: var(--te);
+}
+.C {
+  --c: var(--def);
+}
 
 .injury {
   padding: 0 6px;
@@ -91,19 +106,4 @@
 }
 .miss {
   fill: var(--muted);
-}
-
-.score {
-  display: inline-grid;
-  place-items: center;
-  min-width: 28px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 999px;
-  border: 1.5px solid var(--accent);
-  color: var(--accent);
-  font-family: var(--display);
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
 }

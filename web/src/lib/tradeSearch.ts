@@ -13,13 +13,15 @@ import {
   type Player,
   type TradeIdea,
 } from "./model";
-import { NFL } from "./sports/nfl";
+import { sportOf } from "./sports";
 
 export interface SearchRequest {
   requestId: number;
   model: Model;
   rosters: { rid: number; playerIds: string[]; reserveIds: string[] | null }[];
   myRid: number;
+  /** The league's sport id (nfl, nba): its positions and trade rules. */
+  sport: string;
   /** Trade score per player (Player Score without team importance). */
   tradeScores: [string, number][];
   /** Your ideal roster (total players per position); empty keeps the default rules. */
@@ -38,6 +40,7 @@ export function runSearch({
   model,
   rosters,
   myRid,
+  sport,
   tradeScores,
   ideal,
 }: SearchRequest): SearchResponse {
@@ -45,7 +48,7 @@ export function runSearch({
     rid: r.rid,
     players: rosterPlayers(model, r.playerIds, r.reserveIds),
   }));
-  const ideas = suggestTrades(myRid, teams, model, NFL, new Map(tradeScores), ideal);
+  const ideas = suggestTrades(myRid, teams, model, sportOf(sport), new Map(tradeScores), ideal);
   return {
     requestId,
     ideas: ideas.map((r) => ({ ...r, give: r.give.map((p) => p.id), get: r.get.map((p) => p.id) })),
@@ -79,6 +82,7 @@ export function runFinder({
   model,
   rosters,
   myRid,
+  sport,
   tradeScores,
   ideal,
   finder,
@@ -93,7 +97,7 @@ export function runFinder({
     myRid,
     teams,
     model,
-    NFL,
+    sportOf(sport),
     new Map(tradeScores),
     ideal,
   );
