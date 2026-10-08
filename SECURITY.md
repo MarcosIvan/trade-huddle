@@ -68,8 +68,10 @@ or apps belong to Sleeper.
     and weekly.
   - **Practices:** OpenSSF Scorecard rates the repository weekly and on
     every change to `main`.
-- **Dependency updates.** Dependabot opens pull requests for outdated GitHub
-  Actions, Python packages (pipeline and tools) and npm packages (the site).
+- **Dependency updates.** Once a month, Dependabot opens one grouped pull
+  request each for GitHub Actions, the Python packages (pipeline, tools) and
+  the npm packages (the site). Security fixes come right away, in their own
+  pull requests ([ADR 0017](docs/adr/0017-dependabot-monthly-groups.md)).
   Major npm versions are updated by hand once the tooling supports them;
   a vulnerability fixed only in a new major still raises a Dependabot alert.
 

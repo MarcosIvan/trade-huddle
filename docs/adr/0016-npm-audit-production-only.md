@@ -21,7 +21,8 @@ including dependency updates that fixed real advisories in `next`, failed CI.
 - **Warning only:** the full `npm audit --audit-level=high` still runs in a
   separate step. When it finds something, it adds a warning annotation to the
   run instead of failing it.
-- Dependabot keeps opening update pull requests for dev tools as before.
+- Dependabot keeps opening update pull requests for dev tools (grouped
+  and monthly since ADR 0017).
 
 The other option was to keep the full audit blocking and ignore that one
 advisory with an exception script. The owner preferred the split above.

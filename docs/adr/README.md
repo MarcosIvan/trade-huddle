@@ -23,5 +23,6 @@ later one changes it, the later one says what it replaces.
 | [0014](0014-even-trade-ideas.md)              | Even trade ideas, no free agents and no ideal roster setting            |
 | [0015](0015-player-card.md)                   | Player card with the season week by week and every matchup rated        |
 | [0016](0016-npm-audit-production-only.md)      | npm audit blocks on production dependencies only                        |
+| [0017](0017-dependabot-monthly-groups.md)      | Dependabot: monthly, grouped updates; security fixes right away         |
 
 How the pieces fit together: [architecture.md](../architecture.md).

@@ -1,12 +1,21 @@
-# Opens pull requests when GitHub Actions, Python or npm dependencies have
-# updates, including security fixes. Each entry must point at the directory
-# that holds the manifest files; Dependabot does not search subfolders.
+# Keeps GitHub Actions, Python and npm dependencies up to date. Each entry must
+# point at the directory that holds the manifest files; Dependabot does not
+# search subfolders.
+#
+# Routine updates come once a month, grouped into one pull request per entry
+# (and per directory for pip), so they are few and easy to follow. Security
+# fixes are not grouped or scheduled: Dependabot opens them as soon as an
+# advisory is published (groups only apply to version updates by default).
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - "*"
 
   # Stats pipeline (pyproject.toml, requirements.txt) and the optional
   # Google Sheets export (requirements-sheets.txt).
@@ -15,10 +24,13 @@ updates:
       - /pipeline
       - /tools
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      python:
+        patterns:
+          - "*"
 
-  # The Next.js site. Minor and patch updates of build and test tools come as
-  # one pull request; the app's runtime (next, react) comes one by one.
+  # The Next.js site: the app's runtime and its build and test tools together.
   #
   # Major versions are updated by hand, once the ecosystem supports them:
   # ESLint 10 and TypeScript 7 broke the lint (eslint-config-next and
@@ -28,14 +40,12 @@ updates:
   - package-ecosystem: npm
     directory: /web
     schedule:
-      interval: weekly
+      interval: monthly
     ignore:
       - dependency-name: "*"
         update-types:
           - version-update:semver-major
     groups:
-      dev-tools:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
+      site:
+        patterns:
+          - "*"
