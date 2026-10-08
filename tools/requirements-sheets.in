@@ -4,4 +4,4 @@
 -c ../pipeline/requirements.txt
 requests==2.34.2
 gspread==6.2.1
-google-auth==2.59.0
+google-auth==2.60.0
