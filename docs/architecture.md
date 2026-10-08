@@ -66,8 +66,8 @@ with the hash of every inline script to each page
 6. **News.** The newspaper icon beside a player's name asks Sleeper for that
    player's latest news (`/players/<sport>/<id>/news`) only when clicked
    ([ADR 0012](adr/0012-player-news.md), [`components/News.tsx`](../web/src/components/News.tsx)).
-7. **Player card.** Clicking a player's name opens his season week by week
-   and his schedule, built in the browser from the stats file
+7. **Player card.** Clicking a player's name opens his season totals and
+   rank, his season week by week and his schedule, built in the browser from the stats file
    ([ADR 0015](adr/0015-player-card.md), [`lib/model/playerCard.ts`](../web/src/lib/model/playerCard.ts),
    [`components/PlayerCard.tsx`](../web/src/components/PlayerCard.tsx)).
 8. **Storage.** Only small preferences are kept, in the visitor's own

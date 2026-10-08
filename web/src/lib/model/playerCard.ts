@@ -118,6 +118,37 @@ export function playerCard(
   };
 }
 
+/** Where a player's season fantasy points rank: at his position and among every player. */
+export interface SeasonRank {
+  pos: number;
+  overall: number;
+}
+
+/**
+ * Every player's rank by season fantasy points under the league's scoring, at
+ * his position and overall (1 = most points; ties share a rank). Players who
+ * have not played this season get no rank.
+ */
+export function seasonRanks(model: Model): ReadonlyMap<string, SeasonRank> {
+  const scored = Object.values(model.players)
+    .filter((p) => p.g > 0)
+    .map((p) => ({ p, pts: p.weekly.reduce((s, w) => s + (w.pts ?? 0), 0) }))
+    .sort((a, b) => b.pts - a.pts);
+  const ranks = new Map<string, SeasonRank>();
+  const seen = new Map<string, { count: number; rank: number; pts: number }>();
+  let overall = 0;
+  scored.forEach(({ p, pts }, i) => {
+    if (i === 0 || pts < scored[i - 1]!.pts) overall = i + 1;
+    const at = seen.get(p.pos) ?? { count: 0, rank: 0, pts: Infinity };
+    at.count += 1;
+    if (pts < at.pts) at.rank = at.count;
+    at.pts = pts;
+    seen.set(p.pos, at);
+    ranks.set(p.id, { pos: at.rank, overall });
+  });
+  return ranks;
+}
+
 /** How one game's number compares with what the position usually does (statBenchmarks). */
 export type StatLevel = "good" | "neutral" | "bad";
 

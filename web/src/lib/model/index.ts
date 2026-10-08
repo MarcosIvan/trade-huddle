@@ -76,6 +76,7 @@ export {
   BENCHMARK_DEPTH,
   playerCard,
   PTS_KEY,
+  seasonRanks,
   STAT_EDGE,
   statBenchmarks,
   statLevel,
@@ -83,6 +84,7 @@ export {
   type DefenseFactors,
   type MatchupLevel,
   type PlayerCard,
+  type SeasonRank,
   type StatBenchmarks,
   type StatLevel,
 } from "./playerCard";

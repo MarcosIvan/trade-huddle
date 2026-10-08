@@ -54,6 +54,13 @@ each matchup marked by how hard it is.
 - **Sleeper has no per-stat reference.** Its weekly stats carry a positional
   rank for fantasy points (`pos_rank_*`, in standard, half and full PPR
   only), which the pipeline drops. The app's own cell colors are not exposed.
+- **Season rank next to the totals** (added 2026-10-08, owner's request):
+  beside fantasy points, points per game and games, the card shows the
+  player's rank by season fantasy points under the league's scoring, at
+  his position and among every player in the stats file (`seasonRanks`).
+  Total points, not points per game, as Sleeper ranks them (owner's
+  choice). Tied players share a rank; a player who has not played this
+  season shows a dash.
 - **Where names open it:** the team and weekly lineups, the trade idea and
   trade finder cards and the analyzer's result tables. Names in the
   analyzer's pick lists stay plain, since clicking them picks the player.
