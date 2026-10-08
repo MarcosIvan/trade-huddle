@@ -1,0 +1,48 @@
+.log td,
+.log tfoot th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.log tfoot th,
+.log tfoot td {
+  border-bottom: none;
+  font-weight: 700;
+}
+.log th.group {
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+/* Dividers between Pts and each stat group, in the text color; titles center between them. */
+.log .start {
+  border-left: 2px solid var(--ink);
+}
+.pts {
+  font-weight: 700;
+}
+/* Each stat sits in its own small box: a 2 px gap in the surface color around it. */
+.log td.cell {
+  box-shadow: inset 0 0 0 2px var(--surface);
+}
+.cell_good {
+  background: var(--good-soft);
+}
+.cell_neutral {
+  background: var(--warn-soft);
+}
+.cell_bad {
+  background: var(--bad-soft);
+}
+.empty {
+  background: var(--surface-2);
+}
+.log td.dnp {
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-weight: 600;
+  text-align: center;
+}
+.opp {
+  font-weight: 600;
+}

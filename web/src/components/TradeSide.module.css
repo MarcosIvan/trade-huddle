@@ -1,0 +1,74 @@
+.team {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+.teamHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--line-strong);
+}
+.teamHead h4 {
+  margin: 0;
+  font-size: 22px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.changes {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+}
+.change {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+.change dt {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.change dd {
+  margin: 0;
+}
+.big {
+  font-family: var(--display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.players th:first-child,
+.players td:first-child {
+  width: 100%;
+}
+.games {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.value {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  /* Narrow cells and two-line headers keep all four columns on a phone. */
+  .players th,
+  .players td {
+    padding: 8px 4px;
+  }
+  .players th {
+    white-space: normal;
+  }
+}

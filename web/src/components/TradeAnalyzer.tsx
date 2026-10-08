@@ -1,166 +1,22 @@
-import { useContext, useId, useMemo } from "react";
-import { fmt, pct } from "@/lib/format";
+import { useId, useMemo } from "react";
 import { teamLabel, type Team } from "@/lib/league";
 import {
   bestLineup,
   evaluateTrade,
   idealNeeds,
+  rosterNotes,
   rosterPlayers,
+  sideChange,
   teamNeeds,
   type FreeAgentPool,
   type IdealRoster,
   type Model,
-  type Player,
 } from "@/lib/model";
 import { NFL } from "@/lib/sports/nfl";
 import { BalanceMeter } from "./BalanceMeter";
-import { Delta, FormValue, PlayerCell, TRADE_VALUE_HINT, TradeValue } from "./Player";
-import { ScoreContext } from "./ScoreContext";
+import { PickList } from "./PickList";
 import styles from "./TradeAnalyzer.module.css";
-import { rosterNotes } from "./TradeIdeas";
-
-const RECENT = NFL.model.recentGames;
-
-function PickList({
-  label,
-  players,
-  selected,
-  onToggle,
-}: {
-  label: string;
-  players: Player[];
-  selected: ReadonlySet<string>;
-  onToggle: (id: string) => void;
-}) {
-  const labelId = useId();
-  const scores = useContext(ScoreContext);
-  const worth = (p: Player) => scores.get(p.id)?.trade ?? p.vorp;
-  const sorted = [...players].sort((a, b) => worth(b) - worth(a) || b.value - a.value);
-  return (
-    <div>
-      <span className="label" id={labelId}>
-        {label}
-      </span>
-      <div className={styles.picklist} role="group" aria-labelledby={labelId}>
-        {sorted.length === 0 && <p className="hint">Empty roster.</p>}
-        {sorted.map((p) => {
-          const on = selected.has(p.id);
-          return (
-            <label key={p.id} className={`${styles.pick} ${on ? styles.on : ""}`}>
-              <input type="checkbox" checked={on} onChange={() => onToggle(p.id)} />
-              <PlayerCell player={p} showScore={false} link={false} />
-              <span className={`num ${styles.value}`} title={TRADE_VALUE_HINT}>
-                <TradeValue player={p} />
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/** What one side gains or loses: what it receives minus what it sends. */
-interface SideChange {
-  trade: number;
-  ppg: number;
-  last: number;
-}
-
-/** Received minus sent, in trade value (with the side discount), points per game and last games. */
-function sideChange(sGet: number, sGive: number, get: Player[], give: Player[]): SideChange {
-  const sum = (list: Player[], f: (p: Player) => number) => list.reduce((s, p) => s + f(p), 0);
-  return {
-    trade: sGet - sGive,
-    ppg: sum(get, (p) => p.value) - sum(give, (p) => p.value),
-    last: sum(get, (p) => p.lastAvg ?? 0) - sum(give, (p) => p.lastAvg ?? 0),
-  };
-}
-
-/**
- * One direction of the trade: the players you send or receive, and what the
- * team getting them gains or loses in trade value, points per game and the
- * last games. Both sides sit near zero only when the trade balances.
- */
-function TradeSide({
-  title,
-  change,
-  players,
-}: {
-  title: string;
-  change: SideChange;
-  players: Player[];
-}) {
-  const titleId = useId();
-  const stats = [
-    { label: "Trade value", value: change.trade, hint: TRADE_VALUE_HINT },
-    { label: "Pts/g", value: change.ppg, hint: "Expected points per game" },
-    { label: `Last ${RECENT}`, value: change.last, hint: `Points per game, last ${RECENT} games` },
-  ];
-  return (
-    <section className={styles.team} aria-labelledby={titleId}>
-      <div className={styles.teamHead}>
-        <h4 id={titleId}>{title}</h4>
-        <dl className={styles.changes}>
-          {stats.map((st) => (
-            <div key={st.label} className={styles.change} title={st.hint}>
-              <dt>{st.label}</dt>
-              <dd className={styles.big}>
-                <Delta value={st.value} />
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-      {players.length === 0 ? (
-        <p className="hint">No players picked.</p>
-      ) : (
-        <div className="table-wrap">
-          <table className={`table ${styles.players}`}>
-            <caption className="visually-hidden">{title}</caption>
-            <thead>
-              <tr>
-                <th scope="col">Player</th>
-                <th scope="col" className="num" title={TRADE_VALUE_HINT}>
-                  Trade value
-                </th>
-                <th scope="col" className="num" title="Expected points per game">
-                  Pts/g
-                </th>
-                <th scope="col" className="num">
-                  Last {RECENT}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {players.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <PlayerCell player={p} showScore={false} />
-                  </td>
-                  <td className={`num ${styles.value}`}>
-                    <TradeValue player={p} />
-                  </td>
-                  <td className="num">
-                    {fmt(p.value)}
-                    {p.injMult < 1 && (
-                      <span className={styles.games}>
-                        {p.noTeam ? "no team" : "injury"} −{pct(1 - p.injMult)}
-                      </span>
-                    )}
-                  </td>
-                  <td className="num">
-                    <FormValue player={p} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-}
+import { TradeSide } from "./TradeSide";
 
 export function TradeAnalyzer({
   model,

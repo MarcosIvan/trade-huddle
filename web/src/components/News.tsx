@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { timeAgo, type NewsItem } from "@/lib/news";
 import { playerNews } from "@/lib/sleeper/client";
+import { Modal, ModalHeader } from "./Modal";
 import styles from "./News.module.css";
 
 interface NewsTarget {
@@ -16,6 +17,8 @@ interface NewsState {
   enabled: boolean;
   open: (id: string, name: string) => void;
 }
+
+const TITLE_ID = "news-title";
 
 const NewsContext = createContext<NewsState>({ enabled: false, open: () => {} });
 
@@ -47,51 +50,22 @@ export function NewsProvider({
   children: ReactNode;
 }) {
   const [target, setTarget] = useState<NewsTarget | null>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    if (target && !dialog.current?.open) dialog.current?.showModal();
-  }, [target]);
 
   return (
     <NewsContext.Provider
       value={{ enabled, open: (id, name) => setTarget({ id, name, now: Date.now() }) }}
     >
       {children}
-      <dialog
-        ref={dialog}
-        className={styles.dialog}
-        aria-labelledby="news-title"
-        onClose={() => setTarget(null)}
-        onClick={(e) => {
-          // A click on the backdrop (outside the panel) closes it.
-          if (e.target === e.currentTarget) e.currentTarget.close();
-        }}
-      >
-        {target && (
-          <NewsPanel
-            key={`${target.id}-${target.now}`}
-            sport={sport}
-            target={target}
-            onClose={() => dialog.current?.close()}
-          />
-        )}
-      </dialog>
+      <Modal open={target !== null} labelledBy={TITLE_ID} onClose={() => setTarget(null)}>
+        {target && <NewsPanel key={`${target.id}-${target.now}`} sport={sport} target={target} />}
+      </Modal>
     </NewsContext.Provider>
   );
 }
 
 type Load = { kind: "loading" } | { kind: "ready"; items: NewsItem[] } | { kind: "error" };
 
-function NewsPanel({
-  sport,
-  target,
-  onClose,
-}: {
-  sport: string;
-  target: NewsTarget;
-  onClose: () => void;
-}) {
+function NewsPanel({ sport, target }: { sport: string; target: NewsTarget }) {
   const [load, setLoad] = useState<Load>({ kind: "loading" });
   const { id, name, now } = target;
 
@@ -107,22 +81,10 @@ function NewsPanel({
   }, [sport, id, now]);
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.head}>
-        <h2 id="news-title" className={styles.title}>
-          <span className={styles.kicker}>Latest news</span>
-          {name}
-        </h2>
-        <button
-          type="button"
-          className={`btn ${styles.close}`}
-          aria-label="Close"
-          autoFocus
-          onClick={onClose}
-        >
-          <span aria-hidden="true">✕</span>
-        </button>
-      </div>
+    <>
+      <ModalHeader id={TITLE_ID} kicker="Latest news">
+        {name}
+      </ModalHeader>
       <div aria-live="polite" aria-busy={load.kind === "loading"}>
         {load.kind === "loading" && <p className={styles.status}>Loading news…</p>}
         {load.kind === "error" && (
@@ -158,7 +120,7 @@ function NewsPanel({
             <p className={styles.status}>No recent news about {name}.</p>
           ))}
       </div>
-    </div>
+    </>
   );
 }
 
