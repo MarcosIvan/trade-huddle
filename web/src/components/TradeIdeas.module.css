@@ -50,6 +50,14 @@
   min-width: 0;
   font-weight: 600;
 }
+.nowrap {
+  white-space: nowrap;
+}
+/* A player's positions sit together, a little closer than the name. */
+.positions {
+  display: inline-flex;
+  gap: 4px;
+}
 .tradeValue {
   font-weight: 700;
 }

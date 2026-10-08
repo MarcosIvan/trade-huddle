@@ -1,6 +1,6 @@
 import { useContext, useId } from "react";
 import type { Player } from "@/lib/model";
-import { PlayerCell, TRADE_VALUE_HINT, TradeValue } from "./Player";
+import { PlayerCell, TradeValue, useTradeValueHint } from "./Player";
 import styles from "./PickList.module.css";
 import { ScoreContext } from "./ScoreContext";
 
@@ -17,6 +17,7 @@ export function PickList({
   onToggle: (id: string) => void;
 }) {
   const labelId = useId();
+  const TRADE_VALUE_HINT = useTradeValueHint();
   const scores = useContext(ScoreContext);
   const worth = (p: Player) => scores.get(p.id)?.trade ?? p.vorp;
   const sorted = [...players].sort((a, b) => worth(b) - worth(a) || b.value - a.value);
@@ -32,7 +33,7 @@ export function PickList({
           return (
             <label key={p.id} className={`${styles.pick} ${on ? styles.on : ""}`}>
               <input type="checkbox" checked={on} onChange={() => onToggle(p.id)} />
-              <PlayerCell player={p} showScore={false} link={false} />
+              <PlayerCell player={p} link={false} />
               <span className={`num ${styles.value}`} title={TRADE_VALUE_HINT}>
                 <TradeValue player={p} />
               </span>

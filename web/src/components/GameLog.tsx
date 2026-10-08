@@ -1,4 +1,4 @@
-import { fmt } from "@/lib/format";
+import { fmt, shortDate } from "@/lib/format";
 import {
   matchupNote,
   PTS_KEY,
@@ -73,6 +73,9 @@ function StatCell({
   );
 }
 
+/** "Oct 20" for a game day's date. */
+const dateLabel = (iso: string | null) => (iso ? shortDate(iso) : "–");
+
 /** Stats are counts (yards, catches): whole numbers, a decimal only when the source has one. */
 const count = (x: number | undefined) =>
   x === undefined ? "0" : Number.isInteger(x) ? String(x) : fmt(x);
@@ -87,12 +90,15 @@ export function GameLog({
   card,
   average,
   sport,
+  dateOf,
 }: {
   player: Player;
   card: PlayerCard;
   /** The position's per-game averages (statBenchmarks), for each cell's color. */
   average: Readonly<Record<string, number>>;
   sport: SportConfig;
+  /** A game day's date, for files kept by game day (the NBA); rows show the week otherwise. */
+  dateOf?: (period: number) => string | null;
 }) {
   const groups = sport.gameLog[player.pos] ?? [];
   const columns = groups.flatMap((g) => g.columns);
@@ -127,13 +133,18 @@ export function GameLog({
             </tr>
           )}
           <tr>
-            <th scope="col" className="num">
-              Wk
-            </th>
+            {dateOf ? (
+              <th scope="col">Date</th>
+            ) : (
+              <th scope="col" className="num">
+                Wk
+              </th>
+            )}
             <th scope="col">Opp</th>
             <th scope="col">Matchup</th>
             <th scope="col" className="num" title="Fantasy points, your league's scoring">
-              Pts
+              {/* "Pts" is also a basketball stat: there the column says fantasy points. */}
+              {columns.some((c) => c.key === "pts") ? "FPts" : "Pts"}
             </th>
             {groups.map((g) =>
               g.columns.map((c) => (
@@ -153,7 +164,11 @@ export function GameLog({
         <tbody>
           {rows.map((g) => (
             <tr key={g.week}>
-              <td className="num">{g.week}</td>
+              {dateOf ? (
+                <td className={styles.date}>{dateLabel(dateOf(g.week))}</td>
+              ) : (
+                <td className="num">{g.week}</td>
+              )}
               <td>
                 <Opponent game={g} />
               </td>

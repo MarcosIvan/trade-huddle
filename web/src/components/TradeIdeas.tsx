@@ -3,10 +3,11 @@ import { isTrueMatch, type Player, type TradeIdea } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
 import { NewsButton } from "./News";
 import { PlayerName } from "./PlayerCard";
-import { Delta, PosBadge, TRADE_VALUE_HINT, TradeValue } from "./Player";
+import { Delta, PosBadges, TradeValue, useTradeValueHint } from "./Player";
 import styles from "./TradeIdeas.module.css";
 
 function Side({ label, players }: { label: string; players: Player[] }) {
+  const TRADE_VALUE_HINT = useTradeValueHint();
   return (
     <div className={styles.side}>
       <span className="label">{label}</span>
@@ -14,10 +15,16 @@ function Side({ label, players }: { label: string; players: Player[] }) {
         {players.map((p) => (
           <li key={p.id}>
             <span className={styles.playerName}>
-              <PosBadge pos={p.pos} />
+              <span className={styles.positions}>
+                <PosBadges player={p} />
+              </span>
               <span>
                 <PlayerName player={p} />
-                <NewsButton id={p.id} name={p.name} pos={p.pos} />
+                {/* A word joiner keeps the news icon on the name's last line. */}
+                {"\u2060"}
+                <span className={styles.nowrap}>
+                  <NewsButton id={p.id} name={p.name} pos={p.pos} />
+                </span>
               </span>
             </span>
             <span className={styles.tradeValue} title={TRADE_VALUE_HINT}>

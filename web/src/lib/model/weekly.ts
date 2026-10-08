@@ -4,22 +4,41 @@
  * on), then adjusts for the opponent (what that defense allows to the
  * position), for how the player has done against similar defenses, and blends
  * in Sleeper's own weekly projection. Byes and injuries are applied last.
+ * Where a week holds several games (the NBA's game days), each game left to
+ * play is rated that way and the week counts his best one (`bestGame`).
  */
 import type { ModelParams } from "../sports/types";
+import { weekPeriods } from "./periods";
 import { makeScorer } from "./scoring";
 import type { LeagueSettings, Model, Player, StatsFile } from "./types";
 
-export interface WeeklyOutlook {
-  /** Expected points this week (0 on a bye or when out). */
-  pts: number;
-  /** Opponent's team code, or null on a bye. */
-  opponent: string | null;
+/** One game of the week: its period (week or game day), opponent and expected points. */
+export interface GameOutlook {
+  period: number;
+  opponent: string;
   home: boolean;
   /** Opponent's points-allowed factor for the position (1 = average defense). */
   matchup: number;
+  /** Expected points in this game, availability included. */
+  pts: number;
+}
+
+export interface WeeklyOutlook {
+  /**
+   * Expected points this week (0 on a bye or when out): the game's, or with
+   * several games the best one's (bestGame).
+   */
+  pts: number;
+  /** The first game's opponent (team code), or null on a bye. */
+  opponent: string | null;
+  home: boolean;
+  /** The first game's matchup factor (1 = average defense). */
+  matchup: number;
   bye: boolean;
-  /** Chance of playing this week, from the injury report. */
+  /** Chance of playing each game, from the injury report. */
   availability: number;
+  /** Every game left this week, in order: one in the NFL, two to four in the NBA. */
+  games: GameOutlook[];
 }
 
 /** Opponent of each team in a week, and whether the team is at home. */
@@ -132,38 +151,57 @@ export function weeklyOutlook(
   league: LeagueSettings,
   week: number,
   params: ModelParams,
+  /** Several games a week count only the best one (the NBA), not their sum. */
+  bestGame = false,
 ): Map<string, WeeklyOutlook> {
   const score = makeScorer(stats.keys, league.scoring_settings);
-  const opp = opponents(stats, week);
+  // Game days already played this week are done; only the games left count.
+  const lastPlayed = Math.max(0, ...stats.weeks);
+  const periods =
+    stats.period === "day"
+      ? weekPeriods(stats, week).filter((d) => d > lastPlayed)
+      : weekPeriods(stats, week);
+  const oppByPeriod = new Map(periods.map((d) => [d, opponents(stats, d)] as const));
   const factors = defenseFactors(model, stats, params.matchupShrinkGames);
   const oppByWeek = new Map(stats.weeks.map((w) => [w, opponents(stats, w)] as const));
   const out = new Map<string, WeeklyOutlook>();
   for (const p of Object.values(model.players)) {
-    const game = p.team ? opp.get(p.team) : undefined;
     const availability = p.noTeam ? 0 : p.inj ? (params.weekAvailability[p.inj] ?? 1) : 1;
-    if (!game) {
-      out.set(p.id, { pts: 0, opponent: null, home: false, matchup: 1, bye: true, availability });
-      continue;
-    }
     // Value without the season-long injury discount: this week's availability replaces it.
     const base = p.injMult > 0 ? p.value / p.injMult : p.value;
-    const matchup = factors.get(game.opponent)?.get(p.pos) ?? 1;
-    let pts = base * matchup ** params.matchupWeight;
-    if (params.similarWeight > 0) {
-      const similar = similarDefenseFactor(p, base, stats, oppByWeek, factors, matchup);
-      pts *= similar ** params.similarWeight;
+    const games: GameOutlook[] = [];
+    for (const period of periods) {
+      const game = p.team ? oppByPeriod.get(period)?.get(p.team) : undefined;
+      if (!game) continue;
+      const matchup = factors.get(game.opponent)?.get(p.pos) ?? 1;
+      let pts = base * matchup ** params.matchupWeight;
+      if (params.similarWeight > 0) {
+        const similar = similarDefenseFactor(p, base, stats, oppByWeek, factors, matchup);
+        pts *= similar ** params.similarWeight;
+      }
+      const projected = stats.players[p.id]?.wp?.[String(period)];
+      if (projected && params.weekProjWeight > 0) {
+        pts = (1 - params.weekProjWeight) * pts + params.weekProjWeight * score(projected);
+      }
+      games.push({
+        period,
+        opponent: game.opponent,
+        home: game.home,
+        matchup,
+        pts: Math.max(0, pts * availability),
+      });
     }
-    const projected = stats.players[p.id]?.wp?.[String(week)];
-    if (projected && params.weekProjWeight > 0) {
-      pts = (1 - params.weekProjWeight) * pts + params.weekProjWeight * score(projected);
-    }
+    const first = games[0];
     out.set(p.id, {
-      pts: Math.max(0, pts * availability),
-      opponent: game.opponent,
-      home: game.home,
-      matchup,
-      bye: false,
+      pts: bestGame
+        ? Math.max(0, ...games.map((g) => g.pts))
+        : games.reduce((sum, g) => sum + g.pts, 0),
+      opponent: first?.opponent ?? null,
+      home: first?.home ?? false,
+      matchup: first?.matchup ?? 1,
+      bye: !first,
       availability,
+      games,
     });
   }
   return out;

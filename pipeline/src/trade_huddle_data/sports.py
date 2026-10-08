@@ -1,4 +1,4 @@
-"""Everything the pipeline needs to know about a sport. NBA will get its own entry."""
+"""Everything the pipeline needs to know about a sport: one entry per sport."""
 
 from dataclasses import dataclass
 
@@ -22,6 +22,11 @@ class SportConfig:
     adp_keys: tuple[tuple[str, str], ...]
     #: ADPs past this pick are noise (players nobody drafts) and are dropped.
     adp_max: float
+    #: What one entry of a player's season is: a "week" (NFL, one game a week) or a
+    #: game "day" (NBA, several games a week; a team plays at most once a day).
+    period: str = "week"
+    #: Sleeper's preseason projections are season totals (NFL) or per-game averages (NBA).
+    projections_per_game: bool = False
 
 
 NFL = SportConfig(
@@ -64,4 +69,51 @@ NFL = SportConfig(
     adp_keys=(("adp_half_ppr", "half"), ("adp_ppr", "ppr"), ("adp_std", "std"), ("adp_2qb", "2qb")),
 )
 
-SPORTS: dict[str, SportConfig] = {NFL.id: NFL}
+NBA = SportConfig(
+    id="nba",
+    fantasy_positions=frozenset({"PG", "SG", "SF", "PF", "C"}),
+    regular_season_weeks=25,
+    exclude_exact=frozenset(
+        {
+            "gp",
+            "gs",
+            "pts_std",
+            "pts_std_dfs",
+            "plus_minus",
+            "pace",
+            "pace_rank",
+            "pts_allowed",
+            "tpm_allowed",
+            # Combined stats: leagues score their parts.
+            "pts_reb",
+            "pts_ast",
+            "reb_ast",
+            "pts_reb_ast",
+            "blk_stl",
+        }
+    ),
+    # Quarter, half and overtime splits, ranks and what defenses allow.
+    exclude_prefixes=(
+        "q1_",
+        "q2_",
+        "q3_",
+        "q4_",
+        "h1_",
+        "h2_",
+        "ot_",
+        "pos_rank_",
+        "rank_",
+        "pos_def_rank_",
+        "pts_std_allowed",
+        "adp_",
+    ),
+    exclude_suffixes=("_pct",),
+    usage_keys=(),
+    season_games=82,
+    adp_max=200,
+    adp_keys=(("adp_std", "std"),),
+    period="day",
+    projections_per_game=True,
+)
+
+SPORTS: dict[str, SportConfig] = {NFL.id: NFL, NBA.id: NBA}

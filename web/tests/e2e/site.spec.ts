@@ -78,14 +78,13 @@ test.describe("hostile names from Sleeper", () => {
 });
 
 test.describe("league picker", () => {
-  test("lists the user's NFL and NBA leagues; NBA not openable yet", async ({ page }) => {
+  test("lists the user's NFL and NBA leagues, grouped by sport", async ({ page }) => {
     await mockSleeper(page);
     await page.goto("./");
     await page.getByLabel("Sleeper username").fill(USERNAME);
     await page.getByRole("button", { name: "Find my leagues" }).click();
 
-    // NBA leagues are listed but can't be opened until the site supports NBA.
-    await expect(page.getByRole("button", { name: /Hoops League/ })).toBeDisabled();
+    await expect(page.getByRole("button", { name: /Hoops League/ })).toBeEnabled();
     await page.getByRole("button", { name: /Hostile League/ }).click();
     await ideasReady(page);
 
@@ -95,10 +94,44 @@ test.describe("league picker", () => {
     const picker = page.getByLabel("League", { exact: true });
     await expect(picker.locator("option")).toHaveCount(3);
     await expect(picker.locator("optgroup")).toHaveCount(2);
-    await expect(picker.locator("optgroup").nth(1)).toHaveAttribute("label", "NBA (coming soon)");
-    await expect(picker.locator("option", { hasText: "Hoops League" })).toBeDisabled();
+    await expect(picker.locator("optgroup").nth(1)).toHaveAttribute("label", "NBA");
+    await expect(picker.locator("option", { hasText: "Hoops League" })).toBeEnabled();
     await expect(picker).toHaveValue(LEAGUE_ID);
     expect(await accessibilityProblems(page)).toEqual([]);
+  });
+});
+
+test.describe("NBA league", () => {
+  test("opens with the NBA's slots, every position a player can play and trade ideas", async ({
+    page,
+  }) => {
+    await mockSleeper(page);
+    await page.goto("./");
+    await page.getByLabel("Sleeper username").fill(USERNAME);
+    await page.getByRole("button", { name: "Find my leagues" }).click();
+    await page.getByRole("button", { name: /Hoops League/ }).click();
+    await ideasReady(page);
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Hoops League");
+    const team = page.locator("#team");
+    // This week's best team: each game left, and his best game's projection (lock-in scoring).
+    await expect(team.getByRole("columnheader", { name: "Games" })).toBeVisible();
+    await expect(team.getByRole("columnheader", { name: "High proj." })).toBeVisible();
+    await expect(team.getByRole("columnheader", { name: "Trade value" })).toBeVisible();
+    for (const slot of ["PG", "G", "F", "UTIL"]) {
+      await expect(team.getByRole("rowheader", { name: slot, exact: true }).first()).toBeVisible();
+    }
+    // Every eligible position, not only the main one.
+    const second = team.getByRole("row", { name: /Hoop Player 3\b/ });
+    await expect(second).toContainText("SG");
+    await expect(second).toContainText("SF");
+    await expect(team.getByTitle(/last 12 games/).first()).toBeAttached();
+    await expect(page.locator("#ideas article").first()).toBeVisible();
+    expect(await accessibilityProblems(page)).toEqual([]);
+
+    // The player card opens for NBA players too.
+    await team.getByRole("button", { name: /^Hoop Player 1$/ }).click();
+    await expect(page.getByRole("dialog", { name: /Hoop Player 1/ })).toBeVisible();
   });
 });
 

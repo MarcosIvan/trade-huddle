@@ -126,6 +126,52 @@ export interface StatGroup {
   columns: readonly StatColumn[];
 }
 
+/** How trade value (score.ts) is built for a sport: weights of its measures, and its scale. */
+export interface TradeValueParams {
+  /** Weight of each measure, summing to 100 (score.ts explains each). */
+  weights: Readonly<{
+    base: number;
+    market: number;
+    expected: number;
+    season: number;
+    recent: number;
+    scarcity: number;
+    usage: number;
+  }>;
+  /** Trade value is 40 × (value / best) ** curve: below 1, lesser players sit closer to the top. */
+  curve: number;
+  /** Share of the team's opportunities that makes a lead player, by position (usage measure). */
+  leadShare: Readonly<Record<string, number>>;
+  /** Recent games used for the usage share. */
+  usageGames: number;
+  /** Players averaged to find each position's elite level. */
+  elite: number;
+  /** Production ratios are raised to this power, so production gaps still count. */
+  spread: number;
+  /** Scarcity only moves trade value between this floor and 1. */
+  scarcityFloor: number;
+  /** The position's scarcity ratio is raised to this power: below 1, positions sit closer. */
+  scarcityPower: number;
+  /** Easy-to-replace positions (kickers, defenses) and their fixed scale. */
+  minorPositions: readonly string[];
+  minorScale: number;
+  /** ADP at which the market measure is one half, and how steeply it falls. */
+  adpHalf: number;
+  adpCurve: number;
+  /** Players drafted this early get the reputation lift, closing k / (k + games) of the gap. */
+  reputationMaxAdp: number;
+  reputationGames: number;
+  /** An injured player keeps this share of the value his injury rule takes away. */
+  injuryRecovery: number;
+  /**
+   * Market discount by position, 0 to 1: for positions trade markets price
+   * below what the league's scoring says. A player there loses this share of
+   * his value times (1 − his market measure), so it fades for players the
+   * draft market already rates highly (missing means no discount).
+   */
+  positionMarket: Readonly<Record<string, number>>;
+}
+
 export interface SportConfig {
   id: string;
   /** Positions the model values. */
@@ -142,7 +188,13 @@ export interface SportConfig {
   tradePositions?: readonly string[];
   /** Number of teams assumed when a league does not say. */
   defaultTeams: number;
+  /**
+   * Teams play several games a week (the NBA): the weekly lineup lists each one,
+   * and a player's week counts his best game (his highest projected one), as Sleeper scores it.
+   */
+  multiGameWeeks?: boolean;
   /** The player card's game log: stat groups shown for each position, in order. */
   gameLog: Readonly<Record<string, readonly StatGroup[]>>;
   model: ModelParams;
+  tradeValue: TradeValueParams;
 }

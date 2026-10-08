@@ -2,11 +2,9 @@ import { useMemo } from "react";
 import { fmt, ordinal } from "@/lib/format";
 import type { Team } from "@/lib/league";
 import { bestLineup, rosterPlayers, type Model, type Player } from "@/lib/model";
-import { NFL } from "@/lib/sports/nfl";
-import { FormValue, PlayerCell, Sparkline, TRADE_VALUE_HINT, TradeValue } from "./Player";
+import { FormValue, PlayerCell, Sparkline, TradeValue, useTradeValueHint } from "./Player";
+import { useSport } from "./SportContext";
 import styles from "./TeamLineup.module.css";
-
-const RECENT = NFL.model.recentGames;
 
 function Row({
   slot,
@@ -66,15 +64,18 @@ export function TeamLineup({
   myRid: number;
   sparkMax: number;
 }) {
+  const sport = useSport();
+  const RECENT = sport.model.recentGames;
+  const TRADE_VALUE_HINT = useTradeValueHint();
   const team = teams.find((t) => t.rid === myRid);
   const { lineup, bench, reserve, rank, hidden } = useMemo(() => {
     const players = rosterPlayers(model, team?.playerIds ?? []);
-    const lu = bestLineup(players, model.slots, NFL);
+    const lu = bestLineup(players, model.slots, sport);
     const rest = players.filter((p) => !lu.used.has(p.id)).sort((a, b) => b.value - a.value);
     const totals = teams
       .map((t) => ({
         rid: t.rid,
-        total: bestLineup(rosterPlayers(model, t.playerIds), model.slots, NFL).total,
+        total: bestLineup(rosterPlayers(model, t.playerIds), model.slots, sport).total,
       }))
       .sort((a, b) => b.total - a.total);
     return {
@@ -84,7 +85,7 @@ export function TeamLineup({
       rank: totals.findIndex((t) => t.rid === myRid) + 1,
       hidden: (team?.playerIds.length ?? 0) - players.length,
     };
-  }, [model, teams, team, myRid]);
+  }, [model, teams, team, myRid, sport]);
 
   return (
     <>
@@ -122,7 +123,7 @@ export function TeamLineup({
             {model.slots.map((slot, i) => (
               <Row
                 key={`${slot}-${i}`}
-                slot={NFL.slotLabels[slot] ?? slot}
+                slot={sport.slotLabels[slot] ?? slot}
                 player={lineup.slots[i] ?? null}
                 sparkMax={sparkMax}
               />

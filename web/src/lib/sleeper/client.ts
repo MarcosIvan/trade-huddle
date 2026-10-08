@@ -67,7 +67,7 @@ export async function findUser(username: string, signal?: AbortSignal): Promise<
 /** The Sleeper sports whose leagues are listed; only the supported ones can be opened. */
 export const LEAGUE_SPORTS = ["nfl", "nba"] as const;
 export type LeagueSport = (typeof LEAGUE_SPORTS)[number];
-export const SUPPORTED_SPORTS: ReadonlySet<LeagueSport> = new Set(["nfl"]);
+export const SUPPORTED_SPORTS: ReadonlySet<LeagueSport> = new Set(["nfl", "nba"]);
 
 export async function currentSeason(sport: LeagueSport, signal?: AbortSignal): Promise<string> {
   return parseState(await get(`/state/${sport}`, signal)).season;

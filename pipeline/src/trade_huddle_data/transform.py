@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from datetime import date
 from typing import Any, TypeGuard
 
 from .sports import SportConfig
@@ -20,7 +21,8 @@ def to_entries(data: Any) -> list[Entry]:
 
 
 def played(stats: Stats) -> bool:
-    return bool(stats.get("gp") or stats.get("pts_ppr") or stats.get("pts_std"))
+    # NBA game lines carry no "gp": time on court ("sp") or points say he played.
+    return bool(stats.get("gp") or stats.get("pts_ppr") or stats.get("pts_std") or stats.get("sp"))
 
 
 def keep_key(key: str, sport: SportConfig) -> bool:
@@ -78,7 +80,8 @@ def player_info(meta: Mapping[str, Any], sport: SportConfig, *, current: bool) -
             info["a"] = meta["age"]
         if meta.get("injury_status"):
             info["i"] = meta["injury_status"]
-        if meta.get("status") and meta.get("status") != "Active":
+        # "Active" in the NFL directory, "ACT" in the NBA's.
+        if meta.get("status") and meta.get("status") not in ("Active", "ACT"):
             info["s"] = meta["status"]
     return info
 
@@ -137,20 +140,62 @@ def team_usage(entries: Iterable[Entry], usage_keys: tuple[str, ...]) -> dict[st
     return {team: [round(v, 2) for v in row] for team, row in sorted(totals.items())}
 
 
-def compact_schedule(games: Iterable[Mapping[str, Any]]) -> dict[str, list[list[str]]]:
-    """Games by week as [away, home] pairs."""
-    weeks: dict[str, list[list[str]]] = {}
-    for g in games:
-        week, home, away = g.get("week"), g.get("home"), g.get("away")
-        if isinstance(week, int) and isinstance(home, str) and isinstance(away, str):
-            weeks.setdefault(str(week), []).append([away, home])
-    return {w: sorted(weeks[w]) for w in sorted(weeks, key=int)}
+#: Games that will not be played as scheduled: left out of the schedule and of the lineup week.
+NOT_PLAYED = frozenset({"postponed", "canceled", "cancelled"})
+
+
+def team_code(side: Any) -> str | None:
+    """A schedule's home or away team: a code (NFL) or an object with one (NBA)."""
+    if isinstance(side, dict):
+        side = side.get("team")
+    return side if isinstance(side, str) and side else None
+
+
+def game_days(games: Iterable[Mapping[str, Any]]) -> dict[str, int]:
+    """
+    Each game date's day number, 1 being the first date of the schedule. Days
+    count calendar days, so back-to-backs and rest days keep their spacing.
+    """
+    dates = sorted({g["date"] for g in games if isinstance(g.get("date"), str)})
+    if not dates:
+        return {}
+    first = date.fromisoformat(dates[0])
+    return {d: (date.fromisoformat(d) - first).days + 1 for d in dates}
+
+
+def scheduled(games: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    return [g for g in games if g.get("status") not in NOT_PLAYED]
+
+
+def compact_schedule(
+    games: Iterable[Mapping[str, Any]], days: Mapping[str, int] | None = None
+) -> dict[str, list[list[str]]]:
+    """Games by period as [away, home] pairs: by week, or by game day when ``days`` is given."""
+    periods: dict[str, list[list[str]]] = {}
+    for g in scheduled(games):
+        home, away = team_code(g.get("home")), team_code(g.get("away"))
+        period = days.get(g.get("date") or "") if days is not None else g.get("week")
+        if isinstance(period, int) and home and away:
+            periods.setdefault(str(period), []).append([away, home])
+    return {p: sorted(periods[p]) for p in sorted(periods, key=int)}
+
+
+def day_weeks(games: Iterable[Mapping[str, Any]], days: Mapping[str, int]) -> dict[str, int]:
+    """The fantasy week of each game day."""
+    out: dict[int, int] = {}
+    for g in scheduled(games):
+        day, week = days.get(g.get("date") or ""), g.get("week")
+        if day is not None and isinstance(week, int):
+            out[day] = week
+    return {str(d): out[d] for d in sorted(out)}
 
 
 def lineup_week(games: Iterable[Mapping[str, Any]]) -> int | None:
     """The first week with a game not played yet: the week to set a lineup for."""
     open_weeks = [
-        g["week"] for g in games if isinstance(g.get("week"), int) and g.get("status") != "complete"
+        g["week"]
+        for g in scheduled(games)
+        if isinstance(g.get("week"), int) and g.get("status") != "complete"
     ]
     return min(open_weeks) if open_weeks else None
 
@@ -166,11 +211,16 @@ def build_stats(
     generated_at: str,
     projections: Mapping[str, Stats] | None = None,
     schedule: Iterable[Mapping[str, Any]] | None = None,
-    week_projections: Mapping[int, Mapping[str, Stats]] | None = None,
+    week_projections: Mapping[int, Iterable[Entry]] | None = None,
     current: bool = True,
 ) -> dict[str, Any]:
     """
     The compact stats file.
+
+    A player's season is kept by period: by week (NFL), or by game day for
+    sports with several games a week (``sport.period == "day"``, NBA), where
+    each entry's date gives its day and ``day_weeks`` maps days to weeks.
+    ``weeks`` and ``week_projections`` are what Sleeper returns for each week.
 
     ``projections`` are Sleeper's preseason projections for ``season`` (stat
     totals plus ADP). ``current=False`` builds a past season for backtests: players keep only
@@ -179,6 +229,19 @@ def build_stats(
     """
     keys = KeyIndex(sport)
     players: dict[str, dict[str, Any]] = {}
+    schedule_games = list(schedule or [])
+    days = game_days(schedule_games) if sport.period == "day" else None
+
+    def periods(week: int, entries: Iterable[Entry]) -> dict[int, list[Entry]]:
+        """A week's entries by period: the week itself, or each entry's game day."""
+        if days is None:
+            return {week: list(entries)}
+        out: dict[int, list[Entry]] = {}
+        for entry in entries:
+            day = days.get(entry.get("date") or "")
+            if day is not None:
+                out.setdefault(day, []).append(entry)
+        return out
 
     def ensure(pid: str) -> dict[str, Any]:
         if pid not in players:
@@ -198,10 +261,15 @@ def build_stats(
             continue
         ensure(pid)["prev"] = {"g": games, "s": keys.pack(stats)}
 
+    by_period: dict[int, list[Entry]] = {}
+    for week in sorted(weeks):
+        for period, entries in periods(week, weeks[week]).items():
+            by_period.setdefault(period, []).extend(entries)
+
     weeks_with_games: list[int] = []
     team_weeks: dict[str, dict[str, list[float]]] = {}
-    for week in sorted(weeks):
-        entries = weeks[week]
+    for week in sorted(by_period):
+        entries = by_period[week]
         count = 0
         for entry in entries:
             pid = str(entry["player_id"])
@@ -218,8 +286,9 @@ def build_stats(
             count += 1
         if count:
             weeks_with_games.append(week)
-            for team, row in team_usage(entries, sport.usage_keys).items():
-                team_weeks.setdefault(team, {})[str(week)] = row
+            if sport.usage_keys:
+                for team, row in team_usage(entries, sport.usage_keys).items():
+                    team_weeks.setdefault(team, {})[str(week)] = row
 
     # Preseason projections (season totals) and draft-market ADP, for players
     # already in the file or drafted in a typical league.
@@ -240,30 +309,43 @@ def build_stats(
         if adp:
             player["adp"] = adp
 
-    # Weekly projections (they already account for the opponent), by week.
-    for week, by_player in sorted((week_projections or {}).items()):
-        for pid, stats in by_player.items():
-            if pid in players:
-                packed = keys.pack(stats)
-                if packed:
-                    players[pid].setdefault("wp", {})[str(week)] = packed
+    # Weekly projections (they already account for the opponent), by period: one per
+    # week, or one per game for game-day sports.
+    for week, week_entries in sorted((week_projections or {}).items()):
+        for period, period_entries in periods(week, week_entries).items():
+            for entry in period_entries:
+                pid = str(entry.get("player_id") or "")
+                if pid in players:
+                    packed = keys.pack(entry.get("stats") or {})
+                    if packed:
+                        players[pid].setdefault("wp", {})[str(period)] = packed
 
-    schedule_games = list(schedule or [])
     kept = {
         pid: p
         for pid, p in players.items()
         if p["fp"] and (p.get("prev") or p.get("w") or p["t"] or p.get("adp"))
     }
+    by_day = (
+        {
+            "day_weeks": day_weeks(schedule_games, days),
+            "day_dates": {str(d): k for k, d in days.items()},
+        }
+        if days is not None
+        else {}
+    )
     return {
         "generated_at": generated_at,
         "sport": sport.id,
+        "period": sport.period,
         "season": season,
         "prev_season": prev_season,
         "weeks": weeks_with_games,
         "keys": keys.keys,
         "usage_keys": list(sport.usage_keys),
         "season_games": sport.season_games,
-        "schedule": compact_schedule(schedule_games),
+        "proj_per_game": sport.projections_per_game,
+        "schedule": compact_schedule(schedule_games, days),
+        **by_day,
         "lineup_week": lineup_week(schedule_games) if current else None,
         "team_weeks": dict(sorted(team_weeks.items())),
         "players": kept,

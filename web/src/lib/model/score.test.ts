@@ -2,13 +2,9 @@ import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
 import type { SportConfig } from "../sports/types";
 import { bestLineup } from "./lineup";
-import {
-  playerScores,
-  SCORE_WEIGHTS,
-  TRADE_VALUE_CURVE,
-  TRADE_VALUE_MAX,
-  usageShares,
-} from "./score";
+import { playerScores, SCORE_WEIGHTS, TRADE_VALUE_MAX, usageShares } from "./score";
+
+const TRADE_VALUE_CURVE = NFL.tradeValue.curve;
 import {
   evaluateTrade,
   fairnessLevel,
@@ -279,7 +275,7 @@ describe("usage bonus", () => {
   };
 
   it("measures each player's share of the team's targets and carries", () => {
-    expect(usageShares(model, stats).get("wr1")).toBeCloseTo(8 / 60);
+    expect(usageShares(model, stats, NFL).get("wr1")).toBeCloseTo(8 / 60);
   });
 
   it("ranks the top three weapons and scores usage relative to a lead player", () => {

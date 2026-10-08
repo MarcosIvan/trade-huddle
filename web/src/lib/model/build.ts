@@ -1,4 +1,5 @@
 import type { ModelParams, SportConfig } from "../sports/types";
+import { lineupPeriods } from "./periods";
 import { replacementLevels } from "./replacement";
 import { average, makeScorer } from "./scoring";
 import type { LeagueSettings, Model, PackedStats, Player, StatsFile } from "./types";
@@ -86,11 +87,12 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
   const supported = (x: string | undefined): x is string =>
     x !== undefined && sport.positions.includes(x);
 
-  // The next game: the lineup week, once it comes after every week played so far.
-  const nextWeek =
-    stats.lineup_week != null && stats.lineup_week > Math.max(0, ...stats.weeks)
-      ? stats.lineup_week
-      : null;
+  // The next game: the lineup week's first projected game after every period played so far.
+  const lastPlayed = Math.max(0, ...stats.weeks);
+  const upcoming = lineupPeriods(stats).filter((period) => period > lastPlayed);
+
+  // Preseason projections: season totals (divided by the season's games) or per game already.
+  const projGames = stats.proj_per_game ? 1 : (stats.season_games ?? DEFAULT_SEASON_GAMES);
 
   const players: Record<string, Player> = {};
   const games = new Map<string, Games>();
@@ -111,7 +113,7 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
     });
     games.set(id, played);
     const prevG = p.prev ? p.prev.g : 0;
-    const nextGame = nextWeek === null ? undefined : p.wp?.[String(nextWeek)];
+    const nextGame = upcoming.map((period) => p.wp?.[String(period)]).find(Boolean);
     players[id] = {
       id,
       name: p.n || `Player ${id}`,
@@ -128,7 +130,7 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
       lastAvg: average(played.pts.slice(-params.recentGames)),
       prevG,
       prevPpg: prevG && p.prev ? score(p.prev.s) / prevG : null,
-      projPpg: p.proj ? score(p.proj) / (stats.season_games ?? DEFAULT_SEASON_GAMES) : null,
+      projPpg: p.proj ? score(p.proj) / projGames : null,
       nextGamePpg: nextGame ? score(nextGame) : null,
       value: 0,
       vorp: 0,

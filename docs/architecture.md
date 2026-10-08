@@ -7,7 +7,7 @@ that builds a public stats file.
 ```
                  GitHub Actions (daily, 10:00 UTC, and on every push to main)
                 ┌───────────────────────────────────────────────────────────┐
- Sleeper API ──▶│ pipeline/  (Python)  ──▶ web/public/data/nfl/stats.json   │
+ Sleeper API ──▶│ pipeline/  (Python) ──▶ web/public/data/<sport>/stats.json│
  (public, no    │ web/       (Next.js static export + CSP by hash)          │
   keys)         └──────────────────────────────┬────────────────────────────┘
                                                ▼
@@ -24,7 +24,9 @@ that builds a public stats file.
 
 A small Python package, `trade_huddle_data`, run by the deploy workflow
 ([`deploy.yml`](../.github/workflows/deploy.yml)). It reads Sleeper's public
-API and writes one **league-independent** file, `stats.json`:
+API and writes one **league-independent** file per sport, `data/nfl/stats.json`
+and `data/nba/stats.json` (the NBA one by game day,
+[ADR 0019](adr/0019-nba-data-by-game-day.md)):
 
 - every relevant player's weekly stats this season, and last season's totals;
 - the team each player played for each week, and each team's weekly usage
@@ -146,5 +148,8 @@ and `TradeSide`; the league header's `LeaguePicker` has its own file.
 - **The model is framework-free.** It can be tested, backtested and moved to a
   worker without touching the UI.
 - **Sport-agnostic edges.** Sport details live in
-  [`lib/sports/`](../web/src/lib/sports/) and the pipeline's `sports.py`, so
-  another sport can be added without rewriting the model.
+  [`lib/sports/`](../web/src/lib/sports/) (`nfl.ts`, `nba.ts`) and the
+  pipeline's `sports.py`, so another sport can be added without rewriting the
+  model. The league's sport picks the config (`sportOf`), and components read
+  it from a `SportContext`; a stats file's entries are weeks or game days
+  (`lib/model/periods.ts`, [ADR 0020](adr/0020-nba-model-and-sport-per-league.md)).

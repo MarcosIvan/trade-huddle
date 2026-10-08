@@ -46,3 +46,6 @@
 .opp {
   font-weight: 600;
 }
+.date {
+  white-space: nowrap;
+}

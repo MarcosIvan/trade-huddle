@@ -8,6 +8,9 @@
   font-weight: 700;
   white-space: nowrap;
 }
+.compact {
+  padding: 1px 5px;
+}
 .good {
   background: var(--good-soft);
   color: var(--good);

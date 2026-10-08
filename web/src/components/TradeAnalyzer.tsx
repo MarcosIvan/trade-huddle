@@ -12,9 +12,9 @@ import {
   type IdealRoster,
   type Model,
 } from "@/lib/model";
-import { NFL } from "@/lib/sports/nfl";
 import { BalanceMeter } from "./BalanceMeter";
 import { PickList } from "./PickList";
+import { useSport } from "./SportContext";
 import styles from "./TradeAnalyzer.module.css";
 import { TradeSide } from "./TradeSide";
 
@@ -46,6 +46,7 @@ export function TradeAnalyzer({
   onToggleGet: (id: string) => void;
 }) {
   const partnerId = useId();
+  const sport = useSport();
   const partner = teams.find((t) => t.rid === partnerRid);
   const mine = useMemo(() => {
     const team = teams.find((t) => t.rid === myRid);
@@ -64,9 +65,9 @@ export function TradeAnalyzer({
           players: rosterPlayers(model, t.playerIds, t.reserveIds),
         })),
         model,
-        NFL,
+        sport,
       ),
-    [model, teams],
+    [model, teams, sport],
   );
   const others = [...teams]
     .filter((t) => t.rid !== myRid)
@@ -81,10 +82,10 @@ export function TradeAnalyzer({
       theirs,
       sending,
       getting,
-      bestLineup(mine, model.slots, NFL).total,
-      bestLineup(theirs, model.slots, NFL).total,
+      bestLineup(mine, model.slots, sport).total,
+      bestLineup(theirs, model.slots, sport).total,
       model,
-      NFL,
+      sport,
       pool,
       tradeScores,
       {
@@ -93,7 +94,7 @@ export function TradeAnalyzer({
       },
       ideal,
     );
-  }, [mine, theirs, give, get, model, pool, tradeScores, ideal, needs, myRid, partnerRid]);
+  }, [mine, theirs, give, get, model, pool, tradeScores, ideal, needs, myRid, partnerRid, sport]);
 
   const partnerName = partner?.name ?? "Partner";
 

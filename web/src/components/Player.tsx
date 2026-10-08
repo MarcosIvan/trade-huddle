@@ -1,34 +1,55 @@
 import { fmt, signed, trend } from "@/lib/format";
 import type { Player, PlayerScore } from "@/lib/model";
-import { SCORE_WEIGHTS, TRADE_VALUE_MAX } from "@/lib/model";
-import { NFL } from "@/lib/sports/nfl";
+import { playablePositions } from "@/lib/sports";
+import type { SportConfig } from "@/lib/sports/types";
 import { NewsButton } from "./News";
 import { PlayerName } from "./PlayerCard";
 import styles from "./Player.module.css";
 import { usePlayerScore } from "./ScoreContext";
+import { useSport } from "./SportContext";
 
-const KNOWN_POSITIONS = new Set(NFL.positions);
+/** What "trade value" means in a sport, for tooltips and captions: the measures it weighs. */
+export function tradeValueHint(sport: SportConfig): string {
+  const { weights, reputationMaxAdp } = sport.tradeValue;
+  const parts = [
+    "expected points",
+    "positional scarcity",
+    ...(weights.usage > 0 ? [`${sport.id.toUpperCase()} usage`] : []),
+    "this season",
+    "draft market",
+    `last ${sport.model.recentGames} games`,
+    "proven base",
+  ];
+  const list = `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+  const lift =
+    reputationMaxAdp > 0 ? "; stars off to a slow start keep part of their draft rank's value" : "";
+  return `Trade value, 1 to 40: ${list}${lift}.`;
+}
 
-/** What "trade value" means, for tooltips and captions. */
-export const TRADE_VALUE_HINT =
-  "Trade value, 1 to 40: expected points, positional scarcity, NFL usage, this season, draft market, last 3 games and proven base; stars off to a slow start keep part of their draft rank's value.";
+/** What "trade value" means in the league's sport. */
+export function useTradeValueHint(): string {
+  return tradeValueHint(useSport());
+}
 
-const PART_LABELS: Record<keyof PlayerScore["parts"], string> = {
+const partLabels = (recent: number): Record<keyof PlayerScore["parts"], string> => ({
   base: "base",
   market: "market",
   expected: "expected",
   season: "season",
-  recent: "last 3",
+  recent: `last ${recent}`,
   scarcity: "scarcity",
   usage: "usage",
-};
+});
 
 /** Trade value (1-40, one decimal) with its parts in the tooltip; value above replacement until scores load. */
 export function TradeValue({ player }: { player: Player }) {
   const s = usePlayerScore(player.id);
+  const sport = useSport();
   if (!s) return <>{fmt(player.vorp)}</>;
-  const parts = (Object.keys(PART_LABELS) as (keyof PlayerScore["parts"])[])
-    .map((k) => `${PART_LABELS[k]} ${Math.round(s.parts[k] * 100)}`)
+  const labels = partLabels(sport.model.recentGames);
+  const parts = (Object.keys(labels) as (keyof PlayerScore["parts"])[])
+    .filter((k) => k !== "usage" || sport.tradeValue.weights.usage > 0)
+    .map((k) => `${labels[k]} ${Math.round(s.parts[k] * 100)}`)
     .join(", ");
   const extra =
     (s.availability < 1 ? `, availability ${Math.round(s.availability * 100)}%` : "") +
@@ -37,7 +58,8 @@ export function TradeValue({ player }: { player: Player }) {
 }
 
 export function PosBadge({ pos }: { pos: string }) {
-  const cls = KNOWN_POSITIONS.has(pos) ? styles[pos as keyof typeof styles] : undefined;
+  const known = useSport().positions.includes(pos);
+  const cls = known ? styles[pos as keyof typeof styles] : undefined;
   return <span className={`${styles.pos} ${cls ?? ""}`}>{pos}</span>;
 }
 
@@ -45,8 +67,9 @@ export function PosBadge({ pos }: { pos: string }) {
 const INJURY_LABELS: Record<string, string> = { Questionable: "QUEST", Doubtful: "DOUBT" };
 
 export function InjuryBadge({ status }: { status: string | null }) {
+  const sport = useSport();
   if (!status) return null;
-  const rule = NFL.model.injury[status];
+  const rule = sport.model.injury[status];
   const serious = (rule && !rule.startable) || status === "Out";
   const label = INJURY_LABELS[status] ?? status.toUpperCase();
   return (
@@ -60,31 +83,23 @@ export function InjuryBadge({ status }: { status: string | null }) {
   );
 }
 
-/** Player Score (0-100) as a small pill; the tooltip explains the parts. */
-export function ScorePill({ id }: { id: string }) {
-  const s = usePlayerScore(id);
-  if (!s) return null;
-  const parts = [
-    `trade value ${fmt(s.trade)} of ${TRADE_VALUE_MAX} → ${Math.round((SCORE_WEIGHTS.trade * s.trade) / TRADE_VALUE_MAX)}/${SCORE_WEIGHTS.trade}`,
-    `team importance ${Math.round(s.importance * SCORE_WEIGHTS.importance)}/${SCORE_WEIGHTS.importance}`,
-  ];
-  if (s.usageRank) parts.push(`weapon #${s.usageRank} of his offense`);
+/** Every position he can play (eligibility), in the sport's order, the primary one first when tied. */
+export function PosBadges({ player }: { player: Pick<Player, "pos" | "elig"> }) {
+  const positions = playablePositions(player, useSport());
   return (
-    <span className={styles.score} title={`Player Score: ${parts.join(", ")}`}>
-      <span className="visually-hidden">Player Score </span>
-      {Math.round(s.total)}
-    </span>
+    <>
+      {positions.map((pos) => (
+        <PosBadge key={pos} pos={pos} />
+      ))}
+    </>
   );
 }
 
 export function PlayerCell({
   player,
-  showScore = true,
   link = true,
 }: {
   player: Player;
-  /** The Player Score pill next to the name. */
-  showScore?: boolean;
   /** The name opens the player card (off where a click picks the player). */
   link?: boolean;
 }) {
@@ -95,13 +110,12 @@ export function PlayerCell({
         {/* A word joiner keeps the badges on the name's last line. */}
         {"\u2060"}
         <span className={styles.nowrap}>
-          {showScore && <ScorePill id={player.id} />}
           <InjuryBadge status={player.inj} />
           <NewsButton id={player.id} name={player.name} pos={player.pos} />
         </span>
       </div>
       <div className={styles.sub}>
-        <PosBadge pos={player.pos} />
+        <PosBadges player={player} />
         <span>{player.team || "No team"}</span>
       </div>
     </div>

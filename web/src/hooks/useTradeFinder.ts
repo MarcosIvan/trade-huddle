@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Team } from "@/lib/league";
 import type { FinderMode, IdealRoster, Model, TradeIdea } from "@/lib/model";
+import type { SportConfig } from "@/lib/sports/types";
 import {
   hydrateIdeas,
   runFinder,
@@ -30,6 +31,7 @@ export function useTradeFinder(
   ideal: IdealRoster,
   mode: FinderMode,
   playerId: string | null,
+  sport: SportConfig,
 ): TradeFinderState {
   const [state, setState] = useState<TradeFinderState>(IDLE);
   const workerRef = useRef<Worker | null>(null);
@@ -59,6 +61,7 @@ export function useTradeFinder(
       model,
       rosters: teams.map((t) => ({ rid: t.rid, playerIds: t.playerIds, reserveIds: t.reserveIds })),
       myRid,
+      sport: sport.id,
       tradeScores: [...tradeScores],
       ideal,
       finder: { mode, playerId },
@@ -83,7 +86,7 @@ export function useTradeFinder(
       worker.removeEventListener("message", onMessage);
       worker.removeEventListener("error", onError);
     };
-  }, [model, teams, myRid, tradeScores, ideal, mode, playerId]);
+  }, [model, teams, myRid, tradeScores, ideal, mode, playerId, sport]);
 
   return state;
 }

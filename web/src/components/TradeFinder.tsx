@@ -12,6 +12,7 @@ import {
 } from "@/lib/model";
 import { useTradeFinder } from "@/hooks/useTradeFinder";
 import { ScoreContext } from "./ScoreContext";
+import { useSport } from "./SportContext";
 import { IdeaCard } from "./TradeIdeas";
 import styles from "./TradeFinder.module.css";
 
@@ -51,6 +52,7 @@ export function TradeFinder({
   const modeName = useId();
   const playerFieldId = useId();
   const scores = useContext(ScoreContext);
+  const sport = useSport();
   const worth = (p: Player) => scores.get(p.id)?.trade ?? p.vorp;
   const { ideas, searching } = useTradeFinder(
     model,
@@ -60,6 +62,7 @@ export function TradeFinder({
     ideal,
     mode,
     playerId,
+    sport,
   );
 
   // Your players to sell, or every other team's players to get, best value first.

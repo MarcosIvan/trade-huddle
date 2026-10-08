@@ -39,9 +39,7 @@ class FakeSession(requests.Session):
             and len(url.rsplit("/", 1)[1]) < 3
         ):
             week = int(url.rsplit("/", 1)[1])
-            body = [
-                {"player_id": pid, "stats": s} for pid, s in WEEK_PROJECTIONS.get(week, {}).items()
-            ]
+            body = WEEK_PROJECTIONS.get(week, [])
         elif "/projections/nfl/" in url:
             body = [{"player_id": pid, "stats": s} for pid, s in PROJECTIONS.items()]
         elif url.endswith("/stats/nfl/2025"):

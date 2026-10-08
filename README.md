@@ -5,7 +5,7 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/MarcosIvan/trade-huddle/badge)](https://scorecard.dev/viewer/?uri=github.com/MarcosIvan/trade-huddle)
 
 Trade ideas, a trade finder and a trade analyzer for **Sleeper redraft fantasy
-football leagues**.
+football leagues**, and now **NBA points leagues** too.
 
 **Use it:** open **https://marcosivan.github.io/trade-huddle/**, type your
 Sleeper username and pick a league. No sign-up, no
@@ -16,7 +16,8 @@ For your league, Trade Huddle:
 
 1. **Builds your team**: your current roster, arranged into the best starting
    lineup for your league's slots, plus a **"This week"** lineup that uses each
-   player's opponent.
+   player's opponent. In the NBA it lists every game left this week and builds
+   the lineup on each player's best projected game, for lock-in scoring.
 2. **Suggests three trades** that make _your_ team and the partner's team
    better, stay fair for both sides and keep both rosters' positions balanced.
 3. **Finds deals around one player** (trade finder): pick one of your players
@@ -92,6 +93,11 @@ combines several measures, each compared across the league
 | Draft market (ADP; fades as games are played)     | 10     |
 | Last 3 games                                      | 5      |
 | Proven base (preseason projection or last season) | 5      |
+
+In the NBA the same recipe applies without the usage measure (its weight goes
+to expected points and scarcity), with the **last 12 games** as recent form and
+a market discount for centers the draft market rates low
+([ADR 0020](docs/adr/0020-nba-model-and-sport-per-league.md)).
 
 Scarce positions are scaled up (running backs, and quarterbacks in superflex),
 injured players keep part of their value, and nobody goes below 1. A player

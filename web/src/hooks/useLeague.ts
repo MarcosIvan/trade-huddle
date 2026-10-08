@@ -17,12 +17,16 @@ import {
   parseRosters,
   type SleeperLeague,
 } from "@/lib/sleeper/validate";
+import { sportOf } from "@/lib/sports";
 import { NFL } from "@/lib/sports/nfl";
+import type { SportConfig } from "@/lib/sports/types";
 import { BASE_PATH, loadStats } from "@/lib/stats";
 import { storage } from "@/lib/storage";
 
 export interface LeagueView {
   demo: boolean;
+  /** The league's sport: its positions, slots and model. */
+  sport: SportConfig;
   stats: StatsFile;
   league: SleeperLeague;
   teams: Team[];
@@ -74,13 +78,15 @@ export function useLeague() {
   const show = useCallback(
     (data: LeagueData, stats: StatsFile, demo: boolean, preferred: number | null) => {
       const teams = buildTeams(data.rosters, data.users);
+      const sport = sportOf(data.league.sport);
       const view: LeagueView = {
         demo,
+        sport,
         stats,
         league: data.league,
         teams,
-        model: buildModel(stats, data.league, NFL),
-        notices: leagueNotices(data.league, NFL, demo),
+        model: buildModel(stats, data.league, sport),
+        notices: leagueNotices(data.league, sport, demo),
       };
       setMyRid((current) =>
         pickMyTeam(teams, preferred ?? current, demo ? null : storage.get("uid")),
@@ -99,7 +105,9 @@ export function useLeague() {
       const load = ++loadRef.current;
       setStatus({ kind: "loading" });
       try {
-        const [stats, data] = await Promise.all([loadStats(NFL.id, false), fetchLeague(leagueId)]);
+        // The league says its sport, and the sport says which stats file to load.
+        const data = await fetchLeague(leagueId);
+        const stats = await loadStats(sportOf(data.league.sport).id, false);
         if (load !== loadRef.current) return;
         storage.set("league", leagueId);
         setUrl(`?league=${encodeURIComponent(leagueId)}`);
