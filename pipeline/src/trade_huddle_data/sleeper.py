@@ -90,15 +90,15 @@ class SleeperClient:
         data = self.get(f"{SCHEDULE_API}/{sport.id}/regular/{season}")
         return [g for g in (data or []) if isinstance(g, dict)]
 
-    def week_projections(
-        self, sport: SportConfig, season: str, week: int
-    ) -> dict[str, dict[str, Any]]:
-        """Sleeper's projection for one week (it already accounts for the opponent)."""
+    def week_projections(self, sport: SportConfig, season: str, week: int) -> list[Entry]:
+        """
+        Sleeper's projections for one week (they already account for the opponent):
+        one entry per player, or one per game, with its date, in game-day sports.
+        """
         params = [("season_type", "regular")] + [
             ("position[]", pos) for pos in sorted(sport.fantasy_positions)
         ]
-        entries = to_entries(self.get(f"{PROJECTIONS_API}/{sport.id}/{season}/{week}", params))
-        return {str(e["player_id"]): e.get("stats") or {} for e in entries}
+        return to_entries(self.get(f"{PROJECTIONS_API}/{sport.id}/{season}/{week}", params))
 
     def season_totals(self, sport: SportConfig, season: str) -> dict[str, dict[str, Any]]:
         """Full-season totals: the season endpoint, or the sum of every week as a fallback."""

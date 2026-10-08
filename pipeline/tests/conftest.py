@@ -123,8 +123,11 @@ SCHEDULE: list[dict[str, Any]] = [
     {"week": 3, "home": "DDD", "away": "BBB", "status": "pre_game"},
 ]
 
-WEEK_PROJECTIONS: dict[int, dict[str, dict[str, Any]]] = {
-    3: {"100": {"rec": 6, "rec_yd": 75, "pts_ppr": 13.5}, "700": {"rec": 1}},
+WEEK_PROJECTIONS: dict[int, list[dict[str, Any]]] = {
+    3: [
+        {"player_id": "100", "stats": {"rec": 6, "rec_yd": 75, "pts_ppr": 13.5}},
+        {"player_id": "700", "stats": {"rec": 1}},
+    ],
 }
 
 
@@ -134,5 +137,5 @@ def schedule() -> list[dict[str, Any]]:
 
 
 @pytest.fixture
-def week_projections() -> dict[int, dict[str, dict[str, Any]]]:
+def week_projections() -> dict[int, list[dict[str, Any]]]:
     return WEEK_PROJECTIONS

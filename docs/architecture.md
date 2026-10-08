@@ -7,7 +7,7 @@ that builds a public stats file.
 ```
                  GitHub Actions (daily, 10:00 UTC, and on every push to main)
                 ┌───────────────────────────────────────────────────────────┐
- Sleeper API ──▶│ pipeline/  (Python)  ──▶ web/public/data/nfl/stats.json   │
+ Sleeper API ──▶│ pipeline/  (Python) ──▶ web/public/data/<sport>/stats.json│
  (public, no    │ web/       (Next.js static export + CSP by hash)          │
   keys)         └──────────────────────────────┬────────────────────────────┘
                                                ▼
@@ -24,7 +24,9 @@ that builds a public stats file.
 
 A small Python package, `trade_huddle_data`, run by the deploy workflow
 ([`deploy.yml`](../.github/workflows/deploy.yml)). It reads Sleeper's public
-API and writes one **league-independent** file, `stats.json`:
+API and writes one **league-independent** file per sport, `data/nfl/stats.json`
+and `data/nba/stats.json` (the NBA one by game day,
+[ADR 0019](adr/0019-nba-data-by-game-day.md)):
 
 - every relevant player's weekly stats this season, and last season's totals;
 - the team each player played for each week, and each team's weekly usage

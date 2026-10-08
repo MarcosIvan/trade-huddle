@@ -2,6 +2,7 @@
 Command line entry point.
 
     python -m trade_huddle_data build                # this season -> web/public/data/nfl/stats.json
+    python -m trade_huddle_data build --sport nba    # -> web/public/data/nba/stats.json
     python -m trade_huddle_data build --season 2025  # a whole past season, for backtests
 """
 

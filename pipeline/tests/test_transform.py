@@ -225,6 +225,11 @@ class TestSchedule:
             "3": [["BBB", "DDD"], ["CCC", "AAA"]],
         }
 
+    def test_leaves_out_a_canceled_game_kept_beside_the_real_one(self, schedule: Any) -> None:
+        # Sleeper can keep a canceled game in the week its teams play someone else.
+        canceled = {"week": 3, "home": "DDD", "away": "AAA", "status": "canceled"}
+        assert compact_schedule([*schedule, canceled])["3"] == [["BBB", "DDD"], ["CCC", "AAA"]]
+
     def test_lineup_week_is_the_first_week_not_finished(self, schedule: Any) -> None:
         assert lineup_week(schedule) == 3
         assert lineup_week([{**g, "status": "complete"} for g in schedule]) is None

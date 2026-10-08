@@ -25,5 +25,6 @@ later one changes it, the later one says what it replaces.
 | [0016](0016-npm-audit-production-only.md)      | npm audit blocks on production dependencies only                        |
 | [0017](0017-dependabot-monthly-groups.md)      | Dependabot: monthly, grouped updates; security fixes right away         |
 | [0018](0018-front-components.md)               | Shared front components, logic in the model                             |
+| [0019](0019-nba-data-by-game-day.md)          | NBA stats kept by game day                                              |
 
 How the pieces fit together: [architecture.md](../architecture.md).

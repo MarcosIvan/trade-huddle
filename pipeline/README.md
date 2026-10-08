@@ -9,6 +9,7 @@ python -m venv .venv
 .venv/bin/pip install --no-deps -e pipeline
 
 .venv/bin/python -m trade_huddle_data build            # -> web/public/data/nfl/stats.json
+.venv/bin/python -m trade_huddle_data build --sport nba   # -> web/public/data/nba/stats.json
 .venv/bin/python -m trade_huddle_data build --season 2025   # a past season, for backtests
 ```
 
@@ -24,6 +25,17 @@ games and totals) and `w` (this season, by week). `tw` records the team the
 player played for each week, and `team_weeks` holds each team's weekly
 totals of `usage_keys` (targets, carries, red-zone targets), so the site can
 compute a player's share of his team's offense even after a trade.
+
+`period` says what one entry of a season is. In the NFL it is a `week` (one
+game a week), so `weeks`, `w`, `tw`, `wp` and `schedule` are keyed by week.
+In the NBA it is a game `day`: teams play two to four times a week and at most
+once a day, so those fields are keyed by day number instead (day 1 is the
+first date on the schedule, counted in calendar days). `day_weeks` maps each
+day to its fantasy week and `day_dates` to its date; `wp` holds Sleeper's
+projection for each game of the lineup week. Postponed and canceled games are
+left out of the schedule. The NBA has no usage totals (`usage_keys` is
+empty) and keeps time on court (`sp`) with every stat a points league can
+score ([ADR 0019](../docs/adr/0019-nba-data-by-game-day.md)).
 
 ## Development
 
