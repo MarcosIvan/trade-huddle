@@ -239,6 +239,7 @@ test.describe("demo league", () => {
       .first()
       .click();
     const card = page.getByRole("dialog", { name: /Milo Valadares/ });
+    await expect(card.locator("dl")).toContainText(/[A-Z]+ rank#\d+Overall rank#\d+/);
     await expect(card.getByRole("columnheader", { name: "Rushing", exact: true })).toBeVisible();
     await expect(card.getByRole("columnheader", { name: "Receiving", exact: true })).toBeVisible();
     await expect(card.getByRole("row", { name: /^Total/ })).toBeVisible();

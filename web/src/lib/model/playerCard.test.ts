@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
-import { matchupLevel, playerCard, statLevel } from "./playerCard";
-import type { Player, StatsFile } from "./types";
+import { matchupLevel, playerCard, seasonRanks, statLevel } from "./playerCard";
+import type { Model, Player, StatsFile } from "./types";
 
 const keys = ["rush_att", "rush_yd", "rush_td", "rec", "rec_yd", "pass_yd", "fum"];
 
@@ -143,5 +143,43 @@ describe("stat colors", () => {
     expect(statLevel(0, 0.7, true)).toBe("good");
     expect(statLevel(2, 0.7, true)).toBe("bad");
     expect(statLevel(0.7, 0.7, true)).toBe("neutral");
+  });
+});
+
+describe("seasonRanks", () => {
+  const p = (id: string, pos: string, pts: (number | null)[]) =>
+    ({
+      id,
+      pos,
+      g: pts.filter((x) => x !== null).length,
+      weekly: pts.map((x, i) => ({ week: i + 1, pts: x })),
+    }) as Player;
+  const model = {
+    players: Object.fromEntries(
+      [
+        p("qb1", "QB", [20, 25]),
+        p("rb1", "RB", [30, 10]),
+        p("rb2", "RB", [15, null]),
+        p("wr1", "WR", [15, 0]),
+        p("rb3", "RB", [5, 10]),
+        p("out", "WR", [null, null]),
+      ].map((x) => [x.id, x]),
+    ),
+  } as unknown as Model;
+  const ranks = seasonRanks(model);
+
+  it("ranks by season points at the position and overall", () => {
+    expect(ranks.get("qb1")).toEqual({ pos: 1, overall: 1 });
+    expect(ranks.get("rb1")).toEqual({ pos: 1, overall: 2 });
+    expect(ranks.get("wr1")).toEqual({ pos: 1, overall: 3 });
+  });
+
+  it("gives tied players the same rank", () => {
+    expect(ranks.get("rb2")).toEqual({ pos: 2, overall: 3 });
+    expect(ranks.get("rb3")).toEqual({ pos: 2, overall: 3 });
+  });
+
+  it("leaves out players who have not played", () => {
+    expect(ranks.has("out")).toBe(false);
   });
 });

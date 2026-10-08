@@ -14,6 +14,7 @@ import {
   defenseFactors,
   playerCard,
   PTS_KEY,
+  seasonRanks,
   statBenchmarks,
   statLevel,
   type CardGame,
@@ -21,6 +22,7 @@ import {
   type MatchupLevel,
   type Model,
   type Player,
+  type SeasonRank,
   type StatBenchmarks,
   type StatLevel,
   type StatsFile,
@@ -54,6 +56,8 @@ export function PlayerCardProvider({
   );
   // What rosterable players at each position do per game: the reference for each cell's color.
   const benchmarks = useMemo(() => statBenchmarks(model, stats, sport), [model, stats, sport]);
+  // Every player's rank by season fantasy points, at his position and overall.
+  const ranks = useMemo(() => seasonRanks(model), [model]);
   const [target, setTarget] = useState<{ id: string; at: number } | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const player = target ? model.players[target.id] : undefined;
@@ -84,6 +88,7 @@ export function PlayerCardProvider({
             stats={stats}
             factors={factors}
             benchmarks={benchmarks}
+            rank={ranks.get(player.id)}
             sport={sport}
             onClose={() => dialog.current?.close()}
           />
@@ -179,6 +184,7 @@ function CardPanel({
   stats,
   factors,
   benchmarks,
+  rank,
   sport,
   onClose,
 }: {
@@ -186,6 +192,8 @@ function CardPanel({
   stats: StatsFile;
   factors: DefenseFactors;
   benchmarks: StatBenchmarks;
+  /** Undefined when he has not played this season. */
+  rank: SeasonRank | undefined;
   sport: SportConfig;
   onClose: () => void;
 }) {
@@ -237,6 +245,14 @@ function CardPanel({
         <div>
           <dt>Games</dt>
           <dd>{card.played}</dd>
+        </div>
+        <div title={`Rank by season fantasy points among every ${player.pos}`}>
+          <dt>{player.pos} rank</dt>
+          <dd>{rank ? `#${rank.pos}` : "–"}</dd>
+        </div>
+        <div title="Rank by season fantasy points among every player">
+          <dt>Overall rank</dt>
+          <dd>{rank ? `#${rank.overall}` : "–"}</dd>
         </div>
       </dl>
 
