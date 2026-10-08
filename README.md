@@ -205,7 +205,8 @@ The value model's backtests run with
 are in [`pipeline/README.md`](pipeline/README.md). The **CI** workflow
 ([`ci.yml`](.github/workflows/ci.yml)) runs all of them (except the
 backtests), plus
-`npm audit --audit-level=high` and a gitleaks scan of the git history for
+`npm audit --omit=dev --audit-level=high` (blocking; dev tools only warn,
+see [ADR 0016](docs/adr/0016-npm-audit-production-only.md)) and a gitleaks scan of the git history for
 secrets, on every pull request and every push to `main`. To check for
 secrets before each commit too: `pip install pre-commit && pre-commit install`
 (see [`.pre-commit-config.yaml`](.pre-commit-config.yaml)).

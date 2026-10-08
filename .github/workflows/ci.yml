@@ -64,8 +64,15 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
         run: npm run build
 
+      # Blocks on what ships in the site. Dev tools (lint, tests, build helpers) never
+      # reach the browser, and an advisory there may have no fix yet, so it only warns.
       - name: Known vulnerabilities (high and critical)
-        run: npm audit --audit-level=high
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Known vulnerabilities in dev tools (warning only)
+        run: |
+          npm audit --audit-level=high ||
+            echo "::warning title=npm audit (dev tools)::High or critical advisories in dev dependencies; see this step's log"
 
   e2e:
     name: E2E
