@@ -131,7 +131,11 @@ test.describe("NBA league", () => {
 
     // The player card opens for NBA players too.
     await team.getByRole("button", { name: /^Hoop Player 1$/ }).click();
-    await expect(page.getByRole("dialog", { name: /Hoop Player 1/ })).toBeVisible();
+    const card = page.getByRole("dialog", { name: /Hoop Player 1/ });
+    await expect(card).toBeVisible();
+    // Each game day says which fantasy week it counts in.
+    await expect(card.getByRole("columnheader", { name: "Date" })).toBeVisible();
+    await expect(card.getByRole("columnheader", { name: "Wk" })).toBeVisible();
   });
 });
 

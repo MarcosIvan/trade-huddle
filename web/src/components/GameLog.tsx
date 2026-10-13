@@ -90,15 +90,18 @@ export function GameLog({
   card,
   average,
   sport,
-  dateOf,
+  days,
 }: {
   player: Player;
   card: PlayerCard;
   /** The position's per-game averages (statBenchmarks), for each cell's color. */
   average: Readonly<Record<string, number>>;
   sport: SportConfig;
-  /** A game day's date, for files kept by game day (the NBA); rows show the week otherwise. */
-  dateOf?: (period: number) => string | null;
+  /**
+   * For files kept by game day (the NBA): each game day's date and the fantasy week it
+   * counts in. Rows show only the week otherwise.
+   */
+  days?: { date: (period: number) => string | null; week: (period: number) => number };
 }) {
   const groups = sport.gameLog[player.pos] ?? [];
   const columns = groups.flatMap((g) => g.columns);
@@ -108,18 +111,21 @@ export function GameLog({
   const starts = new Set(groups.map((g) => g.columns[0]?.key));
   const rows = [...card.games, ...card.upcoming];
   const toCome = new Set(card.upcoming);
+  // Columns before the fantasy points: the date and its week on game days, the week otherwise.
+  const lead = days ? 2 : 1;
 
   return (
     <div className="table-wrap">
       <table className={`table ${styles.log}`}>
         <caption className="visually-hidden">
-          {player.name}&apos;s season week by week: opponent, matchup, fantasy points and stats;
-          weeks still to play show the opponent and matchup only
+          {player.name}&apos;s season{" "}
+          {days ? "game by game, with the fantasy week" : "week by week"}: opponent, matchup,
+          fantasy points and stats; games still to play show the opponent and matchup only
         </caption>
         <thead>
           {groups.length > 0 && (
             <tr>
-              <td colSpan={4} />
+              <td colSpan={lead + 3} />
               {groups.map((g) => (
                 <th
                   key={g.label}
@@ -133,13 +139,10 @@ export function GameLog({
             </tr>
           )}
           <tr>
-            {dateOf ? (
-              <th scope="col">Date</th>
-            ) : (
-              <th scope="col" className="num">
-                Wk
-              </th>
-            )}
+            {days && <th scope="col">Date</th>}
+            <th scope="col" className="num" title="Fantasy week">
+              Wk
+            </th>
             <th scope="col">Opp</th>
             <th scope="col">Matchup</th>
             <th scope="col" className="num" title="Fantasy points, your league's scoring">
@@ -164,11 +167,8 @@ export function GameLog({
         <tbody>
           {rows.map((g) => (
             <tr key={g.week}>
-              {dateOf ? (
-                <td className={styles.date}>{dateLabel(dateOf(g.week))}</td>
-              ) : (
-                <td className="num">{g.week}</td>
-              )}
+              {days && <td className={styles.date}>{dateLabel(days.date(g.week))}</td>}
+              <td className="num">{days ? days.week(g.week) || "–" : g.week}</td>
               <td>
                 <Opponent game={g} />
               </td>
@@ -215,7 +215,7 @@ export function GameLog({
         </tbody>
         <tfoot>
           <tr>
-            <th scope="row" colSpan={3}>
+            <th scope="row" colSpan={lead + 2}>
               Total
             </th>
             <td className={`num ${styles.pts}`}>{fmt(card.pts)}</td>
