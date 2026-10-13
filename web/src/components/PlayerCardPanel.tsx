@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { fmt } from "@/lib/format";
 import {
   periodDate,
+  periodWeek,
   playerCard,
   type DefenseFactors,
   type Player,
@@ -79,7 +80,14 @@ export function PlayerCardPanel({
           card={card}
           average={benchmarks.get(player.pos) ?? {}}
           sport={sport}
-          dateOf={stats.period === "day" ? (period) => periodDate(stats, period) : undefined}
+          days={
+            stats.period === "day"
+              ? {
+                  date: (period) => periodDate(stats, period),
+                  week: (period) => periodWeek(stats, period),
+                }
+              : undefined
+          }
         />
       ) : (
         <p className={styles.status}>No games on the schedule yet.</p>

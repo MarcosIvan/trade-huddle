@@ -126,6 +126,16 @@ export interface StatGroup {
   columns: readonly StatColumn[];
 }
 
+/** How a player's share of his team's games is estimated (model/durability.ts). */
+export interface DurabilityParams {
+  /** Weight of last season's games against this season's (0 to 1). */
+  lastSeason: number;
+  /** Team games at the typical share mixed in, so a few missed games move it little. */
+  shrinkGames: number;
+  /** A typical player's share of his team's games. */
+  typical: number;
+}
+
 /** How trade value (score.ts) is built for a sport: weights of its measures, and its scale. */
 export interface TradeValueParams {
   /** Weight of each measure, summing to 100 (score.ts explains each). */
@@ -170,6 +180,11 @@ export interface TradeValueParams {
    * draft market already rates highly (missing means no discount).
    */
   positionMarket: Readonly<Record<string, number>>;
+  /**
+   * Trade value is multiplied by the share of his team's games he plays (model/durability.ts),
+   * for long seasons where missed games add up (null leaves it out).
+   */
+  durability: DurabilityParams | null;
 }
 
 export interface SportConfig {

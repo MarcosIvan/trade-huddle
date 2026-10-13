@@ -19,7 +19,8 @@
     "backtest": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot backtest.run",
     "backtest:scarcity": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot scarcity.run",
     "backtest:teammates": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot teammates.run",
-    "backtest:weekly": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot weekly.run"
+    "backtest:weekly": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot weekly.run",
+    "backtest:nba": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot nba.run"
   },
   "dependencies": {
     "next": "16.3.8",

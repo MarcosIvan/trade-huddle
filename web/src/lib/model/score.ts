@@ -17,7 +17,8 @@
  * "recent" are the same games: they count once, at half weight, and the rest
  * goes to base, so three games cannot swing the value alone.
  * The sum is scaled by how scarce his position is in this league (mildly, so
- * positions stay comparable) and by his availability (injury or no team).
+ * positions stay comparable), by his availability (injury or no team) and, in
+ * sports with long seasons, by the share of his team's games he plays.
  * A star (drafted in the top `reputationMaxAdp`) worth less than his draft
  * rank at his position is lifted part of the way toward the value of that
  * rank (`reputationGames`), so a slow start does not sink him; the lift fades
@@ -36,6 +37,7 @@
  * a player must be worth the same on both sides of a trade.
  */
 import type { SportConfig } from "../sports/types";
+import { durability } from "./durability";
 import type { Model, Player, StatsFile } from "./types";
 import { USAGE_KEYS } from "./usage";
 import { priorPpg } from "./value";
@@ -60,6 +62,8 @@ export interface PlayerScore {
   posScale: number;
   /** Share of his value kept after injury or having no team, 0 to 1. */
   availability: number;
+  /** Share of his team's games he plays (1 where the sport leaves it out), 0 to 1. */
+  durability: number;
   /** Share of his value that comes from the reputation lift (a star off to a slow start), 0 to 1. */
   reputation: number;
   /** His value relative to the best player on his fantasy roster, 0 to 1. */
@@ -177,7 +181,7 @@ export function playerScores(
 
   const raw = new Map<
     string,
-    { value: number; parts: TradeValueParts; avail: number; lift: number }
+    { value: number; parts: TradeValueParts; avail: number; dur: number; lift: number }
   >();
   for (const p of players) {
     const adp = model.adpFormat ? stats.players[p.id]?.adp?.[model.adpFormat] : undefined;
@@ -192,7 +196,7 @@ export function playerScores(
         scarcity: 0,
         usage: 0,
       };
-      raw.set(p.id, { value: 0, parts, avail: availability(p, sport), lift: 0 });
+      raw.set(p.id, { value: 0, parts, avail: availability(p, sport), dur: 1, lift: 0 });
       continue;
     }
     const r = ref.get(p.pos)!;
@@ -229,7 +233,14 @@ export function playerScores(
     );
     const avail = availability(p, sport);
     const market = 1 - (tv.positionMarket[p.pos] ?? 0) * (1 - parts.market);
-    raw.set(p.id, { value: (sum / 100) * posScale(p.pos) * market * avail, parts, avail, lift: 0 });
+    const dur = tv.durability ? durability(stats, p, tv.durability) : 1;
+    raw.set(p.id, {
+      value: (sum / 100) * posScale(p.pos) * market * avail * dur,
+      parts,
+      avail,
+      dur,
+      lift: 0,
+    });
   }
 
   // Reputation: a star below the value of his draft rank at his position is lifted part of
@@ -277,6 +288,7 @@ export function playerScores(
       parts: r.parts,
       posScale: posScale(p.pos),
       availability: r.avail,
+      durability: r.dur,
       reputation: r.value > 0 ? r.lift / r.value : 0,
       importance: imp,
       usageRank: usageRank.get(p.id) ?? null,

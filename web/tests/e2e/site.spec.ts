@@ -38,7 +38,7 @@ test.describe("entry screen", () => {
   test("is prerendered, protected by the CSP and accessible", async ({ page }) => {
     await page.goto("./");
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Fantasy football trade analyzer for Sleeper",
+      "Fantasy football and basketball trade analyzer for Sleeper",
     );
     await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1);
     expect(await accessibilityProblems(page)).toEqual([]);
@@ -131,7 +131,11 @@ test.describe("NBA league", () => {
 
     // The player card opens for NBA players too.
     await team.getByRole("button", { name: /^Hoop Player 1$/ }).click();
-    await expect(page.getByRole("dialog", { name: /Hoop Player 1/ })).toBeVisible();
+    const card = page.getByRole("dialog", { name: /Hoop Player 1/ });
+    await expect(card).toBeVisible();
+    // Each game day says which fantasy week it counts in.
+    await expect(card.getByRole("columnheader", { name: "Date" })).toBeVisible();
+    await expect(card.getByRole("columnheader", { name: "Wk" })).toBeVisible();
   });
 });
 

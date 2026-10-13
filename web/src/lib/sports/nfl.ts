@@ -109,6 +109,8 @@ export const NFL_TRADE_VALUE: TradeValueParams = {
   reputationGames: 8,
   injuryRecovery: 0.4,
   positionMarket: {},
+  // 17 games: a few missed ones are the injury status's business.
+  durability: null,
 };
 
 export const NFL: SportConfig = {

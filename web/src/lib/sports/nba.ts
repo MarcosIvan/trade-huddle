@@ -29,7 +29,8 @@ const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
  * No reputation lift: before a game is played it lifts every early pick to
  * the value of his draft rank, and the draft market already counts. Scarcity
  * follows each position's edge over a free agent linearly. Centers get a
- * market discount (`positionMarket`).
+ * market discount (`positionMarket`), and trade value counts the share of his
+ * team's games a player plays (`durability`).
  */
 export const NBA_TRADE_VALUE: TradeValueParams = {
   ...NFL.tradeValue,
@@ -43,6 +44,9 @@ export const NBA_TRADE_VALUE: TradeValueParams = {
   // Trade markets price centers below what points leagues score for them (rebounds and
   // blocks): up to 35% off, fading for centers the draft market already rates highly.
   positionMarket: { C: 0.35 },
+  // An 82-game season: the games a player misses cost his fantasy team. This season's
+  // share of his team's games, as if he had 40 more at a typical 80% (backtest: ADR 0022).
+  durability: { lastSeason: 0, shrinkGames: 40, typical: 0.8 },
 };
 
 export const NBA: SportConfig = {
@@ -70,8 +74,9 @@ export const NBA: SportConfig = {
     // Recent form: the last 12 games, about the NFL's last 3 in share of the season
     // (15% against 18%) and in time (three and a half weeks).
     recentGames: 12,
-    // The prior's weight is k / (k + games): 38 games, the NFL's 8 in share of the season.
-    prevReliabilityGames: 38,
+    // The prior's weight is k / (k + games): half after 10 games. Basketball's per-game
+    // numbers settle fast (backtest on 2024-25 and 2025-26: ADR 0022).
+    prevReliabilityGames: 10,
     shrinkGames: 5,
     injuredPriorGames: 30,
     // Usage (targets and carries) and the teammate rule are football measures.

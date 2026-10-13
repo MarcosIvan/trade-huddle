@@ -28,5 +28,6 @@ later one changes it, the later one says what it replaces.
 | [0019](0019-nba-data-by-game-day.md)          | NBA stats kept by game day                                              |
 | [0020](0020-nba-model-and-sport-per-league.md) | NBA model, and the sport chosen by the league                           |
 | [0021](0021-nba-weekly-lineup.md)              | NBA weekly lineup: every game left, best game counts                    |
+| [0022](0022-nba-calibration.md)                | NBA calibration: a lighter prior and durability in trade value          |
 
 How the pieces fit together: [architecture.md](../architecture.md).
