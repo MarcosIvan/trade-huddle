@@ -63,13 +63,15 @@ export function EntryScreen({
     <div className={`container ${styles.entry}`}>
       <div className={styles.hero}>
         <h1 className={styles.title}>
-          <span className={styles.eyebrow}>Fantasy football trade analyzer for Sleeper</span> Trades
-          that make both teams better
+          <span className={styles.eyebrow}>
+            Fantasy football and basketball trade analyzer for Sleeper
+          </span>{" "}
+          Trades that make both teams better
         </h1>
         <p className={styles.lede}>
           Enter your Sleeper username and pick a league. Trade Huddle builds your best lineup,
-          suggests up to three fair NFL trades that improve your starters and your trade
-          partner&apos;s, and shows how balanced any deal is.
+          suggests up to three fair trades that improve your starters and your trade partner&apos;s,
+          and shows how balanced any deal is. For NFL and NBA leagues.
         </p>
       </div>
 
@@ -164,7 +166,7 @@ const FEATURES = [
   },
   {
     name: "Weekly lineup",
-    text: "Your best start/sit lineup for this week's NFL games, with each opponent's matchup.",
+    text: "Your best start/sit lineup for this week's games, with each opponent's matchup. In the NBA, every game left this week, and the best one counts.",
   },
 ];
 
@@ -175,11 +177,11 @@ const QUESTIONS = [
   },
   {
     q: "Which leagues does it work with?",
-    a: "Sleeper redraft NFL leagues, with your league's own scoring: PPR, half PPR or standard, one-QB or superflex.",
+    a: "Sleeper redraft NFL leagues, with your league's own scoring (PPR, half PPR or standard, one-QB or superflex), and Sleeper NBA points leagues.",
   },
   {
     q: "How is trade value calculated?",
-    a: "Each player gets a trade value from 1 to 40 that blends his preseason outlook, the draft market, expected points per game, this season, the last 3 games and his share of his NFL offense's targets and carries. A trade is fair when both sides send about the same value.",
+    a: "Each player gets a trade value from 1 to 40 that blends his preseason outlook, the draft market, expected points per game, this season and his recent games (the last 3 in the NFL, the last 12 in the NBA). In the NFL it also counts his share of his offense's targets and carries; in the NBA, the share of his team's games he plays. A trade is fair when both sides send about the same value.",
   },
   {
     q: "Where does my data go?",

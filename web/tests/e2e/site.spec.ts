@@ -38,7 +38,7 @@ test.describe("entry screen", () => {
   test("is prerendered, protected by the CSP and accessible", async ({ page }) => {
     await page.goto("./");
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
-      "Fantasy football trade analyzer for Sleeper",
+      "Fantasy football and basketball trade analyzer for Sleeper",
     );
     await expect(page.locator('meta[http-equiv="Content-Security-Policy"]')).toHaveCount(1);
     expect(await accessibilityProblems(page)).toEqual([]);

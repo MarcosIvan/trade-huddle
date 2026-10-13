@@ -13,10 +13,10 @@ export const HOME_URL = `${SITE_URL}/`;
 
 export const SITE_NAME = "Trade Huddle";
 
-export const SITE_TITLE = "Fantasy Football Trade Analyzer for Sleeper | Trade Huddle";
+export const SITE_TITLE = "Fantasy Football & NBA Trade Analyzer for Sleeper | Trade Huddle";
 
 export const SITE_DESCRIPTION =
-  "Free NFL fantasy football trade analyzer and trade finder for Sleeper leagues. Get fair trade ideas that improve both teams, see every player's trade value and set your best weekly lineup.";
+  "Free fantasy football and basketball trade analyzer and trade finder for Sleeper NFL and NBA leagues. Get fair trade ideas that improve both teams, see every player's trade value and set your best weekly lineup.";
 
 /** Link preview image (public/og.png), 1200 × 630. */
 export const OG_IMAGE = {
