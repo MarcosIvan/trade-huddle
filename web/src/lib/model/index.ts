@@ -1,4 +1,5 @@
 export { adpFormat, buildModel, modelSlots, rosterPlayers } from "./build";
+export { durability, teamGames } from "./durability";
 export { bestLineup, type Lineup } from "./lineup";
 export { currentPeriod, lineupPeriods, periodDate, periodWeek, weekPeriods } from "./periods";
 export { replacementLevels } from "./replacement";

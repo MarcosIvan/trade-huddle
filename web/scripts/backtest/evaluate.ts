@@ -75,7 +75,7 @@ function ranks(values: number[]): number[] {
   return r;
 }
 
-function spearman(a: number[], b: number[]): number {
+export function spearman(a: number[], b: number[]): number {
   const n = a.length;
   if (n < 3) return 0;
   const ra = ranks(a);

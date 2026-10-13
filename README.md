@@ -208,7 +208,9 @@ NEXT_PUBLIC_BASE_PATH=/trade-huddle npm run test:e2e
 The value model's backtests run with
 `npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
 `backtest:weekly`) after building the past seasons they use with
-`python -m trade_huddle_data build --season 2024` (and `2025`). The pipeline's own checks
+`python -m trade_huddle_data build --season 2024` (and `2025`). The NBA's runs
+with `npm run backtest:nba`, on seasons built with `--sport nba`
+([ADR 0022](docs/adr/0022-nba-calibration.md)). The pipeline's own checks
 are in [`pipeline/README.md`](pipeline/README.md). The **CI** workflow
 ([`ci.yml`](.github/workflows/ci.yml)) runs all of them (except the
 backtests), plus
