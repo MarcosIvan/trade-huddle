@@ -23,7 +23,7 @@ export const OG_IMAGE = {
   url: `${SITE_URL}/og.png`,
   width: 1200,
   height: 630,
-  alt: "Trade Huddle: fantasy football trade analyzer for Sleeper leagues",
+  alt: "Trade Huddle: fantasy football and NBA trade analyzer for Sleeper leagues",
 };
 
 /** Structured data (schema.org) describing the site as a free web app. */
