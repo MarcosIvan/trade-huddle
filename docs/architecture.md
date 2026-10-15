@@ -83,22 +83,23 @@ Nothing is sent anywhere except the read-only calls to Sleeper.
 Plain TypeScript, no React and no DOM, so it is easy to test and to run in a
 worker. The main pieces, in the order they are used:
 
-| File             | Role                                                                                           |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| `scoring.ts`     | Fantasy points = sum of stat × league weight                                                   |
-| `usage.ts`       | Expected points from opportunity (targets, carries)                                            |
-| `value.ts`       | Points per game from here on: production, prior, availability                                  |
-| `teammates.ts`   | Adjustment when a key teammate returns (tested, off: [ADR 0004](adr/0004-teammate-returns.md)) |
-| `replacement.ts` | Replacement level per position for this league                                                 |
-| `lineup.ts`      | Best starting lineup for the league's slots                                                    |
-| `score.ts`       | Trade value (1–40) and Player Score (0–100)                                                    |
-| `verdict.ts`     | Fairness of a trade (the traffic light)                                                        |
-| `trades.ts`      | Trade ideas and the trade finder                                                               |
-| `analyzer.ts`    | What the analyzer says about a trade: each side's change, free agents for uneven trades        |
-| `weekly.ts`      | This week's outlook against the opponent                                                       |
-| `weekLineup.ts`  | This week's best lineup, bench and injured reserve                                             |
-| `matchup.ts`     | Good, neutral or tough matchup, and its tooltip                                                |
-| `playerCard.ts`  | The player card: season game by game, stat colors, season rank                                 |
+| File             | Role                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `scoring.ts`     | Fantasy points = sum of stat × league weight                                                                     |
+| `usage.ts`       | Expected points from opportunity (targets, carries)                                                              |
+| `value.ts`       | Points per game from here on: production, prior, availability                                                    |
+| `teammates.ts`   | Adjustment when a key teammate returns (tested, off: [ADR 0004](adr/0004-teammate-returns.md))                   |
+| `role.ts`        | Season-ending injuries and roles from the depth chart ([ADR 0023](adr/0023-roles-and-season-ending-injuries.md)) |
+| `replacement.ts` | Replacement level per position for this league                                                                   |
+| `lineup.ts`      | Best starting lineup for the league's slots                                                                      |
+| `score.ts`       | Trade value (1–40) and Player Score (0–100)                                                                      |
+| `verdict.ts`     | Fairness of a trade (the traffic light)                                                                          |
+| `trades.ts`      | Trade ideas and the trade finder                                                                                 |
+| `analyzer.ts`    | What the analyzer says about a trade: each side's change, free agents for uneven trades                          |
+| `weekly.ts`      | This week's outlook against the opponent                                                                         |
+| `weekLineup.ts`  | This week's best lineup, bench and injured reserve                                                               |
+| `matchup.ts`     | Good, neutral or tough matchup, and its tooltip                                                                  |
+| `playerCard.ts`  | The player card: season game by game, stat colors, season rank                                                   |
 
 Why each piece works the way it does is recorded in the
 [architecture decision records](adr/README.md).

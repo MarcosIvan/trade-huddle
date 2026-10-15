@@ -75,6 +75,14 @@ export interface ModelParams {
    */
   nextGameBlend: Readonly<Record<string, number>>;
 
+  /**
+   * Injuries that end a season: one of these statuses with one of these body
+   * parts, hurt this season (he has played). Null turns the rule off.
+   */
+  seasonEnding: SeasonEndingParams | null;
+  /** Roles from the depth chart and recent usage (model/role.ts); null turns them off. */
+  roles: RoleParams | null;
+
   /** Weekly lineup: exponent on the opponent's points-allowed factor (0 ignores matchups). */
   matchupWeight: number;
   /** Weekly lineup: games of "average defense" mixed into each defense's factor. */
@@ -107,6 +115,32 @@ export interface ModelParams {
   balancedDiff: number;
   /** Value difference (share of the larger side) still called "Slightly favors". */
   slightDiff: number;
+}
+
+export interface SeasonEndingParams {
+  /** Injury statuses of a long absence (IR). */
+  statuses: readonly string[];
+  /** Body parts whose injury ends a season, matched as words of the body part ("Knee - ACL"). */
+  bodyParts: readonly string[];
+}
+
+export interface RoleParams {
+  /** Depth chart orders still starting, by position (WR orders count per slot). */
+  starters: Readonly<Record<string, number>>;
+  /** Recent games his usage is measured over (a new job shows in the last few). */
+  usageGames: number;
+  /** Usage at or above this share of a lead player's (trade value `leadShare`) makes a lead. */
+  leadUsage: number;
+  /** Usage below this share of a lead player's makes a backup. */
+  backupUsage: number;
+  /** A lead whose prior is at most this share of his recent form took the job this season. */
+  formJump: number;
+  /** Games he needs to have played for that call. */
+  minGames: number;
+  /** After the job change, the prior fades as k / (k + games) with this k. */
+  reliabilityGames: number;
+  /** Share of his trade value a backup keeps. */
+  backupValue: number;
 }
 
 /** One stat column of a player's game log: a stats-file key and its header. */

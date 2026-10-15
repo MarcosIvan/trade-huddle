@@ -71,6 +71,9 @@ export const NBA: SportConfig = {
   gameLog: Object.fromEntries(POSITIONS.map((pos) => [pos, [BOX_SCORE]])),
   model: {
     ...NFL.model,
+    // NFL rules for now: NBA injuries and rotations work differently.
+    seasonEnding: null,
+    roles: null,
     // Recent form: the last 12 games, about the NFL's last 3 in share of the season
     // (15% against 18%) and in time (three and a half weeks).
     recentGames: 12,

@@ -1,6 +1,8 @@
 import type { ModelParams, SportConfig } from "../sports/types";
 import { lineupPeriods } from "./periods";
 import { replacementLevels } from "./replacement";
+import { playerRole, seasonOver } from "./role";
+import { usageShares } from "./score";
 import { average, makeScorer } from "./scoring";
 import type { LeagueSettings, Model, PackedStats, Player, StatsFile } from "./types";
 import { expectedPoints, fitPointsPerOpportunity, USAGE_KEYS, type UsageSample } from "./usage";
@@ -143,6 +145,42 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
 
   const list = Object.values(players);
 
+  // Season-ending injuries and roles (depth chart + recent usage).
+  if (params.seasonEnding || params.roles) {
+    const shares = params.roles
+      ? usageShares({ players }, stats, sport, params.roles.usageGames)
+      : new Map<string, number>();
+    const lastTeamWeek = (team: string) =>
+      Math.max(0, ...Object.keys(stats.team_weeks?.[team] ?? {}).map(Number));
+    for (const pl of list) {
+      const sp = stats.players[pl.id];
+      pl.seasonOver = seasonOver({ inj: pl.inj, bodyPart: sp?.ib, g: pl.g }, params.seasonEnding);
+      const lead = sport.tradeValue.leadShare[pl.pos];
+      const share = shares.get(pl.id);
+      // Without a usage share (QB), usage is whether he played his team's last game.
+      const last = pl.team ? lastTeamWeek(pl.team) : 0;
+      const usage = lead
+        ? share === undefined
+          ? undefined
+          : share / lead
+        : last > 0
+          ? Number(sp?.tw?.[String(last)] === pl.team)
+          : undefined;
+      pl.role = playerRole(
+        {
+          pos: pl.pos,
+          g: pl.g,
+          lastAvg: pl.lastAvg,
+          prior: priorPpg(pl, params),
+          depth: sp?.dc,
+          usage,
+          injured: pl.inj !== null && pl.inj !== "Questionable",
+        },
+        params.roles,
+      );
+    }
+  }
+
   // What an opportunity is worth at each position, under this league's scoring.
   const coefByPos = new Map<string, number[] | null>();
   if (params.usageBlend > 0) {
@@ -204,7 +242,8 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
           pl.context = { teammate: absent.name, returnChance: absent.returnChance };
         }
       }
-      return [pl.id, { ...pl, seasonAvg, lastAvg }] as const;
+      const priorGames = pl.role === "lead" ? params.roles?.reliabilityGames : undefined;
+      return [pl.id, { ...pl, seasonAvg, lastAvg, priorGames }] as const;
     }),
   );
 

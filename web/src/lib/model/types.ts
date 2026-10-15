@@ -16,8 +16,12 @@ export interface StatsPlayer {
   a?: number;
   /** Injury status. */
   i?: string;
+  /** Injured body part ("Knee - ACL"), with the injury status. */
+  ib?: string;
   /** Roster status when not "Active". */
   s?: string;
+  /** Depth chart: slot ("RB", "LWR") and order, 1 being the starter. */
+  dc?: readonly [string, number];
   /** Last season: games played and total stats. */
   prev?: { g: number; s: PackedStats };
   /** This season, by week number. */
@@ -125,7 +129,18 @@ export interface Player extends Valued {
   weights: ValueWeights;
   /** Set when the value accounts for a key teammate expected back from absence. */
   context: { teammate: string; returnChance: number } | null;
+  /** Hurt this season with an injury that ends it (model/role.ts): worth nothing. */
+  seasonOver?: boolean;
+  /** His role from the depth chart and his recent usage (model/role.ts), when it says something. */
+  role?: Role | null;
 }
+
+/**
+ * "lead": the starter now, with lead usage and form well above his prior (he
+ * took the job during the season). "backup": behind the starters on the depth
+ * chart and with little usage.
+ */
+export type Role = "lead" | "backup";
 
 export interface FreeAgent extends Valued {
   freeAgent: true;
