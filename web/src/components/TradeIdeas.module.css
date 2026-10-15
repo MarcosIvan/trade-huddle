@@ -37,29 +37,37 @@
   display: grid;
   gap: 8px;
 }
+/* Name on top with the full width, positions below, trade value at the right. */
 .side li {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name value"
+    "positions value";
   align-items: baseline;
-  gap: 8px;
+  gap: 2px 8px;
 }
 .playerName {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
+  grid-area: name;
   min-width: 0;
   font-weight: 600;
+  overflow-wrap: break-word;
 }
 .nowrap {
   white-space: nowrap;
 }
 /* A player's positions sit together, a little closer than the name. */
 .positions {
-  display: inline-flex;
+  grid-area: positions;
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px;
 }
 .tradeValue {
+  grid-area: value;
+  align-self: center;
   font-weight: 700;
+  white-space: nowrap;
 }
 .impacts {
   display: flex;

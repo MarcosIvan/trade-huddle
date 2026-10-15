@@ -1246,25 +1246,161 @@ export function findTrades(
       ? isIdeaShape(give, get, worth)
       : FINDER_SHAPES.some(([a, b]) => a === give.length && b === get.length);
 
-  const withValues = Boolean(scores);
-  const needs = scores ? teamNeeds(rosters, model, sport) : null;
-  const myNeeds = idealNeeds(mine, ideal, needs?.get(myRid));
-  const myBase = bestLineup(mine, model.slots, sport).total;
   const partners = mode === "sell" ? rosters.filter((t) => t.rid !== myRid) : [owner];
   const myGroups =
     mode === "sell"
       ? withPinned(mine)
       : groups(top(mine, sport.model.candidates), MAX_IDEA_PLAYERS);
+  return searchDeals(
+    myRid,
+    rosters,
+    partners,
+    myGroups,
+    (team) =>
+      mode === "sell"
+        ? groups(top(team.players, sport.model.candidates), MAX_IDEA_PLAYERS)
+        : withPinned(team.players),
+    shaped,
+    mode === "sell",
+    model,
+    sport,
+    scores,
+    ideal,
+  );
+}
+
+/** What the trade finder looks for in "target" mode. */
+export interface FinderTarget {
+  /** Position of the player you want. */
+  pos: string;
+  /** He must rank this high or better at his position, by trade value, across the league. */
+  top: number;
+  /** One of your players every deal must send, or null for any of them. */
+  offerId: string | null;
+}
+
+/** Ranks the target mode offers: a top-N player at the position. */
+export const TARGET_TIERS: readonly number[] = [5, 10, 15, 20, 30];
+
+/**
+ * Players at a position ranked `top` or better by trade value among every
+ * rostered player at it, best first.
+ */
+export function topAtPosition(
+  rosters: readonly TeamRoster[],
+  pos: string,
+  top: number,
+  worth: (p: Player) => number,
+): Player[] {
+  return rosters
+    .flatMap((t) => t.players.filter((p) => p.pos === pos))
+    .sort((a, b) => worth(b) - worth(a))
+    .slice(0, top);
+}
+
+/**
+ * Deals that bring you a top player at a position (target.top or better, by
+ * trade value) from any other team, sending target.offerId when given. Only
+ * 2-for-2: a straight swap for a clearly better player at his position is
+ * rarely agreed, so each side adds one more player. Same rules and ranking as
+ * the other finder modes, different partners when possible.
+ */
+export function findTargetTrades(
+  target: FinderTarget,
+  myRid: number,
+  rosters: readonly TeamRoster[],
+  model: Model,
+  sport: SportConfig,
+  scores?: ReadonlyMap<string, number>,
+  ideal?: IdealRoster,
+): FinderResult {
+  const empty: FinderResult = { ideas: [] };
+  const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
+  const offer = target.offerId ? mine.find((p) => p.id === target.offerId) : undefined;
+  if (target.offerId && !offer) return empty;
+
+  const worth = (p: Player) => scores?.get(p.id) ?? p.vorp;
+  const wanted = new Set(
+    topAtPosition(rosters, target.pos, target.top, worth)
+      .filter((p) => !mine.includes(p))
+      .map((p) => p.id),
+  );
+  const skipped = scores ? ideaSkipped(model.slots, sport) : new Set<string>();
+  const top = (list: readonly Player[], n: number, without?: Player) =>
+    list
+      .filter((p) => p !== without && tradable(p, sport) && !skipped.has(p.pos))
+      .sort((a, b) => worth(b) - worth(a))
+      .slice(0, n);
+  const pairs = (list: readonly Player[]) => groups(list, 2).filter((g) => g.length === 2);
+  const n = sport.model.candidates;
+  const myGroups = offer ? top(mine, n - 1, offer).map((p) => [offer, p]) : pairs(top(mine, n));
+  // Each pair once, even when both of its players are wanted.
+  const theirGroups = (team: TeamRoster) => {
+    const seen = new Set<string>();
+    const out: Player[][] = [];
+    for (const want of team.players.filter((p) => wanted.has(p.id))) {
+      for (const p of top(team.players, n - 1, want)) {
+        const key = [want.id, p.id].sort().join();
+        if (!seen.has(key)) out.push([want, p]);
+        seen.add(key);
+      }
+    }
+    return out;
+  };
+  const shaped = (give: Player[], get: Player[]) =>
+    give.length === 2 && get.length === 2 && (!scores || isIdeaShape(give, get, worth));
+  const partners = rosters.filter(
+    (t) => t.rid !== myRid && t.players.some((p) => wanted.has(p.id)),
+  );
+  return searchDeals(
+    myRid,
+    rosters,
+    partners,
+    myGroups,
+    theirGroups,
+    shaped,
+    true,
+    model,
+    sport,
+    scores,
+    ideal,
+    false,
+  );
+}
+
+/**
+ * Evaluates every pair of groups with each partner and picks three deals, best
+ * first: the ones that pass every rule, then the closest with what they miss.
+ * `spread` prefers different partners; `oneForOne` keeps a slot for a fair
+ * 1-for-1 when the list has none.
+ */
+function searchDeals(
+  myRid: number,
+  rosters: readonly TeamRoster[],
+  partners: readonly TeamRoster[],
+  myGroups: readonly Player[][],
+  theirGroupsFor: (team: TeamRoster) => Player[][],
+  shaped: (give: Player[], get: Player[]) => boolean,
+  spread: boolean,
+  model: Model,
+  sport: SportConfig,
+  scores?: ReadonlyMap<string, number>,
+  ideal?: IdealRoster,
+  oneForOne = true,
+): FinderResult {
+  const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
+  const worth = (p: Player) => scores?.get(p.id) ?? p.vorp;
+  const withValues = Boolean(scores);
+  const needs = scores ? teamNeeds(rosters, model, sport) : null;
+  const myNeeds = idealNeeds(mine, ideal, needs?.get(myRid));
+  const myBase = bestLineup(mine, model.slots, sport).total;
 
   const found: TradeIdea[] = [];
   const near: TradeIdea[] = [];
   for (const team of partners) {
     const theirs = team.players;
     const theirBase = bestLineup(theirs, model.slots, sport).total;
-    const theirGroups =
-      mode === "sell"
-        ? groups(top(theirs, sport.model.candidates), MAX_IDEA_PLAYERS)
-        : withPinned(theirs);
+    const theirGroups = theirGroupsFor(team);
     for (const give of myGroups) {
       for (const get of theirGroups) {
         if (!shaped(give, get)) continue;
@@ -1293,10 +1429,10 @@ export function findTrades(
   const inLean = (r: TradeIdea) => fitsLean(myLean, ideaLean(r.give, r.get, worth));
   const max = sport.model.maxSuggestions;
   const pick = (sorted: readonly TradeIdea[], picked: TradeIdea[] = []) =>
-    mode === "sell" ? pickPartners(sorted, max, picked) : [...picked, ...sorted].slice(0, max);
+    spread ? pickPartners(sorted, max, picked) : [...picked, ...sorted].slice(0, max);
   sortIdeas(found, withValues, inLean);
   let ideas = pick(found);
-  if (withValues) ideas = withOneForOne(ideas, found, (r, kept) => !kept.includes(r));
+  if (withValues && oneForOne) ideas = withOneForOne(ideas, found, (r, kept) => !kept.includes(r));
   if (ideas.length >= max) return { ideas };
   // Too few pass: the closest deals fill the list, fewest problems first.
   sortIdeas(near, withValues, inLean);

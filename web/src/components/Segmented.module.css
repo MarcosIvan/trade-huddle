@@ -1,0 +1,45 @@
+.group {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}
+/* A legend ignores the fieldset's gap: its own margin matches a field's label spacing. */
+.group > legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--muted);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+}
+.segment {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+.segment + .segment {
+  border-left: 1px solid var(--muted);
+}
+.segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.segment:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}

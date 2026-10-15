@@ -129,6 +129,22 @@ test.describe("NBA league", () => {
     await expect(page.locator("#ideas article").first()).toBeVisible();
     expect(await accessibilityProblems(page)).toEqual([]);
 
+    // The finder by position and the Leaders tab use the NBA's positions.
+    const finder = page.locator("#finder");
+    await finder.getByText("Get a position", { exact: true }).click();
+    const positions = await finder
+      .getByLabel("Position", { exact: true })
+      .locator("option")
+      .allTextContents();
+    expect(positions).toEqual(["PG", "SG", "SF", "PF", "C"]);
+    await expect(finder.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 60_000 });
+    await page.getByRole("tab", { name: "Leaders" }).click();
+    const leaders = page.locator("#leaders");
+    for (const pos of positions)
+      await expect(leaders.getByRole("radio", { name: pos, exact: true })).toBeAttached();
+    await expect(leaders.locator("tbody tr").first()).toBeVisible();
+    await page.getByRole("tab", { name: "Team & trades" }).click();
+
     // The player card opens for NBA players too.
     await team.getByRole("button", { name: /^Hoop Player 1$/ }).click();
     const card = page.getByRole("dialog", { name: /Hoop Player 1/ });
@@ -259,6 +275,97 @@ test.describe("demo league", () => {
     await page.locator("#finder select").selectOption({ index: 1 });
     await expect(page.locator('#finder [aria-busy="true"]')).toHaveCount(0, { timeout: 60_000 });
     await expect(page.locator("#finder article").first()).toBeVisible();
+  });
+
+  test("gets a player found by typing his name", async ({ page }) => {
+    const finder = page.locator("#finder");
+    await finder.getByText("Get a player", { exact: true }).click();
+    const search = finder.getByRole("combobox", { name: "Player" });
+    await search.fill("feli");
+    const options = finder.getByRole("option");
+    await expect(options.first()).toBeVisible();
+    for (const text of await options.allTextContents()) expect(text).toMatch(/^Felix/);
+    expect(await accessibilityProblems(page)).toEqual([]);
+    const first = (await finder.getByRole("option").first().locator("span").first().textContent())!;
+    await search.press("ArrowDown");
+    await search.press("ArrowUp");
+    await search.press("Enter");
+    await expect(search).toHaveValue(first);
+    await expect(finder.getByRole("listbox")).toBeHidden();
+    await expect(finder.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 60_000 });
+    const cards = finder.locator("article");
+    await expect(cards.first()).toBeVisible();
+    for (const card of await cards.all()) {
+      await expect(card.locator("ul").nth(1)).toContainText(first);
+    }
+  });
+
+  test("gets a top player at a position, two-for-two, sending the chosen player", async ({
+    page,
+  }) => {
+    const finder = page.locator("#finder");
+    await finder.getByText("Get a position", { exact: true }).click();
+    await finder.getByLabel("Position", { exact: true }).selectOption("WR");
+    await finder.getByLabel("Ranked").selectOption("10");
+    const offer = finder.getByLabel("Player you offer");
+    const rb = (await offer.locator("option").filter({ hasText: "· RB ·" }).first().textContent())!;
+    await offer.selectOption({ label: rb });
+    const name = rb.split(" · ")[0]!;
+
+    // The league's top 10 receivers by trade value, from the Leaders tab's ranking.
+    await expect(finder.locator('[aria-busy="true"]')).toHaveCount(0, { timeout: 60_000 });
+    const cards = finder.locator("article");
+    await expect(cards).toHaveCount(3);
+    const deals = await cards.evaluateAll((list) =>
+      list.map((card) =>
+        [...card.querySelectorAll("ul")].map((ul) =>
+          [...ul.querySelectorAll("li")].map((li) => li.textContent ?? ""),
+        ),
+      ),
+    );
+    await page.getByRole("tab", { name: "Leaders" }).click();
+    const leaders = page.locator("#leaders");
+    await leaders.getByText("WR", { exact: true }).click();
+    const top = await leaders
+      .locator("tbody tr")
+      .evaluateAll((rows) =>
+        rows
+          .slice(0, 10)
+          .map((r) => r.querySelector("button, td:nth-child(2) div div")?.textContent),
+      );
+    for (const [give = [], get = []] of deals) {
+      expect(give).toHaveLength(2);
+      expect(get).toHaveLength(2);
+      expect(give.join()).toContain(name);
+      expect(get.some((row) => top.some((t) => t && row.startsWith(t)))).toBe(true);
+    }
+  });
+
+  test("ranks each position's leaders by trade value or season points", async ({ page }) => {
+    const tab = page.getByRole("tab", { name: "Leaders" });
+    await tab.click();
+    await expect(tab).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#finder")).toHaveCount(0);
+    const leaders = page.locator("#leaders");
+    const rows = leaders.locator("tbody tr");
+    await expect(rows).toHaveCount(30);
+    const column = (n: number) =>
+      rows.evaluateAll(
+        (list, i) =>
+          list.map((r) => Number(r.children[i]!.textContent!.replace(",", ".").replace("–", "0"))),
+        n,
+      );
+    const descending = (xs: number[]) => xs.every((x, i) => i === 0 || xs[i - 1]! >= x);
+    expect(descending(await column(3))).toBe(true);
+    await leaders.getByText("Season points").click();
+    expect(descending(await column(4))).toBe(true);
+    await expect(leaders.getByText("Free agent").first()).toBeAttached();
+    expect(await accessibilityProblems(page)).toEqual([]);
+
+    // Arrow keys move between tabs.
+    await tab.press("ArrowLeft");
+    await expect(page.getByRole("tab", { name: "Team & trades" })).toBeFocused();
+    await expect(page.locator("#finder")).toBeVisible();
   });
 
   for (const scheme of ["light", "dark"] as const) {

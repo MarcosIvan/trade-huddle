@@ -31,5 +31,6 @@ later one changes it, the later one says what it replaces.
 | [0022](0022-nba-calibration.md)                       | NBA calibration: a lighter prior and durability in trade value          |
 | [0023](0023-roles-and-season-ending-injuries.md)      | Roles from the depth chart, and season-ending injuries                  |
 | [0024](0024-no-qb-trade-ideas-and-lineup-warnings.md) | No QBs in one-QB trade ideas; only lineup warnings in the analyzer      |
+| [0025](0025-finder-by-position-and-leaders.md)        | Trade finder by position, player search, and position leaders           |
 
 How the pieces fit together: [architecture.md](../architecture.md).

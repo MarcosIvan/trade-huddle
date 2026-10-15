@@ -13,7 +13,6 @@ import {
   rosterPlayers,
   weekLineup,
   weeklyOutlook,
-  type FinderMode,
   type TradeIdea,
 } from "@/lib/model";
 import { ScoreContext } from "./ScoreContext";
@@ -23,10 +22,12 @@ import { LeaguePicker } from "./LeaguePicker";
 import { NewsProvider } from "./News";
 import { PlayerCardProvider } from "./PlayerCard";
 import { Notices } from "./Notices";
+import { PositionLeaders } from "./PositionLeaders";
 import { Section } from "./Section";
+import { Tabs, tabPanelProps } from "./Tabs";
 import { TeamLineup } from "./TeamLineup";
 import { TradeAnalyzer } from "./TradeAnalyzer";
-import { TradeFinder } from "./TradeFinder";
+import { NO_FINDER_CHOICE, TradeFinder, type FinderChoice } from "./TradeFinder";
 import { TradeIdeas } from "./TradeIdeas";
 import styles from "./LeagueScreen.module.css";
 
@@ -37,6 +38,13 @@ interface AnalyzerState {
 }
 
 const EMPTY: AnalyzerState = { partnerRid: null, give: new Set(), get: new Set() };
+
+type View = "team" | "leaders";
+
+const VIEWS: { value: View; label: string }[] = [
+  { value: "team", label: "Team & trades" },
+  { value: "leaders", label: "Leaders" },
+];
 
 function toggle(set: ReadonlySet<string>, id: string): Set<string> {
   const next = new Set(set);
@@ -80,14 +88,15 @@ export function LeagueScreen({
     [model, league, sport],
   );
 
+  const [tab, setTab] = useState<View>("team");
+
   const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal, sport);
 
-  // Trade finder: sell one of your players or get one from another team.
-  const [finder, setFinder] = useState<{
-    forRid: number;
-    mode: FinderMode;
-    playerId: string | null;
-  }>({ forRid: myRid, mode: "sell", playerId: null });
+  // Trade finder: sell or get one player, or get a top player at a position.
+  const [finder, setFinder] = useState<FinderChoice & { forRid: number }>({
+    ...NO_FINDER_CHOICE,
+    forRid: myRid,
+  });
 
   // The analyzer starts on the first idea's partner; the user can change it.
   const [analyzer, setAnalyzer] = useState<AnalyzerState & { forRid: number }>({
@@ -181,64 +190,85 @@ export function LeagueScreen({
 
               <Notices kinds={notices} />
 
-              <div className={styles.grid}>
-                {week && thisWeek ? (
+              <Tabs id="league" label="League views" tabs={VIEWS} value={tab} onChange={setTab} />
+
+              {tab === "leaders" ? (
+                <div {...tabPanelProps("league", "leaders")}>
                   <Section
-                    id="team"
-                    title={`Your best team for week ${week}`}
-                    aside={
-                      <span className={styles.projected}>
-                        <b>{fmt(thisWeek.lineup.total)}</b> projected pts
-                      </span>
-                    }
+                    id="leaders"
+                    title="Position leaders"
+                    subtitle="The league's best players at each position, free agents included"
                   >
-                    <WeeklyLineup model={model} week={week} rated={thisWeek} />
+                    <PositionLeaders model={model} teams={teams} myRid={myRid} />
                   </Section>
-                ) : (
-                  <Section id="team" title="Your team" subtitle="Best lineup by current value">
-                    <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+                </div>
+              ) : (
+                <div {...tabPanelProps("league", "team")}>
+                  <div className={styles.grid}>
+                    {week && thisWeek ? (
+                      <Section
+                        id="team"
+                        title={`Your best team for week ${week}`}
+                        aside={
+                          <span className={styles.projected}>
+                            <b>{fmt(thisWeek.lineup.total)}</b> projected pts
+                          </span>
+                        }
+                      >
+                        <WeeklyLineup model={model} week={week} rated={thisWeek} />
+                      </Section>
+                    ) : (
+                      <Section id="team" title="Your team" subtitle="Best lineup by current value">
+                        <TeamLineup model={model} teams={teams} myRid={myRid} sparkMax={sparkMax} />
+                      </Section>
+                    )}
+                    <Section id="ideas" title="Trade ideas">
+                      <TradeIdeas
+                        ideas={ideas}
+                        searching={searching}
+                        teams={teams}
+                        onOpen={openIdea}
+                      />
+                    </Section>
+                  </div>
+
+                  <Section id="finder" title="Trade finder" className={styles.spaced}>
+                    <TradeFinder
+                      model={model}
+                      teams={teams}
+                      myRid={myRid}
+                      tradeScores={tradeScores}
+                      ideal={ideal}
+                      choice={finder.forRid === myRid ? finder : { ...finder, playerId: null }}
+                      onChoice={(choice) => setFinder({ ...choice, forRid: myRid })}
+                      onOpen={openIdea}
+                    />
                   </Section>
-                )}
-                <Section id="ideas" title="Trade ideas">
-                  <TradeIdeas ideas={ideas} searching={searching} teams={teams} onOpen={openIdea} />
-                </Section>
-              </div>
 
-              <Section id="finder" title="Trade finder" className={styles.spaced}>
-                <TradeFinder
-                  model={model}
-                  teams={teams}
-                  myRid={myRid}
-                  tradeScores={tradeScores}
-                  ideal={ideal}
-                  mode={finder.mode}
-                  playerId={finder.forRid === myRid ? finder.playerId : null}
-                  onMode={(mode) => setFinder({ forRid: myRid, mode, playerId: null })}
-                  onPlayer={(playerId) => setFinder({ ...finder, forRid: myRid, playerId })}
-                  onOpen={openIdea}
-                />
-              </Section>
-
-              <Section id="analyzer" title="Trade analyzer" className={styles.spaced}>
-                <TradeAnalyzer
-                  model={model}
-                  teams={teams}
-                  myRid={myRid}
-                  partnerRid={partnerRid}
-                  give={current.give}
-                  get={partnerRid === current.partnerRid ? current.get : new Set()}
-                  pool={pool}
-                  tradeScores={tradeScores}
-                  ideal={ideal}
-                  onPartner={(rid) => setAnalyzer({ ...current, partnerRid: rid, get: new Set() })}
-                  onToggleGive={(id) =>
-                    setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })
-                  }
-                  onToggleGet={(id) =>
-                    setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
-                  }
-                />
-              </Section>
+                  <Section id="analyzer" title="Trade analyzer" className={styles.spaced}>
+                    <TradeAnalyzer
+                      model={model}
+                      teams={teams}
+                      myRid={myRid}
+                      partnerRid={partnerRid}
+                      give={current.give}
+                      get={partnerRid === current.partnerRid ? current.get : new Set()}
+                      pool={pool}
+                      tradeScores={tradeScores}
+                      ideal={ideal}
+                      onPartner={(rid) =>
+                        setAnalyzer({ ...current, partnerRid: rid, get: new Set() })
+                      }
+                      onToggleGive={(id) =>
+                        setAnalyzer({ ...current, partnerRid, give: toggle(current.give, id) })
+                      }
+                      onToggleGet={(id) =>
+                        setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
+                      }
+                    />
+                  </Section>
+                </div>
+              )}
             </div>
           </PlayerCardProvider>
         </NewsProvider>

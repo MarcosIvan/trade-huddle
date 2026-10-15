@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Team } from "@/lib/league";
-import type { FinderMode, IdealRoster, Model, TradeIdea } from "@/lib/model";
+import type { IdealRoster, Model, TradeIdea } from "@/lib/model";
 import type { SportConfig } from "@/lib/sports/types";
 import {
   hydrateIdeas,
   runFinder,
+  type FinderQuery,
   type FinderRequest,
   type FinderResponse,
 } from "@/lib/tradeSearch";
@@ -20,8 +21,9 @@ export interface TradeFinderState {
 const IDLE: TradeFinderState = { ideas: [], searching: false };
 
 /**
- * Deals around one chosen player, computed in their own Web Worker (or inline
- * where workers are unavailable), so they never wait for the trade ideas.
+ * The trade finder's deals for a query (null: nothing chosen yet), computed in
+ * their own Web Worker (or inline where workers are unavailable), so they never
+ * wait for the trade ideas. Pass a memoized query: a new object searches again.
  */
 export function useTradeFinder(
   model: Model,
@@ -29,8 +31,7 @@ export function useTradeFinder(
   myRid: number,
   tradeScores: ReadonlyMap<string, number>,
   ideal: IdealRoster,
-  mode: FinderMode,
-  playerId: string | null,
+  query: FinderQuery | null,
   sport: SportConfig,
 ): TradeFinderState {
   const [state, setState] = useState<TradeFinderState>(IDLE);
@@ -51,7 +52,7 @@ export function useTradeFinder(
 
   useEffect(() => {
     const requestId = ++requestRef.current;
-    if (!playerId) {
+    if (!query) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setState(IDLE);
       return;
@@ -64,7 +65,7 @@ export function useTradeFinder(
       sport: sport.id,
       tradeScores: [...tradeScores],
       ideal,
-      finder: { mode, playerId },
+      finder: query,
     };
     const finish = (response: FinderResponse) => {
       if (response.requestId !== requestRef.current) return; // a newer search replaced this one
@@ -86,7 +87,7 @@ export function useTradeFinder(
       worker.removeEventListener("message", onMessage);
       worker.removeEventListener("error", onError);
     };
-  }, [model, teams, myRid, tradeScores, ideal, mode, playerId, sport]);
+  }, [model, teams, myRid, tradeScores, ideal, query, sport]);
 
   return state;
 }
