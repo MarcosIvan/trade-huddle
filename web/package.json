@@ -20,6 +20,7 @@
     "backtest:scarcity": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot scarcity.run",
     "backtest:teammates": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot teammates.run",
     "backtest:weekly": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot weekly.run",
+    "backtest:schedule": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot schedule.run",
     "backtest:nba": "vitest run --config scripts/backtest/vitest.config.ts --reporter=dot nba.run"
   },
   "dependencies": {

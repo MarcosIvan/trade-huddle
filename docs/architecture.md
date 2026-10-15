@@ -100,6 +100,7 @@ worker. The main pieces, in the order they are used:
 | `weekly.ts`      | This week's outlook against the opponent                                                                         |
 | `weekLineup.ts`  | This week's best lineup, bench and injured reserve                                                               |
 | `matchup.ts`     | Good, neutral or tough matchup, and its tooltip                                                                  |
+| `schedule.ts`    | Bye weeks and schedule strength for the analyzer ([ADR 0026](adr/0026-schedule-in-the-analyzer.md))              |
 | `playerCard.ts`  | The player card: season game by game, stat colors, season rank                                                   |
 
 Why each piece works the way it does is recorded in the

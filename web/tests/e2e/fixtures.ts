@@ -48,7 +48,43 @@ const demo = JSON.parse(readFileSync("public/data/nfl/demo_league.json", "utf8")
   users: { user_id: string; display_name: string; metadata?: { team_name?: string } }[];
   my_roster_id: number;
 };
-const demoStats = readFileSync("public/data/nfl/demo_stats.json", "utf8");
+const demoStats = withSchedule(
+  JSON.parse(readFileSync("public/data/nfl/demo_stats.json", "utf8")) as DemoStats,
+);
+
+type DemoStats = {
+  weeks: number[];
+  players: Record<string, { t?: string; w?: Record<string, unknown> }>;
+};
+
+/**
+ * The demo stats with a fictional eight-week schedule (round robin), so the
+ * analyzer can show byes and schedule strength: the first four teams rest in
+ * week 5 and the next four in week 6; the league's playoffs are weeks 7-8.
+ */
+function withSchedule(stats: DemoStats): string {
+  const teams = [...new Set(Object.values(stats.players).map((p) => p.t ?? ""))]
+    .filter(Boolean)
+    .sort();
+  const rest: Record<number, string[]> = { 5: teams.slice(0, 4), 6: teams.slice(4, 8) };
+  const schedule: Record<string, string[][]> = {};
+  for (let week = 1; week <= 8; week++) {
+    const order = [teams[0]!, ...teams.slice(1).map((_, i, all) => all[(i + week) % all.length]!)];
+    const games: string[][] = [];
+    for (let i = 0; i < order.length / 2; i++) {
+      const pair = [order[i]!, order[order.length - 1 - i]!];
+      if (!pair.some((t) => rest[week]?.includes(t))) games.push(pair);
+    }
+    schedule[String(week)] = games;
+  }
+  const players = Object.fromEntries(
+    Object.entries(stats.players).map(([id, p]) => [
+      id,
+      { ...p, tw: Object.fromEntries(Object.keys(p.w ?? {}).map((w) => [w, p.t])) },
+    ]),
+  );
+  return JSON.stringify({ ...stats, schedule, players });
+}
 
 /** The demo league as Sleeper would return it, with the hostile names planted. */
 function sleeperLeague() {
@@ -58,7 +94,12 @@ function sleeperLeague() {
   );
   return {
     me,
-    league: { ...demo.league, league_id: LEAGUE_ID, name: HOSTILE.league },
+    league: {
+      ...demo.league,
+      league_id: LEAGUE_ID,
+      name: HOSTILE.league,
+      settings: { ...(demo.league.settings as object), playoff_week_start: 7, playoff_teams: 4 },
+    },
     rosters: demo.rosters,
     users,
   };

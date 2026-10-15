@@ -50,6 +50,33 @@ export function truncate(stats: StatsFile, week: number): StatsFile {
   };
 }
 
+/** The last game day of a fantasy week. */
+export function lastDay(stats: StatsFile, week: number): number {
+  const days = Object.entries(stats.day_weeks ?? {})
+    .filter(([, w]) => w <= week)
+    .map(([d]) => Number(d));
+  return Math.max(0, ...days);
+}
+
+/** The file as it looked after fantasy week `week`: the days played, the next week's projections. */
+export function truncateDays(stats: StatsFile, week: number): StatsFile {
+  const day = lastDay(stats, week);
+  const next = new Set(
+    Object.entries(stats.day_weeks ?? {})
+      .filter(([, w]) => w === week + 1)
+      .map(([d]) => d),
+  );
+  const upTo = <T>(rec: Readonly<Record<string, T>> | undefined) =>
+    rec ? Object.fromEntries(Object.entries(rec).filter(([d]) => Number(d) <= day)) : undefined;
+  const players = Object.fromEntries(
+    Object.entries(stats.players).map(([id, p]) => {
+      const wp = p.wp ? Object.fromEntries(Object.entries(p.wp).filter(([d]) => next.has(d))) : {};
+      return [id, { ...p, w: upTo(p.w), tw: upTo(p.tw), wp, i: undefined }];
+    }),
+  );
+  return { ...stats, weeks: stats.weeks.filter((d) => d <= day), lineup_week: week + 1, players };
+}
+
 /** Actual points per game after week N, for players with enough games left. */
 export function actualAfter(
   stats: StatsFile,

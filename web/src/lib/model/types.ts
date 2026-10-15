@@ -74,7 +74,13 @@ export interface LeagueSettings {
   roster_positions?: readonly string[];
   scoring_settings?: Readonly<Record<string, number>>;
   total_rosters?: number;
-  settings?: { num_teams?: number };
+  settings?: {
+    num_teams?: number;
+    /** First fantasy playoff week, the number of playoff teams and Sleeper's round type. */
+    playoff_week_start?: number;
+    playoff_teams?: number;
+    playoff_round_type?: number;
+  };
 }
 
 export interface ValueWeights {
