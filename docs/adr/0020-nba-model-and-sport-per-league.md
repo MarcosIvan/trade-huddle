@@ -50,6 +50,7 @@ config. The NFL's values are unchanged. The NBA's (`lib/sports/nba.ts`):
   rules (`IDEA_DEPTH_SHARE`, `STAR_EDGE`) are derived from it.
 
 **NBA config.**
+
 - Positions: PG, SG, SF, PF and C. Slots G (PG/SG), F (SF/PF) and UTIL (any).
 - Injuries: IR, Sus and NA keep half the value and can't start; Out keeps 90%.
   Chances of playing in a game: GTD 60%, DTD 75%.
@@ -57,6 +58,7 @@ config. The NFL's values are unchanged. The NBA's (`lib/sports/nba.ts`):
   threes and turnovers.
 
 **Interface.**
+
 - Player badges show every position a player can play, not only his main one.
 - The Player Score pill next to names is gone from the team list too.
 - The page grows to 1440 px, so names with three positions fit on one line.

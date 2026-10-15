@@ -1179,7 +1179,7 @@ describe("quarterbacks in trade ideas", () => {
     expect(ideaSkipped(["QB", "QB", "RB", "WR"], NFL).size).toBe(0);
   });
 
-  it("never suggests a QB in a one-QB league, even a spare starter", () => {
+  it("never suggests a QB in a one-QB league, even a spare starter, in ideas or the finder", () => {
     const slots = ["QB", "RB", "RB", "WR", "WR", "FLEX"];
     const mine = [
       player("myQb1", "QB", 22, 6),
@@ -1209,6 +1209,22 @@ describe("quarterbacks in trade ideas", () => {
     expect(ideas.length).toBeGreaterThan(0);
     for (const r of ideas) {
       expect([...r.give, ...r.get].some((p) => p.pos === "QB")).toBe(false);
+    }
+    // The trade finder too, around any player but a chosen quarterback.
+    for (const [mode, id] of [
+      ["sell", "myRb2"],
+      ["get", "tWr1"],
+    ] as const) {
+      const found = findTrades(mode, id, 1, rosters, model, NFL, values).ideas;
+      expect(found.length).toBeGreaterThan(0);
+      for (const r of found) {
+        expect([...r.give, ...r.get].some((p) => p.pos === "QB")).toBe(false);
+      }
+    }
+    const sellQb = findTrades("sell", "myQb2", 1, rosters, model, NFL, values).ideas;
+    for (const r of sellQb) {
+      expect(r.give.map((p) => p.id)).toContain("myQb2");
+      expect([...r.give, ...r.get].filter((p) => p.pos === "QB")).toHaveLength(1);
     }
   });
 });

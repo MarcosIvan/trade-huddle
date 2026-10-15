@@ -21,8 +21,10 @@ The product owner pointed out two things after using the site in a real league:
 - **Trade ideas leave quarterbacks out** where the league starts only one
   (the sport's `ideaSkipPositions`, kept for a position only one lineup slot
   can start). Superflex and 2-QB leagues keep them, since quarterbacks are
-  their main trade currency. The trade finder (a player you chose) and the
-  analyzer still allow quarterbacks.
+  their main trade currency. The trade finder ("sell a player", "get a
+  player") follows the same rule for every player it adds to the deal; only
+  a quarterback the manager chose himself is kept. The analyzer still allows
+  quarterbacks.
 - **The analyzer shows only lineup warnings**: a position left without
   enough healthy starters, or a starter sent with no starter-level player
   left to replace him (`TradeResult.lineupWarnings`). Roster balance warnings
@@ -32,6 +34,6 @@ The product owner pointed out two things after using the site in a real league:
 ## Consequences
 
 - One-QB leagues no longer see quarterback ideas even when a team holds two
-  starters; the finder covers that case on demand.
+  starters; choosing that quarterback in the finder covers the case on demand.
 - The model's checks are unchanged: `warnings` still lists everything and
   decides whether an idea passes.

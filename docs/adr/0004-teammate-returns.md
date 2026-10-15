@@ -30,11 +30,11 @@ comparison is on the players the adjustment changes
 (`npm run backtest:teammates`, 2024-2025, half-PPR and PPR, weeks 2-12):
 
 | Return chance | Cases | MAE without | MAE with | Closer to reality |
-|---|---|---|---|---|
-| 0.3 | 4921 | 2.108 | 2.127 | 46% |
-| 0.5 | 4921 | 2.108 | 2.111 | 46% |
-| 0.7 | 4921 | 2.108 | 2.130 | 48% |
-| 0.9 | 4921 | 2.108 | 2.188 | 45% |
+| ------------- | ----- | ----------- | -------- | ----------------- |
+| 0.3           | 4921  | 2.108       | 2.127    | 46%               |
+| 0.5           | 4921  | 2.108       | 2.111    | 46%               |
+| 0.7           | 4921  | 2.108       | 2.130    | 48%               |
+| 0.9           | 4921  | 2.108       | 2.188    | 45%               |
 
 It never helps, even with an injury report that knows who comes back. In
 the real league it also produced changes with the wrong sign (a quarterback

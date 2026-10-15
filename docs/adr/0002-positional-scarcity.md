@@ -33,11 +33,11 @@ scarce than they are.
    preseason trade value ranks the top 150 picks against ADP in 2024, 2025 and
    2026, half-PPR and PPR.
 
-| Bench depth per team | Correlation with ADP | RBs in our top 36 |
-|---|---|---|
-| none | 0.842 | 16-17 |
-| QB 0, RB 0.5, WR 1, TE 0.25 (best fit) | 0.885 | 14-17 |
-| **QB 0, RB 1, WR 1, TE 0.25 (chosen)** | **0.876** | **20-21** |
+| Bench depth per team                   | Correlation with ADP | RBs in our top 36 |
+| -------------------------------------- | -------------------- | ----------------- |
+| none                                   | 0.842                | 16-17             |
+| QB 0, RB 0.5, WR 1, TE 0.25 (best fit) | 0.885                | 14-17             |
+| **QB 0, RB 1, WR 1, TE 0.25 (chosen)** | **0.876**            | **20-21**         |
 
 The best statistical fit and the chosen setting are close. The product owner
 chose the setting that leans toward running backs: scarcity in fantasy is
@@ -55,11 +55,11 @@ Bench depth changes replacement level, which also sets where rookies and
 players without a track record start. The rest-of-season backtest
 (ADR 0001) improves with it:
 
-| Model | MAE (pts/game) | Rank correlation |
-|---|---|---|
-| Prototype | 4.26 | 0.28 |
-| ADR 0001 calibration | 4.02 | 0.31 |
-| **+ bench depth** | **3.88** | **0.36** |
+| Model                | MAE (pts/game) | Rank correlation |
+| -------------------- | -------------- | ---------------- |
+| Prototype            | 4.26           | 0.28             |
+| ADR 0001 calibration | 4.02           | 0.31             |
+| **+ bench depth**    | **3.88**       | **0.36**         |
 
 ## Consequences
 

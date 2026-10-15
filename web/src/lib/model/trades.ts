@@ -1230,9 +1230,11 @@ export function findTrades(
   if (!owner || !pinned || (mode === "sell") !== (owner.rid === myRid)) return empty;
 
   const worth = (p: Player) => scores?.get(p.id) ?? p.vorp;
+  // As in trade ideas, one-QB leagues' quarterbacks are left out, except the chosen player.
+  const skipped = scores ? ideaSkipped(model.slots, sport) : new Set<string>();
   const top = (list: readonly Player[], n: number) =>
     list
-      .filter((p) => p.id !== playerId && tradable(p, sport))
+      .filter((p) => p.id !== playerId && tradable(p, sport) && !skipped.has(p.pos))
       .sort((a, b) => worth(b) - worth(a))
       .slice(0, n);
   const withPinned = (list: readonly Player[]) => [

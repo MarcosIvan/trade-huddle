@@ -22,12 +22,12 @@ product owner asked for:
 
 **Player Score** (`score.ts`):
 
-| Part | Points | Measure |
-|---|---|---|
-| Level | 50 | trade value / best trade value in the league (scarcity included) |
-| Form | 30 | recent points above replacement / best in the league |
-| Team importance | 20 | value / best value on his fantasy roster |
-| Usage bonus | +10 max | top-3 share of his NFL team's targets + carries (1st 100%, 2nd 70%, 3rd 45%), scaled by how close the share is to a lead player's at the position |
+| Part            | Points  | Measure                                                                                                                                           |
+| --------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Level           | 50      | trade value / best trade value in the league (scarcity included)                                                                                  |
+| Form            | 30      | recent points above replacement / best in the league                                                                                              |
+| Team importance | 20      | value / best value on his fantasy roster                                                                                                          |
+| Usage bonus     | +10 max | top-3 share of his NFL team's targets + carries (1st 100%, 2nd 70%, 3rd 45%), scaled by how close the share is to a lead player's at the position |
 
 Capped at 100. The **trade score** is the same without team importance,
 which depends on who owns the player; a player must be worth the same on
