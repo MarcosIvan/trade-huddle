@@ -30,7 +30,7 @@ import {
 } from "../../src/lib/model";
 import { NBA } from "../../src/lib/sports/nba";
 import type { DurabilityParams, ModelParams, SportConfig } from "../../src/lib/sports/types";
-import { spearman } from "./evaluate";
+import { lastDay, spearman, truncateDays as truncate } from "./evaluate";
 
 const SEASONS = ["2024", "2025"];
 /** Checkpoints: after these fantasy weeks (25 in a season). */
@@ -93,33 +93,6 @@ function load(season: string): StatsFile | null {
   return existsSync(file)
     ? preseasonProjections(JSON.parse(readFileSync(file, "utf8")) as StatsFile)
     : null;
-}
-
-/** The last game day of a fantasy week. */
-function lastDay(stats: StatsFile, week: number): number {
-  const days = Object.entries(stats.day_weeks ?? {})
-    .filter(([, w]) => w <= week)
-    .map(([d]) => Number(d));
-  return Math.max(0, ...days);
-}
-
-/** The file as it looked after fantasy week `week`: the days played, the next week's projections. */
-function truncate(stats: StatsFile, week: number): StatsFile {
-  const day = lastDay(stats, week);
-  const next = new Set(
-    Object.entries(stats.day_weeks ?? {})
-      .filter(([, w]) => w === week + 1)
-      .map(([d]) => d),
-  );
-  const upTo = <T>(rec: Readonly<Record<string, T>> | undefined) =>
-    rec ? Object.fromEntries(Object.entries(rec).filter(([d]) => Number(d) <= day)) : undefined;
-  const players = Object.fromEntries(
-    Object.entries(stats.players).map(([id, p]) => {
-      const wp = p.wp ? Object.fromEntries(Object.entries(p.wp).filter(([d]) => next.has(d))) : {};
-      return [id, { ...p, w: upTo(p.w), tw: upTo(p.tw), wp, i: undefined }];
-    }),
-  );
-  return { ...stats, weeks: stats.weeks.filter((d) => d <= day), lineup_week: week + 1, players };
 }
 
 /** His team on each schedule day: the last team he played for, or the first one ahead. */

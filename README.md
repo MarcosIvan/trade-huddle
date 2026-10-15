@@ -170,7 +170,12 @@ it only builds 2-for-2 deals that bring you a player in the chosen tier
 ([ADR 0025](docs/adr/0025-finder-by-position-and-leaders.md)).
 The **trade analyzer** shows any deal in one card: fairness on top, then what
 you send and what you receive, each with what it gains or loses in trade
-value, points per game and the last 3 games (received minus sent).
+value, points per game and the last 3 games (received minus sent). Each
+player also shows his bye week and how easy his schedule is for the rest of
+the regular season and for the league's playoff weeks, ranked among every
+team's and colored green (easier) to red (harder). The schedule is only
+information: it never changes trade value or fairness
+([ADR 0026](docs/adr/0026-schedule-in-the-analyzer.md)).
 
 ## For developers
 
@@ -214,7 +219,7 @@ NEXT_PUBLIC_BASE_PATH=/trade-huddle npm run test:e2e
 
 The value model's backtests run with
 `npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
-`backtest:weekly`) after building the past seasons they use with
+`backtest:weekly`, `backtest:schedule`) after building the past seasons they use with
 `python -m trade_huddle_data build --season 2024` (and `2025`). The NBA's runs
 with `npm run backtest:nba`, on seasons built with `--sport nba`
 ([ADR 0022](docs/adr/0022-nba-calibration.md)). The pipeline's own checks

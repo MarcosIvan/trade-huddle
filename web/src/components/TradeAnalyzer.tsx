@@ -11,6 +11,7 @@ import {
   type FreeAgentPool,
   type IdealRoster,
   type Model,
+  type PlayerSchedule,
 } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
 import { PickList } from "./PickList";
@@ -28,6 +29,7 @@ export function TradeAnalyzer({
   pool,
   tradeScores,
   ideal,
+  schedules,
   onPartner,
   onToggleGive,
   onToggleGet,
@@ -41,6 +43,8 @@ export function TradeAnalyzer({
   pool: FreeAgentPool;
   tradeScores: ReadonlyMap<string, number>;
   ideal: IdealRoster;
+  /** Bye weeks and schedule strength, shown with the result (information only). */
+  schedules: ReadonlyMap<string, PlayerSchedule>;
   onPartner: (rid: number) => void;
   onToggleGive: (id: string) => void;
   onToggleGet: (id: string) => void;
@@ -136,11 +140,13 @@ export function TradeAnalyzer({
                 title="You send"
                 change={sideChange(result.sGive, result.sGet, result.give, result.get)}
                 players={result.give}
+                schedules={schedules}
               />
               <TradeSide
                 title="You receive"
                 change={sideChange(result.sGet, result.sGive, result.get, result.give)}
                 players={result.get}
+                schedules={schedules}
               />
             </div>
             {/* Roster balance is each manager's call: only lineup problems are shown. */}

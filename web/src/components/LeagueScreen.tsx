@@ -10,6 +10,7 @@ import {
   idealPlayers,
   freeAgentPool,
   playerScores,
+  playerSchedules,
   rosterPlayers,
   weekLineup,
   weeklyOutlook,
@@ -78,6 +79,12 @@ export function LeagueScreen({
   const tradeScores = useMemo(
     () => new Map([...scores].map(([id, s]) => [id, s.trade] as const)),
     [scores],
+  );
+
+  // Bye weeks and schedule strength, shown in the analyzer (information only).
+  const schedules = useMemo(
+    () => playerSchedules(model, stats, league, sport.model),
+    [model, stats, league, sport],
   );
 
   // The roster shape trades keep you close to: the league's roster size spread over the
@@ -256,6 +263,7 @@ export function LeagueScreen({
                       pool={pool}
                       tradeScores={tradeScores}
                       ideal={ideal}
+                      schedules={schedules}
                       onPartner={(rid) =>
                         setAnalyzer({ ...current, partnerRid: rid, get: new Set() })
                       }

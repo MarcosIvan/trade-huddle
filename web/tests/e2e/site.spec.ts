@@ -153,6 +153,21 @@ test.describe("NBA league", () => {
     await expect(card.getByRole("columnheader", { name: "Date" })).toBeVisible();
     await expect(card.getByRole("columnheader", { name: "Wk" })).toBeVisible();
   });
+  test("has no bye column, and no schedule strength before the first games", async ({ page }) => {
+    await mockSleeper(page);
+    await page.goto("./");
+    await page.getByLabel("Sleeper username").fill(USERNAME);
+    await page.getByRole("button", { name: "Find my leagues" }).click();
+    await page.getByRole("button", { name: /Hoops League/ }).click();
+    await ideasReady(page);
+
+    const analyzer = page.locator("#analyzer");
+    await page.getByRole("button", { name: "Open in analyzer" }).first().click();
+    const table = analyzer.locator("table").first();
+    await expect(table.getByRole("columnheader", { name: "Regular schedule" })).toBeVisible();
+    await expect(table.getByRole("columnheader", { name: "Bye" })).toHaveCount(0);
+    await expect(table.locator("td span[title*='information only']")).toHaveCount(0);
+  });
 });
 
 test.describe("player news", () => {
@@ -206,6 +221,29 @@ test.describe("player news", () => {
       .first()
       .click();
     await expect(page.getByRole("dialog")).toContainText("Could not load the news from Sleeper.");
+  });
+
+  test("shows each player's bye and schedule strength in the analyzer, for information", async ({
+    page,
+  }) => {
+    const analyzer = page.locator("#analyzer");
+    await page.getByRole("button", { name: "Open in analyzer" }).first().click();
+    const table = analyzer.locator("table").first();
+    // Trade value, points and recent form first; then the bye and the two schedules.
+    const headers = await table.locator("thead th").allInnerTexts();
+    expect(headers.map((h) => h.replace(/\s+/g, " ").trim().toLowerCase())).toEqual([
+      "player",
+      "trade value",
+      "pts/g",
+      "last 3",
+      "bye",
+      "regular schedule",
+      "playoffs schedule",
+    ]);
+    const ranks = analyzer.locator("td span[title*='information only']");
+    await expect(ranks.first()).toHaveText(/^\d+ of \d+$/);
+    await expect(ranks.first()).toHaveAttribute("title", /^(Regular season left|Playoffs): /);
+    expect(await accessibilityProblems(page)).toEqual([]);
   });
 
   test("doesn't pick the player in the analyzer", async ({ page }) => {

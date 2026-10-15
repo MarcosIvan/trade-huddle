@@ -87,7 +87,13 @@ export interface SleeperLeague {
   total_rosters: number | undefined;
   roster_positions: string[];
   scoring_settings: Record<string, number>;
-  settings: { num_teams?: number; type?: number };
+  settings: {
+    num_teams?: number;
+    type?: number;
+    playoff_week_start?: number;
+    playoff_teams?: number;
+    playoff_round_type?: number;
+  };
 }
 
 /** Sleeper answers `null` for unknown leagues. */
@@ -112,7 +118,13 @@ export function parseLeague(x: unknown): SleeperLeague | null {
     total_rosters: num(x.total_rosters),
     roster_positions: strings(x.roster_positions),
     scoring_settings: scoring,
-    settings: { num_teams: num(settings.num_teams), type: num(settings.type) },
+    settings: {
+      num_teams: num(settings.num_teams),
+      type: num(settings.type),
+      playoff_week_start: num(settings.playoff_week_start),
+      playoff_teams: num(settings.playoff_teams),
+      playoff_round_type: num(settings.playoff_round_type),
+    },
   };
 }
 

@@ -80,6 +80,15 @@ export {
 } from "./trades";
 export type * from "./types";
 export { estimate, type Estimate } from "./value";
+export {
+  byeWeeks,
+  playerSchedules,
+  playoffWeeks,
+  SCHEDULE_EDGE,
+  scheduleNote,
+  type PlayerSchedule,
+  type ScheduleStrength,
+} from "./schedule";
 export { verdict, type Verdict } from "./verdict";
 export { defenseFactors, weeklyOutlook, type GameOutlook, type WeeklyOutlook } from "./weekly";
 export { weekLineup, type WeekLineup, type WeekRated } from "./weekLineup";
