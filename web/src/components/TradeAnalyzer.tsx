@@ -143,7 +143,8 @@ export function TradeAnalyzer({
                 players={result.get}
               />
             </div>
-            {result.warnings.map((w) => (
+            {/* Roster balance is each manager's call: only lineup problems are shown. */}
+            {result.lineupWarnings.map((w) => (
               <p key={w} className={`hint ${styles.warning}`}>
                 <span aria-hidden="true">⚠ </span>
                 {w}

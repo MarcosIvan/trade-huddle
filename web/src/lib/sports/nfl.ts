@@ -134,6 +134,8 @@ export const NFL: SportConfig = {
   unsupportedSlots: ["DL", "LB", "DB", "IDP_FLEX"],
   freeAgentPositions: ["QB", "RB", "WR", "TE"],
   tradePositions: ["QB", "RB", "WR", "TE"],
+  // One-QB leagues: every team has its quarterback, so QB trades rarely happen.
+  ideaSkipPositions: ["QB"],
   defaultTeams: 12,
   gameLog: {
     QB: [PASSING, RUSHING],

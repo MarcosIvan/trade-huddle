@@ -52,6 +52,12 @@ export interface TradeResult {
   warnings: string[];
   /** What the trade leaves wrong on the partner's roster, in words. */
   theirWarnings: string[];
+  /**
+   * The part of `warnings` about your lineup (a position left without enough
+   * healthy starters); the rest is about roster balance, which the analyzer
+   * leaves to each manager.
+   */
+  lineupWarnings: string[];
   /** Free agents you would add as depth at a position the trade thins out. */
   myBackups: Valued[];
   /** Free agents the partner would add as depth. */
@@ -461,7 +467,15 @@ export function positionCheck(
   side: "you" | "they" = "you",
   findBackup?: (pos: string) => Valued | null,
   worth: (p: Valued) => number = (p) => p.value,
-): { ok: boolean; fit: number; covered: boolean; warnings: string[]; backups: Valued[] } {
+): {
+  ok: boolean;
+  fit: number;
+  covered: boolean;
+  warnings: string[];
+  /** The warnings about positions left without enough healthy starters. */
+  shortages: string[];
+  backups: Valued[];
+} {
   const [subject, object] = side === "you" ? ["You", "you"] : ["They", "them"];
   const readyBefore = countByPos(before, true);
   const readyAfter = countByPos(after, true);
@@ -491,6 +505,7 @@ export function positionCheck(
       );
     }
   }
+  const shortages = [...warnings];
   for (const [pos, cap] of Object.entries(needs.cap)) {
     const byIdeal = needs.ideal?.[pos] !== undefined;
     const now = (byIdeal ? idealAfter : allAfter)[pos] ?? 0;
@@ -526,6 +541,7 @@ export function positionCheck(
     : 1;
   return {
     ok: warnings.length === 0,
+    shortages,
     fit,
     covered: give.every((p) => refill(p) > 0),
     warnings,
@@ -711,7 +727,9 @@ export function evaluateTrade(
   );
   const theirCheck = positionCheck(theirList, theirs, get, give, needs, "they", findBackup, worth);
   if (scores) {
-    myCheck.warnings.push(...starterGaps(myList, mine, give, get, model, sport, "you"));
+    const gaps = starterGaps(myList, mine, give, get, model, sport, "you");
+    myCheck.warnings.push(...gaps);
+    myCheck.shortages.push(...gaps);
     theirCheck.warnings.push(...starterGaps(theirList, theirs, get, give, model, sport, "they"));
     myCheck.ok = myCheck.warnings.length === 0;
     theirCheck.ok = theirCheck.warnings.length === 0;
@@ -750,6 +768,7 @@ export function evaluateTrade(
     positionsCovered: myCheck.covered,
     warnings: myCheck.warnings,
     theirWarnings: theirCheck.warnings,
+    lineupWarnings: myCheck.shortages,
     myBackups: myCheck.backups,
     theirBackups: theirCheck.backups,
     myNeedFit: mineFit,
@@ -760,6 +779,18 @@ export function evaluateTrade(
     myPickups,
     theirPickups,
   };
+}
+
+/**
+ * Positions trade ideas leave out in this league: the sport's ideaSkipPositions
+ * that only one lineup slot can start (a superflex or second QB slot keeps them).
+ */
+export function ideaSkipped(slots: readonly string[], sport: SportConfig): Set<string> {
+  return new Set(
+    (sport.ideaSkipPositions ?? []).filter(
+      (pos) => slots.filter((s) => sport.slotEligibility[s]?.includes(pos)).length <= 1,
+    ),
+  );
 }
 
 /** Positions worth trading for (kickers and defenses are streamed, not traded). */
@@ -802,8 +833,10 @@ export function suggestTrades(
   const mine = rosters.find((t) => t.rid === myRid)?.players ?? [];
   const myBase = bestLineup(mine, model.slots, sport).total;
   // With trade values, kickers and defenses are left out: they are streamed, not traded.
+  // So are one-QB leagues' quarterbacks (ideaSkipped).
+  const skipped = ideaSkipped(model.slots, sport);
   const offered = (list: readonly Player[]) =>
-    scores ? list.filter((p) => tradable(p, sport)) : list;
+    scores ? list.filter((p) => tradable(p, sport) && !skipped.has(p.pos)) : list;
   // With trade values, ideas take the shapes of isIdeaShape; without them,
   // the prototype's pairs, minus same-position swaps.
   const worth = (pl: Player) => scores?.get(pl.id) ?? pl.vorp;
@@ -1197,9 +1230,11 @@ export function findTrades(
   if (!owner || !pinned || (mode === "sell") !== (owner.rid === myRid)) return empty;
 
   const worth = (p: Player) => scores?.get(p.id) ?? p.vorp;
+  // As in trade ideas, one-QB leagues' quarterbacks are left out, except the chosen player.
+  const skipped = scores ? ideaSkipped(model.slots, sport) : new Set<string>();
   const top = (list: readonly Player[], n: number) =>
     list
-      .filter((p) => p.id !== playerId && tradable(p, sport))
+      .filter((p) => p.id !== playerId && tradable(p, sport) && !skipped.has(p.pos))
       .sort((a, b) => worth(b) - worth(a))
       .slice(0, n);
   const withPinned = (list: readonly Player[]) => [

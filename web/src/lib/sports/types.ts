@@ -235,6 +235,13 @@ export interface SportConfig {
   freeAgentPositions: readonly string[];
   /** Positions offered or asked for in trade ideas and the trade finder (all when missing). */
   tradePositions?: readonly string[];
+  /**
+   * Positions trade ideas leave out when the league starts only one of them
+   * (every team has its starter, so such trades rarely happen; superflex and
+   * 2-QB leagues keep them). The trade finder adds none either, but keeps one the
+   * manager chose; the analyzer still allows them.
+   */
+  ideaSkipPositions?: readonly string[];
   /** Number of teams assumed when a league does not say. */
   defaultTeams: number;
   /**
