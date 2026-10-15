@@ -32,18 +32,18 @@ who were hurt early in the season are still projected for a full one).
 Rest-of-season backtest (2024 and 2025, half-PPR and PPR, checkpoints after
 weeks 1 to 12):
 
-| Model                             | MAE (pts/game) | Rank correlation |
-| --------------------------------- | -------------- | ---------------- |
-| Prototype                         | 4.26           | 0.28             |
-| ADR 0001 + ADR 0002               | 3.88           | 0.36             |
-| **Preseason projection as prior** | **3.35**       | **0.47**         |
+| Model | MAE (pts/game) | Rank correlation |
+|---|---|---|
+| Prototype | 4.26 | 0.28 |
+| ADR 0001 + ADR 0002 | 3.88 | 0.36 |
+| **Preseason projection as prior** | **3.35** | **0.47** |
 
-| After week | Prototype   | Before      | Projection prior |
-| ---------- | ----------- | ----------- | ---------------- |
-| 1          | 4.98 / 0.17 | 4.19 / 0.30 | 3.15 / 0.51      |
-| 3          | 4.37 / 0.21 | 4.03 / 0.31 | 3.23 / 0.46      |
-| 6          | 4.40 / 0.22 | 3.95 / 0.33 | 3.47 / 0.42      |
-| 12         | 3.56 / 0.49 | 3.45 / 0.50 | 3.50 / 0.51      |
+| After week | Prototype | Before | Projection prior |
+|---|---|---|---|
+| 1 | 4.98 / 0.17 | 4.19 / 0.30 | 3.15 / 0.51 |
+| 3 | 4.37 / 0.21 | 4.03 / 0.31 | 3.23 / 0.46 |
+| 6 | 4.40 / 0.22 | 3.95 / 0.33 | 3.47 / 0.42 |
+| 12 | 3.56 / 0.49 | 3.45 / 0.50 | 3.50 / 0.51 |
 
 The gain is largest early in the season and fades by week 12, when this
 season's games dominate either way. Settings near the chosen one form a

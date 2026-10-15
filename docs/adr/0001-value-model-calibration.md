@@ -50,25 +50,25 @@ the problem. We needed a way to measure the model.
 Average over both seasons, both scoring systems and all checkpoints
 (lower MAE is better, higher rank is better):
 
-| Model            | MAE (pts/game) | Rank correlation |
-| ---------------- | -------------- | ---------------- |
-| Only last season | 4.55           | 0.21             |
-| Only this season | 4.71           | 0.23             |
-| Prototype        | 4.26           | 0.28             |
-| **Calibrated**   | **4.02**       | **0.31**         |
+| Model | MAE (pts/game) | Rank correlation |
+|---|---|---|
+| Only last season | 4.55 | 0.21 |
+| Only this season | 4.71 | 0.23 |
+| Prototype | 4.26 | 0.28 |
+| **Calibrated** | **4.02** | **0.31** |
 
 By checkpoint (MAE / rank):
 
-| After week | Prototype   | Calibrated  |
-| ---------- | ----------- | ----------- |
-| 1          | 4.98 / 0.17 | 4.49 / 0.22 |
-| 2          | 4.50 / 0.22 | 4.31 / 0.23 |
-| 3          | 4.37 / 0.21 | 4.21 / 0.25 |
-| 4          | 4.29 / 0.23 | 4.11 / 0.26 |
-| 6          | 4.40 / 0.22 | 4.05 / 0.29 |
-| 8          | 4.05 / 0.31 | 3.75 / 0.34 |
-| 10         | 3.94 / 0.37 | 3.76 / 0.38 |
-| 12         | 3.56 / 0.49 | 3.48 / 0.49 |
+| After week | Prototype | Calibrated |
+|---|---|---|
+| 1 | 4.98 / 0.17 | 4.49 / 0.22 |
+| 2 | 4.50 / 0.22 | 4.31 / 0.23 |
+| 3 | 4.37 / 0.21 | 4.21 / 0.25 |
+| 4 | 4.29 / 0.23 | 4.11 / 0.26 |
+| 6 | 4.40 / 0.22 | 4.05 / 0.29 |
+| 8 | 4.05 / 0.31 | 3.75 / 0.34 |
+| 10 | 3.94 / 0.37 | 3.76 / 0.38 |
+| 12 | 3.56 / 0.49 | 3.48 / 0.49 |
 
 The calibrated model is better at every checkpoint, most of all early in the
 season, which is when the prototype's problem showed. The search covered 240
