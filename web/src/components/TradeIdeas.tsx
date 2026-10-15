@@ -15,17 +15,15 @@ function Side({ label, players }: { label: string; players: Player[] }) {
         {players.map((p) => (
           <li key={p.id}>
             <span className={styles.playerName}>
-              <span className={styles.positions}>
-                <PosBadges player={p} />
+              <PlayerName player={p} />
+              {/* A word joiner keeps the news icon on the name's last line. */}
+              {"\u2060"}
+              <span className={styles.nowrap}>
+                <NewsButton id={p.id} name={p.name} pos={p.pos} />
               </span>
-              <span>
-                <PlayerName player={p} />
-                {/* A word joiner keeps the news icon on the name's last line. */}
-                {"\u2060"}
-                <span className={styles.nowrap}>
-                  <NewsButton id={p.id} name={p.name} pos={p.pos} />
-                </span>
-              </span>
+            </span>
+            <span className={styles.positions}>
+              <PosBadges player={p} />
             </span>
             <span className={styles.tradeValue} title={TRADE_VALUE_HINT}>
               <TradeValue player={p} />

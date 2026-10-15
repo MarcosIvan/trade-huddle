@@ -94,7 +94,8 @@ worker. The main pieces, in the order they are used:
 | `lineup.ts`      | Best starting lineup for the league's slots                                                                      |
 | `score.ts`       | Trade value (1–40) and Player Score (0–100)                                                                      |
 | `verdict.ts`     | Fairness of a trade (the traffic light)                                                                          |
-| `trades.ts`      | Trade ideas and the trade finder                                                                                 |
+| `trades.ts`      | Trade ideas and the trade finder (around a player or a position)                                                 |
+| `leaders.ts`     | Position leaders by trade value or season points ([ADR 0025](adr/0025-finder-by-position-and-leaders.md))        |
 | `analyzer.ts`    | What the analyzer says about a trade: each side's change, free agents for uneven trades                          |
 | `weekly.ts`      | This week's outlook against the opponent                                                                         |
 | `weekLineup.ts`  | This week's best lineup, bench and injured reserve                                                               |
@@ -116,12 +117,16 @@ files ([ADR 0018](adr/0018-front-components.md)):
 - `MatchupBadge`: the Good / Neutral / Tough badge of the weekly lineup and
   the player card;
 - `Player` (`PlayerCell`, `PosBadge`, `TradeValue`…), `Section`,
-  `BalanceMeter`: the building blocks of every list and card.
+  `BalanceMeter`: the building blocks of every list and card;
+- `Tabs` (the league screen's "Team & trades" and "Leaders"), `Segmented`
+  (radio buttons drawn as one control) and `PlayerSearch` (a name search
+  combobox, over `lib/playerSearch.ts`).
 
 Bigger screens are split by part: the player card is `PlayerCard`
 (provider and clickable name), `PlayerCardPanel` (totals and rank) and
 `GameLog` (the season table); the analyzer is `TradeAnalyzer`, `PickList`
-and `TradeSide`; the league header's `LeaguePicker` has its own file.
+and `TradeSide`; the league header's `LeaguePicker` has its own file;
+the Leaders tab is `PositionLeaders`.
 
 ## Tests and checks
 

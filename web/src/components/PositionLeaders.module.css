@@ -1,0 +1,18 @@
+.leaders {
+  display: grid;
+  gap: 20px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+.mine {
+  background: var(--accent-soft);
+}
+.owner {
+  color: var(--ink-2);
+}
+.sorted {
+  font-weight: 700;
+}

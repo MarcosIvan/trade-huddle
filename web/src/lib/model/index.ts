@@ -2,6 +2,13 @@ export { adpFormat, buildModel, modelSlots, rosterPlayers } from "./build";
 export { durability, teamGames } from "./durability";
 export { bestLineup, type Lineup } from "./lineup";
 export { currentPeriod, lineupPeriods, periodDate, periodWeek, weekPeriods } from "./periods";
+export {
+  LEADERS_SHOWN,
+  positionLeaders,
+  seasonPoints,
+  type Leader,
+  type LeaderSort,
+} from "./leaders";
 export { replacementLevels } from "./replacement";
 export {
   playerScores,
@@ -18,6 +25,10 @@ export {
   evaluateTrade,
   FINDER_SHAPES,
   findTrades,
+  findTargetTrades,
+  topAtPosition,
+  TARGET_TIERS,
+  type FinderTarget,
   type FinderMode,
   type FinderResult,
   ideaProblems,

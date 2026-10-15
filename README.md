@@ -20,13 +20,18 @@ For your league, Trade Huddle:
    the lineup on each player's best projected game, for lock-in scoring.
 2. **Suggests three trades** that make _your_ team and the partner's team
    better, stay fair for both sides and keep both rosters' positions balanced.
-3. **Finds deals around one player** (trade finder): pick one of your players
-   to sell, or one from another team to get, and see the best deals around him.
+3. **Finds deals around one player or a position** (trade finder): pick one
+   of your players to sell, search by name for one on another team to get, or
+   ask for a top player at a position (a top 10 RB, say), optionally offering
+   one of yours, and see the best deals.
 4. **Analyzes any trade you build**, player by player, with a fairness
    traffic light.
-5. **Shows each player's latest news**: the newspaper icon beside a name
+5. **Ranks each position's leaders** (Leaders tab): the league's top 30 at
+   each position, free agents included, by trade value or by fantasy points
+   this season.
+6. **Shows each player's latest news**: the newspaper icon beside a name
    opens the 5 most recent reports from Sleeper (practice, injuries, games).
-6. **Opens a player card**: click a name to see his season totals, his
+7. **Opens a player card**: click a name to see his season totals, his
    rank in fantasy points at his position and overall, his season week by week,
    with fantasy points under your league's scoring, rushing and receiving
    (passing for QBs), each number colored against what the position
@@ -160,7 +165,9 @@ when the other two are 2-for-2 and one passes every rule. When fewer than
 three deals pass, the nearest ones fill the list
 ([ADR 0014](docs/adr/0014-even-trade-ideas.md)). The **trade finder** applies the same rules, shapes and
 ranking around one player and also always shows three deals, starring every
-true match ([ADR 0008](docs/adr/0008-trade-finder.md)).
+true match ([ADR 0008](docs/adr/0008-trade-finder.md)). Asked for a position,
+it only builds 2-for-2 deals that bring you a player in the chosen tier
+([ADR 0025](docs/adr/0025-finder-by-position-and-leaders.md)).
 The **trade analyzer** shows any deal in one card: fairness on top, then what
 you send and what you receive, each with what it gains or loses in trade
 value, points per game and the last 3 games (received minus sent).
