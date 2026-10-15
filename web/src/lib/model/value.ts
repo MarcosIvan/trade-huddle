@@ -18,6 +18,10 @@ export interface ValueInputs {
   projPpg?: number | null;
   /** Sleeper's projection for the next game, under the league's scoring. */
   nextGamePpg?: number | null;
+  /** Hurt this season with an injury that ends it (model/role.ts). */
+  seasonOver?: boolean;
+  /** The prior's reliability games for this player, when not the sport's (a job change). */
+  priorGames?: number;
 }
 
 type PriorInputs = Pick<ValueInputs, "projPpg" | "prevG" | "prevPpg" | "inj">;
@@ -76,9 +80,10 @@ export function estimate(
     }
   } else {
     if (hasPrev) {
+      const k = pl.priorGames ?? params.prevReliabilityGames;
       const fade =
         params.prevReliabilityGames > 0
-          ? (params.wPrevStart * params.prevReliabilityGames) / (params.prevReliabilityGames + pl.g)
+          ? (params.wPrevStart * k) / (k + pl.g)
           : params.wPrevStart - params.wPrevDecay * pl.g;
       wPrev = Math.max(params.wPrevMin, fade) * Math.min(1, prevG / params.prevFullGames);
     }
@@ -109,11 +114,12 @@ export function estimate(
     raw = (1 - wNext) * raw + wNext * pl.nextGamePpg;
   }
   const noTeam = Boolean(pl.noTeam) && params.noTeamMult !== null;
-  const mult = (rule?.mult ?? 1) * (noTeam ? (params.noTeamMult ?? 1) : 1);
+  const over = Boolean(pl.seasonOver);
+  const mult = over ? 0 : (rule?.mult ?? 1) * (noTeam ? (params.noTeamMult ?? 1) : 1);
   const k = 1 - wRepl;
   return {
     value: Math.max(0, raw * mult),
-    startable: (rule?.startable ?? true) && !noTeam,
+    startable: (rule?.startable ?? true) && !noTeam && !over,
     injMult: mult,
     weights: { prev: wPrev * k, season: wSeason * k, recent: wRecent * k, repl: wRepl },
   };

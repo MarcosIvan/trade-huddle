@@ -20,7 +20,8 @@ a day, as Sleeper asks.
 
 Stat names are replaced by indexes into `keys` to keep the file small. Each
 player has `n` (name), `p` (position), `fp` (fantasy positions), `t` (team),
-optional `a` (age), `i` (injury) and `s` (status), `prev` (last season:
+optional `a` (age), `i` (injury), `ib` (injured body part), `s` (status)
+and `dc` (depth chart: `[slot, order]`, 1 being the starter), `prev` (last season:
 games and totals) and `w` (this season, by week). `tw` records the team the
 player played for each week, and `team_weeks` holds each team's weekly
 totals of `usage_keys` (targets, carries, red-zone targets), so the site can

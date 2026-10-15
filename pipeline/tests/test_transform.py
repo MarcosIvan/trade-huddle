@@ -97,6 +97,8 @@ class TestHelpers:
             "t": "AAA",
             "a": 27,
             "i": "Questionable",
+            "ib": "Ankle",
+            "dc": ["LWR", 1],
         }
         past = player_info(directory["100"], NFL, current=False)
         assert past == {"n": "Alpha Receiver", "p": "WR", "fp": ["WR"], "t": ""}

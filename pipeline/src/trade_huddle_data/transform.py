@@ -63,8 +63,8 @@ def is_fantasy_player(meta: Mapping[str, Any], sport: SportConfig) -> bool:
 
 def player_info(meta: Mapping[str, Any], sport: SportConfig, *, current: bool) -> dict[str, Any]:
     """
-    Name, position and eligibility. Team, age, injury and status describe the
-    player today, so they are only included for the current season.
+    Name, position and eligibility. Team, age, injury, status and depth chart
+    describe the player today, so they are only included for the current season.
     """
     name = meta.get("full_name") or (
         f"{meta.get('first_name') or ''} {meta.get('last_name') or ''}".strip()
@@ -80,6 +80,14 @@ def player_info(meta: Mapping[str, Any], sport: SportConfig, *, current: bool) -
             info["a"] = meta["age"]
         if meta.get("injury_status"):
             info["i"] = meta["injury_status"]
+            # Where he is hurt ("Knee - ACL", "Ankle"): tells a season-ending injury apart.
+            if isinstance(meta.get("injury_body_part"), str) and meta["injury_body_part"]:
+                info["ib"] = meta["injury_body_part"]
+        # His spot on the team's depth chart: [slot, order], 1 being the starter.
+        order = meta.get("depth_chart_order")
+        slot = meta.get("depth_chart_position")
+        if is_number(order) and isinstance(slot, str) and slot:
+            info["dc"] = [slot, int(order)]
         # "Active" in the NFL directory, "ACT" in the NBA's.
         if meta.get("status") and meta.get("status") not in ("Active", "ACT"):
             info["s"] = meta["status"]

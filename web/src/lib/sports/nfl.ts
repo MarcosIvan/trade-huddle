@@ -35,6 +35,8 @@ export const PROTOTYPE_MODEL: ModelParams = {
   teammateReturn: 0,
   keyTeammatePpg: 10,
   nextGameBlend: {},
+  seasonEnding: null,
+  roles: null,
   matchupWeight: 0,
   matchupShrinkGames: 4,
   similarWeight: 0,
@@ -162,6 +164,20 @@ export const NFL: SportConfig = {
     nextGameBlend: { QB: 0.3, RB: 0.3, WR: 0.3, TE: 0.3 },
     // No team: a quarter of the value (he may sign somewhere) and never started.
     noTeamMult: 0.25,
+    // A torn ACL or Achilles on IR, hurt this season: his season is over
+    // (docs/adr/0023-roles-and-season-ending-injuries.md).
+    seasonEnding: { statuses: ["IR"], bodyParts: ["ACL", "Achilles"] },
+    // Roles from the depth chart and recent usage (same ADR).
+    roles: {
+      starters: { QB: 1, RB: 2, WR: 1, TE: 1 },
+      usageGames: 2,
+      leadUsage: 0.5,
+      backupUsage: 0.35,
+      formJump: 0.4,
+      minGames: 2,
+      reliabilityGames: 2,
+      backupValue: 0.6,
+    },
     // Weekly lineup (docs/adr/0005-weekly-lineup.md): 65% Sleeper's weekly projection,
     // 35% our value adjusted for what the opponent allows to the position. Our value
     // already holds 30% of that projection (nextGameBlend), so it weighs about 75%.

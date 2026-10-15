@@ -17,8 +17,11 @@
  * "recent" are the same games: they count once, at half weight, and the rest
  * goes to base, so three games cannot swing the value alone.
  * The sum is scaled by how scarce his position is in this league (mildly, so
- * positions stay comparable), by his availability (injury or no team) and, in
- * sports with long seasons, by the share of his team's games he plays.
+ * positions stay comparable), by his availability (injury or no team; nothing
+ * when his season is over), by his role (a backup keeps part of it) and, in
+ * sports with long seasons, by the share of his team's games he plays. A
+ * player who took a starting job this season is measured on what he does now,
+ * not on his preseason prior (model/role.ts, ADR 0023).
  * A star (drafted in the top `reputationMaxAdp`) worth less than his draft
  * rank at his position is lifted part of the way toward the value of that
  * rank (`reputationGames`), so a slow start does not sink him; the lift fades
@@ -80,11 +83,12 @@ export const SCORE_WEIGHTS = { trade: 80, importance: 20 } as const;
 
 /** Each skill player's share of his team's targets + carries over his last games. */
 export function usageShares(
-  model: Model,
+  model: Pick<Model, "players">,
   stats: StatsFile,
   sport: SportConfig,
+  usageGames = sport.tradeValue.usageGames,
 ): Map<string, number> {
-  const { leadShare, usageGames } = sport.tradeValue;
+  const { leadShare } = sport.tradeValue;
   const tgt = stats.keys.indexOf(USAGE_KEYS[0]);
   const att = stats.keys.indexOf(USAGE_KEYS[1]);
   const shares = new Map<string, number>();
@@ -120,6 +124,7 @@ const healthyPpg = (p: Player) => (p.injMult > 0 ? p.value / p.injMult : p.value
 
 /** Share of a player's value kept after injury (he may come back) or having no team. */
 function availability(p: Player, sport: SportConfig): number {
+  if (p.seasonOver) return 0;
   const rule = p.inj ? sport.model.injury[p.inj] : undefined;
   const injury = rule ? 1 - (1 - sport.tradeValue.injuryRecovery) * (1 - rule.mult) : 1;
   const noTeam = p.noTeam && sport.model.noTeamMult !== null ? sport.model.noTeamMult : 1;
@@ -205,8 +210,10 @@ export function playerScores(
     const season = p.seasonAvg ?? expected;
     const recent = p.lastAvg ?? season;
     const share = shares.get(p.id);
+    // A player who took the job this season is no longer what he was expected to be.
+    const prior = p.role === "lead" ? expected : (priorPpg(p, sport.model) ?? expected);
     const parts: TradeValueParts = {
-      base: production(priorPpg(p, sport.model) ?? expected),
+      base: production(prior),
       market: adp === undefined ? 0 : 1 / (1 + (adp / tv.adpHalf) ** tv.adpCurve),
       expected: production(expected),
       season: production(season),
@@ -234,8 +241,9 @@ export function playerScores(
     const avail = availability(p, sport);
     const market = 1 - (tv.positionMarket[p.pos] ?? 0) * (1 - parts.market);
     const dur = tv.durability ? durability(stats, p, tv.durability) : 1;
+    const role = p.role === "backup" ? (sport.model.roles?.backupValue ?? 1) : 1;
     raw.set(p.id, {
-      value: (sum / 100) * posScale(p.pos) * market * avail * dur,
+      value: (sum / 100) * posScale(p.pos) * market * avail * dur * role,
       parts,
       avail,
       dur,

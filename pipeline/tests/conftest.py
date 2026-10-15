@@ -12,7 +12,10 @@ DIRECTORY: dict[str, dict[str, Any]] = {
         "team": "AAA",
         "age": 27,
         "injury_status": "Questionable",
+        "injury_body_part": "Ankle",
         "status": "Active",
+        "depth_chart_position": "LWR",
+        "depth_chart_order": 1,
     },
     "200": {
         "first_name": "Beta",
