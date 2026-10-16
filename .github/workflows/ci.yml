@@ -101,8 +101,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Headless tests only run the headless shell; the full browser is not needed.
       - name: Install Chromium for Playwright
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: End-to-end tests
         # Sleeper's API is mocked in every test; nothing leaves the runner.
