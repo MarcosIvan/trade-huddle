@@ -5,7 +5,7 @@ happens in the visitor's browser; the only server-side work is a daily job
 that builds a public stats file.
 
 ```
-                 GitHub Actions (daily, 10:00 UTC, and on every push to main)
+                 GitHub Actions (daily, 09:17 UTC, and on every push to main)
                 ┌───────────────────────────────────────────────────────────┐
  Sleeper API ──▶│ pipeline/  (Python) ──▶ web/public/data/<sport>/stats.json│
  (public, no    │ web/       (Next.js static export + CSP by hash)          │
