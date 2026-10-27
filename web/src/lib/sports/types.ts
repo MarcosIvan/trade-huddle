@@ -31,6 +31,11 @@ export interface ModelParams {
    * k > 0: by reliability, k / (k + games), so a few games move it less.
    */
   prevReliabilityGames: number;
+  /**
+   * For rookies (no last season), the prior fades as k / (k + games) with this k
+   * instead: the preseason projection is the only thing known about them (0 = as everyone).
+   */
+  rookiePriorGames: number;
   /** Count the recent-games average only once more games than the window have been played. */
   recentAfterWindow: boolean;
   /** A single game counts at most this multiple of the player's usual output (0 = no cap). */

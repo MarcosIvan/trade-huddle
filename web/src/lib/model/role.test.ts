@@ -80,8 +80,8 @@ describe("roles and season-ending injuries in the model", () => {
   const players: Record<string, StatsPlayer> = {
     // Expected to start, then tore his ACL in week 1.
     star: rb({ ...games(0, 0), w: { "1": week(5, 30) }, tw: { "1": "AAA" }, i: "IR" }),
-    // A deep backup before the season who took the job.
-    heir: rb({ ...games(20, 120), proj: [2, 300], dc: ["RB", 1] }),
+    // A deep backup before the season who took the job (a veteran: rookies fade fast anyway).
+    heir: rb({ ...games(20, 120), proj: [2, 300], prev: { g: 17, s: [2, 300] }, dc: ["RB", 1] }),
     // The same games, expected to start all along.
     starter: rb({ ...games(20, 120), proj: [2, 1500], dc: ["RB", 1] }),
     // Third on the depth chart, barely used.
@@ -120,6 +120,19 @@ describe("roles and season-ending injuries in the model", () => {
     const without = run(stats({ heir: { ...players.heir, dc: undefined } }));
     expect(model.players.heir!.value).toBeGreaterThan(without.model.players.heir!.value);
     expect(scores.get("heir")!.trade).toBeGreaterThan(without.scores.get("heir")!.trade);
+  });
+
+  it("judges a rookie sooner on his games than a veteran with the same projection", () => {
+    const vet = { ...players.heir, dc: undefined };
+    const rookie = { ...vet, prev: undefined };
+    const { model } = run(stats({ vet, rookie }));
+    // Both beat a modest projection; the rookie's projection is all there is, so it weighs less.
+    expect(model.players.rookie!.value).toBeGreaterThan(model.players.vet!.value);
+    const off = buildModel(stats({ vet, rookie }), league, {
+      ...NFL,
+      model: { ...NFL.model, rookiePriorGames: 0 },
+    });
+    expect(off.players.rookie!.value).toBeCloseTo(off.players.vet!.value);
   });
 
   it("cuts a backup's trade value but not his points", () => {
