@@ -38,6 +38,8 @@ export const NBA_TRADE_VALUE: TradeValueParams = {
   leadShare: {},
   minorPositions: [],
   scarcityPower: 1,
+  // The scale's shape from ADR 0013 (the NFL's moved in ADR 0027).
+  curve: 0.8,
   reputationMaxAdp: 0,
   // The draft market's measure is one half at pick 30 (the 3rd round in 12-team leagues).
   adpHalf: 30,
@@ -80,6 +82,8 @@ export const NBA: SportConfig = {
     // The prior's weight is k / (k + games): half after 10 games. Basketball's per-game
     // numbers settle fast (backtest on 2024-25 and 2025-26: ADR 0022).
     prevReliabilityGames: 10,
+    // Not backtested on basketball: rookies fade like everyone.
+    rookiePriorGames: 0,
     shrinkGames: 5,
     injuredPriorGames: 30,
     // Usage (targets and carries) and the teammate rule are football measures.

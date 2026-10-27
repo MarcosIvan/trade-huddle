@@ -87,7 +87,8 @@ game when he is expected to play it. Calibrated with a backtest on 2024 and 2025
 combines several measures, each compared across the league
 ([ADR 0007](docs/adr/0007-composite-trade-value.md),
 [ADR 0010](docs/adr/0010-market-calibrated-trade-value.md),
-[ADR 0013](docs/adr/0013-trade-value-scale.md)):
+[ADR 0013](docs/adr/0013-trade-value-scale.md),
+[ADR 0027](docs/adr/0027-mid-season-trade-value.md)):
 
 | Part                                              | Weight |
 | ------------------------------------------------- | ------ |
@@ -113,7 +114,8 @@ top, as trade markets do: a player worth a quarter of the best player's raw
 value shows about a third of 40. A star
 (drafted in the top 60) off to a slow start keeps part of the value of his
 draft rank at his position, less as games are played. The weights were
-calibrated against a market of real trade values. The
+calibrated against a market of real trade values, and checked again at
+mid-season. A rookie is judged on his own games sooner than a veteran. The
 **Player Score** (0-100, next to each name) adds how important the player is
 to his fantasy team.
 

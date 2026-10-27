@@ -23,6 +23,7 @@ export const PROTOTYPE_MODEL: ModelParams = {
   },
   replacementPool: 3,
   prevReliabilityGames: 0,
+  rookiePriorGames: 0,
   recentAfterWindow: false,
   outlierCap: 0,
   usageBlend: 0,
@@ -92,16 +93,19 @@ const RECEIVING: StatGroup = {
   ],
 };
 
-/** Trade value: calibrated in ADR 0010 against real trade values, scale shape in ADR 0013. */
+/**
+ * Trade value: calibrated in ADR 0010 against real trade values, scale shape in ADR 0013,
+ * recalibrated at mid-season in ADR 0027.
+ */
 export const NFL_TRADE_VALUE: TradeValueParams = {
   weights: { base: 5, market: 10, expected: 30, season: 10, recent: 5, scarcity: 25, usage: 15 },
-  curve: 0.8,
+  curve: 0.75,
   leadShare: { RB: 0.55, WR: 0.2, TE: 0.14 },
   usageGames: 4,
   elite: 3,
   spread: 1.2,
   scarcityFloor: 0.5,
-  scarcityPower: 0.6,
+  scarcityPower: 1,
   minorPositions: ["K", "DEF"],
   minorScale: 0.3,
   // About the 4th round in 12-team leagues.
@@ -157,6 +161,9 @@ export const NFL: SportConfig = {
     wPrevStart: 1,
     wPrevMin: 0,
     prevReliabilityGames: 8,
+    // A rookie's prior is only his preseason projection: it fades as 4 / (4 + games),
+    // 57% after 3 games, a third after 8 (docs/adr/0027-mid-season-trade-value.md).
+    rookiePriorGames: 4,
     recentShare: 0.25,
     recentAfterWindow: true,
     // 30% of each game's points come from what its targets and carries usually produce.
@@ -174,7 +181,8 @@ export const NFL: SportConfig = {
       starters: { QB: 1, RB: 2, WR: 1, TE: 1 },
       usageGames: 2,
       leadUsage: 0.5,
-      backupUsage: 0.35,
+      // A share of the backfield is not a backup's (ADR 0027).
+      backupUsage: 0.25,
       formJump: 0.4,
       minGames: 2,
       reliabilityGames: 2,

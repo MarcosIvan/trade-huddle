@@ -242,7 +242,13 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
           pl.context = { teammate: absent.name, returnChance: absent.returnChance };
         }
       }
-      const priorGames = pl.role === "lead" ? params.roles?.reliabilityGames : undefined;
+      // A player who took a job, or a rookie, is judged sooner on what he does.
+      const priorGames =
+        pl.role === "lead"
+          ? params.roles?.reliabilityGames
+          : pl.prevG === 0 && params.rookiePriorGames > 0
+            ? params.rookiePriorGames
+            : undefined;
       return [pl.id, { ...pl, seasonAvg, lastAvg, priorGames }] as const;
     }),
   );

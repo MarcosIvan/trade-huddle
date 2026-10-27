@@ -32,7 +32,7 @@
  * position is worth exactly that.
  *
  * Calibrated in ADR 0010 against a market of real trade values; scale shape
- * in ADR 0013.
+ * in ADR 0013; recalibrated at mid-season in ADR 0027.
  *
  * Player Score, 0 to 100, adds his importance to his fantasy team:
  *   80 points × trade value / 40 + 20 points × his value / the best value on his roster.

@@ -33,5 +33,6 @@ later one changes it, the later one says what it replaces.
 | [0024](0024-no-qb-trade-ideas-and-lineup-warnings.md) | No QBs in one-QB trade ideas; only lineup warnings in the analyzer      |
 | [0025](0025-finder-by-position-and-leaders.md)        | Trade finder by position, player search, and position leaders           |
 | [0026](0026-schedule-in-the-analyzer.md)              | Bye week and schedule strength in the trade analyzer                    |
+| [0027](0027-mid-season-trade-value.md)                | Mid-season trade value recalibration                                    |
 
 How the pieces fit together: [architecture.md](../architecture.md).

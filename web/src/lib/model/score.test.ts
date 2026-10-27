@@ -199,7 +199,7 @@ describe("trade value", () => {
     const t = (id: string) => s.get(id)!.trade;
     expect(t("onIr")).toBeGreaterThan(0.5 * t("healthy"));
     expect(t("onIr")).toBeLessThan(t("healthy"));
-    expect(t("noTeam")).toBeLessThan(0.3 * t("healthy"));
+    expect(t("noTeam")).toBeLessThan(0.35 * t("healthy"));
     expect(t("noTeam")).toBeGreaterThanOrEqual(1);
   });
 });
