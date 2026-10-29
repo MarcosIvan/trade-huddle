@@ -10,6 +10,19 @@ export const isLeagueId = (s: unknown): s is string =>
 export const isUsername = (s: unknown): s is string =>
   typeof s === "string" && /^[A-Za-z0-9_.-]{2,40}$/.test(s);
 
+/**
+ * A username as typed or pasted, in the form Sleeper looks up: without the
+ * "@" of a handle, the spaces around it or the invisible characters some apps
+ * add when copying, and in lowercase (Sleeper ignores case, and one spelling
+ * per user keeps its cached answers the same).
+ */
+export const normalizeUsername = (s: string): string =>
+  s
+    .replace(/\p{Cf}/gu, "")
+    .trim()
+    .replace(/^@+/, "")
+    .toLowerCase();
+
 export class ResponseShapeError extends Error {
   constructor(what: string) {
     super(`Unexpected response from Sleeper (${what}).`);

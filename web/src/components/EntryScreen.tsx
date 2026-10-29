@@ -88,6 +88,7 @@ export function EntryScreen({
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
                 autoCapitalize="off"
+                autoCorrect="off"
                 spellCheck={false}
                 maxLength={40}
                 required
@@ -98,7 +99,7 @@ export function EntryScreen({
               </button>
             </div>
             <p className="hint" id={`${userFieldId}-hint`}>
-              Your profile username, not your team name.
+              Your profile username, with or without the @, not your team name.
             </p>
           </div>
         </form>

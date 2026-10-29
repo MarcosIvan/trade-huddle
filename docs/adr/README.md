@@ -34,5 +34,6 @@ later one changes it, the later one says what it replaces.
 | [0025](0025-finder-by-position-and-leaders.md)        | Trade finder by position, player search, and position leaders           |
 | [0026](0026-schedule-in-the-analyzer.md)              | Bye week and schedule strength in the trade analyzer                    |
 | [0027](0027-mid-season-trade-value.md)                | Mid-season trade value recalibration                                    |
+| [0028](0028-new-starters-from-the-projection.md)      | New starters seen in the next game's projection                         |
 
 How the pieces fit together: [architecture.md](../architecture.md).

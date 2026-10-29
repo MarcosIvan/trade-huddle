@@ -102,6 +102,8 @@ export const NFL_TRADE_VALUE: TradeValueParams = {
   curve: 0.75,
   leadShare: { RB: 0.55, WR: 0.2, TE: 0.14 },
   usageGames: 4,
+  // 30% of the usage share comes from the next game's projection (ADR 0028).
+  projectedUsageBlend: 0.3,
   elite: 3,
   spread: 1.2,
   scarcityFloor: 0.5,
@@ -187,6 +189,8 @@ export const NFL: SportConfig = {
       minGames: 2,
       reliabilityGames: 2,
       backupValue: 0.6,
+      // A new starter the next game's projection already shows (ADR 0028).
+      projectedLead: { minGames: 1, minUsage: 0.35 },
     },
     // Weekly lineup (docs/adr/0005-weekly-lineup.md): 65% Sleeper's weekly projection,
     // 35% our value adjusted for what the opponent allows to the position. Our value

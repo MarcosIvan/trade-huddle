@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
 import { buildModel } from "./build";
 import { playerRole, seasonOver, type RoleInputs } from "./role";
-import { playerScores } from "./score";
+import { playerScores, projectedShares } from "./score";
 import type { StatsFile, StatsPlayer } from "./types";
 
 const ENDING = NFL.model.seasonEnding;
@@ -62,6 +62,28 @@ describe("roles", () => {
     expect(playerRole({ ...deep, pos: "WR", depth: ["SWR", 2] }, ROLES)).toBe("backup");
   });
 
+  it("calls a lead a new starter the next game's projection already shows", () => {
+    // One game, a share of the backfield, form not yet far above his prior.
+    const fresh: RoleInputs = {
+      ...base,
+      g: 1,
+      lastAvg: 5,
+      prior: 3,
+      usage: 0.4,
+      projectedTop: true,
+      nextGamePpg: 11,
+    };
+    expect(playerRole({ ...fresh, projectedTop: false }, ROLES)).toBeNull();
+    expect(playerRole(fresh, ROLES)).toBe("lead");
+    // Projected to start, but expected to all along.
+    expect(playerRole({ ...fresh, nextGamePpg: 6 }, ROLES)).toBeNull();
+    expect(playerRole({ ...fresh, usage: 0.3 }, ROLES)).toBeNull();
+    expect(playerRole({ ...fresh, depth: ["RB", 2] }, ROLES)).toBeNull();
+    expect(playerRole({ ...fresh, injured: true }, ROLES)).toBeNull();
+    expect(playerRole({ ...fresh, g: 0 }, ROLES)).toBeNull();
+    expect(playerRole(fresh, { ...ROLES!, projectedLead: undefined })).toBeNull();
+  });
+
   it("says nothing without a depth chart, a usage measure or the rule", () => {
     expect(playerRole({ ...base, prior: 2, depth: undefined }, ROLES)).toBeNull();
     expect(playerRole({ ...base, prior: 2, usage: undefined }, ROLES)).toBeNull();
@@ -95,6 +117,7 @@ describe("roles and season-ending injuries in the model", () => {
     keys: ["rec_tgt", "rush_att", "rush_yd"],
     usage_keys: ["rec_tgt", "rush_att", "rec_rz_tgt"],
     team_weeks: { AAA: { "1": [0, 30, 0], "2": [0, 30, 0], "3": [0, 30, 0] } },
+    lineup_week: 4,
     players: { ...players, ...extra } as Record<string, StatsPlayer>,
   });
   const league = { roster_positions: ["RB"], scoring_settings: { rush_yd: 0.1 } };
@@ -141,5 +164,39 @@ describe("roles and season-ending injuries in the model", () => {
     const listed = run(stats({ deep: { ...players.deep, dc: ["RB", 2] } }));
     expect(model.players.deep!.value).toBeCloseTo(listed.model.players.deep!.value);
     expect(scores.get("deep")!.trade).toBeLessThan(listed.scores.get("deep")!.trade);
+  });
+
+  // A rookie with a modest projection back for one game, first on the depth chart.
+  const rookie = rb({
+    w: { "3": week(10, 40) },
+    tw: { "3": "AAA" },
+    proj: [2, 150],
+    dc: ["RB", 1],
+  });
+  const nextGame = { "4": [1, 18, 2, 90] };
+
+  it("lets a new starter the projection shows shake off his preseason prior", () => {
+    const projected = run(stats({ rookie: { ...rookie, wp: nextGame } }));
+    const unprojected = run(stats({ rookie }));
+    expect(projected.model.players.rookie!.role).toBe("lead");
+    expect(unprojected.model.players.rookie!.role).toBeNull();
+    expect(projected.scores.get("rookie")!.trade).toBeGreaterThan(
+      unprojected.scores.get("rookie")!.trade,
+    );
+  });
+
+  it("takes part of the usage measure from the next game's projected share", () => {
+    const file = stats({
+      rookie: { ...rookie, wp: nextGame },
+      starter: { ...players.starter!, wp: { "4": [1, 6] } },
+    });
+    const { model } = run(file);
+    const shares = projectedShares(model, file, NFL);
+    expect(shares.get("rookie")).toBeCloseTo(18 / 24);
+    expect(shares.get("starter")).toBeCloseTo(6 / 24);
+    const recentOnly = { ...NFL, tradeValue: { ...NFL.tradeValue, projectedUsageBlend: 0 } };
+    const before = playerScores(buildModel(file, league, recentOnly), file, [], recentOnly);
+    const after = playerScores(model, file, [], NFL);
+    expect(after.get("starter")!.parts.usage).toBeLessThan(before.get("starter")!.parts.usage);
   });
 });

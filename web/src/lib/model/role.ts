@@ -7,7 +7,10 @@
  *   games yet, often on PUP) is not.
  * - Lead: first on the depth chart, with a lead player's usage, and recent
  *   form far above what was expected of him before the season: he took the
- *   job during the season, so his preseason prior says little.
+ *   job during the season, so his preseason prior says little. Or first on
+ *   the depth chart and projected the most touches at his position for the
+ *   next game, far above his prior, with some usage already (ADR 0028): the
+ *   projection shows the new job before two games do.
  * - Backup: behind the starters on the depth chart, with little usage: what
  *   he did before (prior, draft position) is not what he will do now. An
  *   injured player drops down the depth chart while out, so he is left to
@@ -51,6 +54,10 @@ export interface RoleInputs {
   usage: number | undefined;
   /** Out for now (any injury status but Questionable): his depth chart spot is a stand-in's. */
   injured: boolean;
+  /** Projected the most targets + carries at his position on his team in the next game. */
+  projectedTop?: boolean;
+  /** Sleeper's projection for his next game (real points). */
+  nextGamePpg?: number | null;
 }
 
 /** His role, or null when the depth chart and usage say nothing special. */
@@ -64,6 +71,19 @@ export function playerRole(p: RoleInputs, params: RoleParams | null): Role | nul
     p.usage >= params.leadUsage &&
     p.lastAvg !== null &&
     (p.prior ?? 0) <= params.formJump * p.lastAvg
+  ) {
+    return "lead";
+  }
+  const byProjection = params.projectedLead;
+  if (
+    byProjection &&
+    order === 1 &&
+    p.projectedTop &&
+    !p.injured &&
+    p.g >= byProjection.minGames &&
+    p.usage >= byProjection.minUsage &&
+    p.nextGamePpg != null &&
+    (p.prior ?? 0) <= params.formJump * p.nextGamePpg
   ) {
     return "lead";
   }

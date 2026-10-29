@@ -7,7 +7,8 @@
  *
  *   expected   30  expected points per game from here on (the backtested model)
  *   scarcity   25  points above a free agent at his position, relative to the league's best
- *   usage      15  his importance to his NFL offense (share of targets + carries)
+ *   usage      15  his importance to his NFL offense (share of targets + carries;
+ *                  30% from the next game's projection, ADR 0028)
  *   season     10  points per game this season
  *   market     10  where drafters took him (ADP); fades as the season's games pile up
  *   recent      5  points per game over the last 3 games
@@ -41,6 +42,7 @@
  */
 import type { SportConfig } from "../sports/types";
 import { durability } from "./durability";
+import { lineupPeriods } from "./periods";
 import type { Model, Player, StatsFile } from "./types";
 import { USAGE_KEYS } from "./usage";
 import { priorPpg } from "./value";
@@ -116,6 +118,41 @@ export function usageShares(
   return shares;
 }
 
+/**
+ * Share of his team's projected targets + carries in the next game (Sleeper's
+ * projection for the lineup week), for players at the usage positions.
+ */
+export function projectedShares(
+  model: Pick<Model, "players">,
+  stats: StatsFile,
+  sport: SportConfig,
+): Map<string, number> {
+  const { leadShare } = sport.tradeValue;
+  const lastPlayed = Math.max(0, ...stats.weeks);
+  const period = lineupPeriods(stats).find((x) => x > lastPlayed);
+  const shares = new Map<string, number>();
+  if (period === undefined) return shares;
+  const tgt = stats.keys.indexOf(USAGE_KEYS[0]);
+  const att = stats.keys.indexOf(USAGE_KEYS[1]);
+  const touches = new Map<string, number>();
+  const team = new Map<string, number>();
+  for (const p of Object.values(model.players)) {
+    const packed = stats.players[p.id]?.wp?.[String(period)];
+    if (!packed || !p.team) continue;
+    let n = 0;
+    for (let i = 0; i + 1 < packed.length; i += 2) {
+      if (packed[i] === tgt || packed[i] === att) n += packed[i + 1]!;
+    }
+    team.set(p.team, (team.get(p.team) ?? 0) + n);
+    if (p.pos in leadShare) touches.set(p.id, n);
+  }
+  for (const [id, n] of touches) {
+    const total = team.get(model.players[id]!.team) ?? 0;
+    if (total > 0) shares.set(id, n / total);
+  }
+  return shares;
+}
+
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const mean = (xs: readonly number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 0);
 
@@ -168,7 +205,16 @@ export function playerScores(
           clamp01((ref.get(pos)?.eliteVorp ?? 0) / topVorp) ** tv.scarcityPower;
 
   // Usage: share of targets + carries relative to a lead player; top three weapons per offense.
-  const shares = usageShares(model, stats, sport);
+  const recentShares = usageShares(model, stats, sport);
+  // Part of the usage comes from the next game's projection: a new role shows there first.
+  const blend = tv.projectedUsageBlend ?? 0;
+  const projected = blend > 0 ? projectedShares(model, stats, sport) : new Map<string, number>();
+  const shares = new Map(
+    [...recentShares].map(([id, share]) => {
+      const next = projected.get(id);
+      return [id, next === undefined ? share : (1 - blend) * share + blend * next] as const;
+    }),
+  );
   const usageRank = new Map<string, number>();
   const byTeam = new Map<string, { id: string; norm: number }[]>();
   for (const [id, share] of shares) {
