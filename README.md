@@ -29,9 +29,13 @@ For your league, Trade Huddle:
 5. **Ranks each position's leaders** (Leaders tab): the league's top 30 at
    each position, free agents included, by trade value or by fantasy points
    this season.
-6. **Shows each player's latest news**: the newspaper icon beside a name
+6. **Works the waiver wire** (Free agency tab): every free agent in your
+   league by position, with season stats or this week's projection, three
+   pick ideas (add one free agent, drop one of your players) and a pick
+   analyzer with the same indicators as the trade analyzer.
+7. **Shows each player's latest news**: the newspaper icon beside a name
    opens the 5 most recent reports from Sleeper (practice, injuries, games).
-7. **Opens a player card**: click a name to see his season totals, his
+8. **Opens a player card**: click a name to see his season totals, his
    rank in fantasy points at his position and overall, his season week by week,
    with fantasy points under your league's scoring, rushing and receiving
    (passing for QBs), each number colored against what the position
@@ -178,6 +182,12 @@ the regular season and for the league's playoff weeks, ranked among every
 team's and colored green (easier) to red (harder). The schedule is only
 information: it never changes trade value or fairness
 ([ADR 0026](docs/adr/0026-schedule-in-the-analyzer.md)).
+**Pick ideas** follow the same value-first rule: only free agents worth more
+than the player dropped, green when the move gains at least 1 point of trade
+value without weakening your starters or bench, never piling up a position
+(no third QB for a receiver); each idea adds and drops someone different. The **pick analyzer** shows any add/drop
+with the trade analyzer's indicators
+([ADR 0029](docs/adr/0029-free-agency-tab.md)).
 
 ## For developers
 

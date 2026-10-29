@@ -19,6 +19,7 @@ import {
 import { ScoreContext } from "./ScoreContext";
 import { SportContext } from "./SportContext";
 import { WeeklyLineup } from "./WeeklyLineup";
+import { FreeAgency } from "./FreeAgency";
 import { LeaguePicker } from "./LeaguePicker";
 import { NewsProvider } from "./News";
 import { PlayerCardProvider } from "./PlayerCard";
@@ -40,11 +41,12 @@ interface AnalyzerState {
 
 const EMPTY: AnalyzerState = { partnerRid: null, give: new Set(), get: new Set() };
 
-type View = "team" | "leaders";
+type View = "team" | "leaders" | "free-agency";
 
 const VIEWS: { value: View; label: string }[] = [
   { value: "team", label: "Team & trades" },
   { value: "leaders", label: "Leaders" },
+  { value: "free-agency", label: "Free agency" },
 ];
 
 function toggle(set: ReadonlySet<string>, id: string): Set<string> {
@@ -199,7 +201,21 @@ export function LeagueScreen({
 
               <Tabs id="league" label="League views" tabs={VIEWS} value={tab} onChange={setTab} />
 
-              {tab === "leaders" ? (
+              {tab === "free-agency" ? (
+                <div {...tabPanelProps("league", "free-agency")}>
+                  <FreeAgency
+                    model={model}
+                    stats={stats}
+                    league={league}
+                    teams={teams}
+                    myRid={myRid}
+                    pool={pool}
+                    tradeScores={tradeScores}
+                    ideal={ideal}
+                    schedules={schedules}
+                  />
+                </div>
+              ) : tab === "leaders" ? (
                 <div {...tabPanelProps("league", "leaders")}>
                   <Section
                     id="leaders"

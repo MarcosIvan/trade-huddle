@@ -1,0 +1,53 @@
+/* The position filter sits above the free agents, so both lists start on the same line
+   (in the page order: your players, the filter, the free agents). */
+.pickers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    ". filter"
+    "drop add";
+  gap: 16px 20px;
+}
+.filter {
+  grid-area: filter;
+}
+.drop {
+  grid-area: drop;
+}
+.add {
+  grid-area: add;
+}
+.prompt {
+  margin-top: 24px;
+}
+.result {
+  margin-top: 24px;
+  display: grid;
+  gap: 20px;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.teams {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+}
+@media (max-width: 640px) {
+  .pickers,
+  .teams {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pickers {
+    grid-template-areas:
+      "drop"
+      "filter"
+      "add";
+  }
+}
+.warning {
+  color: var(--warn);
+  font-weight: 600;
+}
