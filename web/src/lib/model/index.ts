@@ -17,7 +17,7 @@ export {
   type PlayerScore,
   type TradeValueParts,
 } from "./score";
-export { average, makeScorer } from "./scoring";
+export { average, makeScorer, type Scorer } from "./scoring";
 export {
   benchDepth,
   DEPTH_WEIGHT,
@@ -109,3 +109,28 @@ export {
   type StatBenchmarks,
   type StatLevel,
 } from "./playerCard";
+export {
+  FREE_AGENT_PAGE,
+  freeAgentRows,
+  listable,
+  pageCount,
+  pageOf,
+  projectedPeriods,
+  type FreeAgentData,
+  type GameAhead,
+  type FreeAgentRow,
+  type FreeAgentSort,
+} from "./freeAgency";
+export {
+  available,
+  dropCandidates,
+  evaluatePick,
+  PICK_CANDIDATES,
+  PICK_IDEAS,
+  PICK_MIN_AVAILABILITY,
+  PICK_MIN_VALUE_GAIN,
+  pickLevel,
+  suggestPicks,
+  type PickLevel,
+  type PickResult,
+} from "./pickups";

@@ -96,6 +96,8 @@ worker. The main pieces, in the order they are used:
 | `verdict.ts`     | Fairness of a trade (the traffic light)                                                                          |
 | `trades.ts`      | Trade ideas and the trade finder (around a player or a position)                                                 |
 | `leaders.ts`     | Position leaders by trade value or season points ([ADR 0025](adr/0025-finder-by-position-and-leaders.md))        |
+| `freeAgency.ts`  | The free agent list: season stats or the week's projection, paged ([ADR 0029](adr/0029-free-agency-tab.md))      |
+| `pickups.ts`     | Pick ideas and the pick analyzer: add a free agent, drop a player ([ADR 0029](adr/0029-free-agency-tab.md))      |
 | `analyzer.ts`    | What the analyzer says about a trade: each side's change, free agents for uneven trades                          |
 | `weekly.ts`      | This week's outlook against the opponent                                                                         |
 | `weekLineup.ts`  | This week's best lineup, bench and injured reserve                                                               |
@@ -118,16 +120,19 @@ files ([ADR 0018](adr/0018-front-components.md)):
 - `MatchupBadge`: the Good / Neutral / Tough badge of the weekly lineup and
   the player card;
 - `Player` (`PlayerCell`, `PosBadge`, `TradeValue`…), `Section`,
-  `BalanceMeter`: the building blocks of every list and card;
-- `Tabs` (the league screen's "Team & trades" and "Leaders"), `Segmented`
-  (radio buttons drawn as one control) and `PlayerSearch` (a name search
-  combobox, over `lib/playerSearch.ts`).
+  `BalanceMeter` (the fairness meter and the pickup meter, over one value
+  bar) and `IdeaFrame` (the card around trade and pick ideas): the building
+  blocks of every list and card;
+- `Tabs` (the league screen's "Team & trades", "Leaders" and "Free agency"),
+  `Segmented` (radio buttons drawn as one control), `Pagination` and
+  `PlayerSearch` (a name search combobox, over `lib/playerSearch.ts`).
 
 Bigger screens are split by part: the player card is `PlayerCard`
 (provider and clickable name), `PlayerCardPanel` (totals and rank) and
 `GameLog` (the season table); the analyzer is `TradeAnalyzer`, `PickList`
 and `TradeSide`; the league header's `LeaguePicker` has its own file;
-the Leaders tab is `PositionLeaders`.
+the Leaders tab is `PositionLeaders`; the Free agency tab is `FreeAgency`
+(state), `FreeAgentList`, `PickIdeas` and `PickAnalyzer`.
 
 ## Tests and checks
 

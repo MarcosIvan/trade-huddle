@@ -1,39 +1,9 @@
 import type { Team } from "@/lib/league";
-import { isTrueMatch, type Player, type TradeIdea } from "@/lib/model";
+import { isTrueMatch, type TradeIdea } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
-import { NewsButton } from "./News";
-import { PlayerName } from "./PlayerCard";
-import { Delta, PosBadges, TradeValue, useTradeValueHint } from "./Player";
+import { IdeaChip, IdeaFrame, IdeaHandle, IdeaSide } from "./IdeaFrame";
+import { Delta } from "./Player";
 import styles from "./TradeIdeas.module.css";
-
-function Side({ label, players }: { label: string; players: Player[] }) {
-  const TRADE_VALUE_HINT = useTradeValueHint();
-  return (
-    <div className={styles.side}>
-      <span className="label">{label}</span>
-      <ul>
-        {players.map((p) => (
-          <li key={p.id}>
-            <span className={styles.playerName}>
-              <PlayerName player={p} />
-              {/* A word joiner keeps the news icon on the name's last line. */}
-              {"\u2060"}
-              <span className={styles.nowrap}>
-                <NewsButton id={p.id} name={p.name} pos={p.pos} />
-              </span>
-            </span>
-            <span className={styles.positions}>
-              <PosBadges player={p} />
-            </span>
-            <span className={styles.tradeValue} title={TRADE_VALUE_HINT}>
-              <TradeValue player={p} />
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 export function IdeaCard({
   idea,
@@ -52,51 +22,43 @@ export function IdeaCard({
   idPrefix?: string;
   onOpen: () => void;
 }) {
-  const name = partner?.name ?? "Unknown team";
-  const titleId = `${idPrefix}-${index}-title`;
   return (
-    <article
-      className={`card ${styles.card} ${star ? styles.starred : ""}`}
-      aria-labelledby={titleId}
-    >
-      {star && (
-        <p className={styles.star}>
-          <span aria-hidden="true">★</span> {star === "match" ? "Best match" : "Closest to a match"}
-        </p>
-      )}
-      <div className={styles.head}>
-        <h3 className={styles.title} id={titleId}>
-          {name}
-          {partner?.handle && <span className={styles.handle}>@{partner.handle}</span>}
-        </h3>
-      </div>
-      <div className={styles.swap}>
-        <Side label="You send" players={idea.give} />
-        <Side label="You get" players={idea.get} />
-      </div>
-      <div className={styles.impacts}>
-        <span className={styles.chip}>
-          Your starters <Delta value={idea.dMe} />
-        </span>
-        <span className={styles.chip}>
-          Their starters <Delta value={idea.dThem} />
-        </span>
-        {Math.abs(idea.depthMe) >= 0.1 && (
-          <span className={styles.chip} title="Change in your best backups (20% of their points)">
-            Your bench <Delta value={idea.depthMe} />
-          </span>
-        )}
-        {idea.benchShare >= 0.25 && (
-          <span className={`${styles.chip} ${styles.plus}`}>Sends a player from your bench</span>
-        )}
-      </div>
-      <BalanceMeter sGive={idea.sGive} sGet={idea.sGet} fairness={idea.fairness} />
-      <div className={styles.foot}>
-        <button type="button" className={`btn ${styles.openBtn}`} onClick={onOpen}>
-          Open in analyzer
-        </button>
-      </div>
-    </article>
+    <IdeaFrame
+      titleId={`${idPrefix}-${index}-title`}
+      title={
+        <>
+          {partner?.name ?? "Unknown team"}
+          {partner?.handle && <IdeaHandle handle={partner.handle} />}
+        </>
+      }
+      star={star === "match" ? "Best match" : star === "closest" ? "Closest to a match" : null}
+      sides={
+        <>
+          <IdeaSide label="You send" players={idea.give} />
+          <IdeaSide label="You get" players={idea.get} />
+        </>
+      }
+      chips={
+        <>
+          <IdeaChip>
+            Your starters <Delta value={idea.dMe} />
+          </IdeaChip>
+          <IdeaChip>
+            Their starters <Delta value={idea.dThem} />
+          </IdeaChip>
+          {Math.abs(idea.depthMe) >= 0.1 && (
+            <IdeaChip title="Change in your best backups (20% of their points)">
+              Your bench <Delta value={idea.depthMe} />
+            </IdeaChip>
+          )}
+          {idea.benchShare >= 0.25 && (
+            <IdeaChip tone="plus">Sends a player from your bench</IdeaChip>
+          )}
+        </>
+      }
+      meter={<BalanceMeter sGive={idea.sGive} sGet={idea.sGet} fairness={idea.fairness} />}
+      onOpen={onOpen}
+    />
   );
 }
 

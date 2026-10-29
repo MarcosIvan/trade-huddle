@@ -1,0 +1,17 @@
+/* The list gets the room its stat columns need; pick ideas sit beside it. */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 40px;
+}
+/* The analyzer below the grid, apart from it. */
+.spaced {
+  margin-top: 48px;
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

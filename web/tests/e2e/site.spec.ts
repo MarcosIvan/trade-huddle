@@ -143,6 +143,14 @@ test.describe("NBA league", () => {
     for (const pos of positions)
       await expect(leaders.getByRole("radio", { name: pos, exact: true })).toBeAttached();
     await expect(leaders.locator("tbody tr").first()).toBeVisible();
+    // Free agency: the NBA's positions (every player in this small league is on a roster).
+    await page.getByRole("tab", { name: "Free agency" }).click();
+    const free = page.locator("#free-agents");
+    for (const pos of positions)
+      await expect(free.getByRole("radio", { name: pos, exact: true })).toBeAttached();
+    await expect(free).toContainText("No PG free agents in this league.");
+    await expect(page.locator("#pick-ideas")).toContainText("No free agent is an upgrade");
+    await expect(page.locator("#pick-analyzer")).toBeVisible();
     await page.getByRole("tab", { name: "Team & trades" }).click();
 
     // The player card opens for NBA players too.
@@ -404,6 +412,59 @@ test.describe("demo league", () => {
     await tab.press("ArrowLeft");
     await expect(page.getByRole("tab", { name: "Team & trades" })).toBeFocused();
     await expect(page.locator("#finder")).toBeVisible();
+  });
+
+  test("lists free agents a page at a time, with pick ideas and the pick analyzer", async ({
+    page,
+  }) => {
+    await page.getByRole("tab", { name: "Free agency" }).click();
+    const list = page.locator("#free-agents");
+    const rows = list.locator("tbody tr");
+    await expect(rows.first()).toBeVisible();
+    // Free agents only: no player from a roster in the league.
+    await expect(list.getByText("You", { exact: true })).toHaveCount(0);
+    expect(await rows.count()).toBeLessThanOrEqual(25);
+    const firstName = await rows.first().locator("td").nth(1).innerText();
+    const next = list.getByRole("button", { name: "Next" });
+    if (await next.isVisible()) {
+      await next.click();
+      await expect(list.getByText(/^Page 2 of/)).toBeVisible();
+      await expect(rows.first().locator("td").first()).toHaveText("26");
+      expect(await rows.first().locator("td").nth(1).innerText()).not.toBe(firstName);
+    }
+    // Season stats or the week's projection, by position.
+    await list.getByText("RB", { exact: true }).click();
+    await expect(list.getByRole("columnheader", { name: "Carries" })).toBeAttached();
+    const projections = list.getByText(/projections$/);
+    if (await projections.count()) {
+      await projections.click();
+      await expect(list.getByRole("columnheader", { name: "Opp" })).toBeVisible();
+    }
+
+    // Pick ideas: one for one, at most three, each opening the analyzer.
+    const ideas = page.locator("#pick-ideas article");
+    const count = await ideas.count();
+    expect(count).toBeLessThanOrEqual(3);
+    if (count === 0) {
+      await expect(page.locator("#pick-ideas")).toContainText("No free agent is an upgrade");
+    } else {
+      await expect(ideas.first()).toContainText("You drop");
+      await expect(ideas.first()).toContainText("You add");
+      await ideas.first().getByRole("button", { name: "Open in analyzer" }).click();
+    }
+
+    // The analyzer: a player you drop and a free agent you add, by position.
+    const analyzer = page.locator("#pick-analyzer");
+    await list
+      .getByRole("button", { name: /^Analyze adding/ })
+      .first()
+      .click();
+    await expect(analyzer.getByRole("radio", { name: "RB", exact: true })).toBeChecked();
+    await analyzer.getByRole("radiogroup", { name: "You drop" }).getByRole("radio").last().check();
+    await expect(analyzer.getByRole("img", { name: /you drop .*, you add / })).toBeVisible();
+    await expect(analyzer.getByRole("heading", { name: "You add" })).toBeVisible();
+    await expect(analyzer).not.toContainText("balanced roster");
+    expect(await accessibilityProblems(page)).toEqual([]);
   });
 
   for (const scheme of ["light", "dark"] as const) {

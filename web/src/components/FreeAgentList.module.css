@@ -1,0 +1,32 @@
+.list {
+  display: grid;
+  gap: 16px;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+.table td {
+  font-variant-numeric: tabular-nums;
+}
+.table th.group {
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+/* A divider before each stat group, as in the player card's game log. */
+.table .start {
+  border-left: 2px solid var(--line);
+}
+.sorted {
+  font-weight: 700;
+}
+.opp {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.analyze {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 14px;
+}
