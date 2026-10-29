@@ -146,6 +146,12 @@ export interface RoleParams {
   reliabilityGames: number;
   /** Share of his trade value a backup keeps. */
   backupValue: number;
+  /**
+   * A lead by projection: first on the depth chart, the most projected targets
+   * and carries at his position on his team for the next game, at least this
+   * many games played and usage at least `minUsage` of a lead player's. Unset: off.
+   */
+  projectedLead?: { minGames: number; minUsage: number };
 }
 
 /** One stat column of a player's game log: a stats-file key and its header. */
@@ -193,6 +199,8 @@ export interface TradeValueParams {
   leadShare: Readonly<Record<string, number>>;
   /** Recent games used for the usage share. */
   usageGames: number;
+  /** Share of the usage measure taken from the next game's projected share (0 = recent games only). */
+  projectedUsageBlend?: number;
   /** Players averaged to find each position's elite level. */
   elite: number;
   /** Production ratios are raised to this power, so production gaps still count. */

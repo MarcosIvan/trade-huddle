@@ -2,7 +2,7 @@ import type { ModelParams, SportConfig } from "../sports/types";
 import { lineupPeriods } from "./periods";
 import { replacementLevels } from "./replacement";
 import { playerRole, seasonOver } from "./role";
-import { usageShares } from "./score";
+import { projectedShares, usageShares } from "./score";
 import { average, makeScorer } from "./scoring";
 import type { LeagueSettings, Model, PackedStats, Player, StatsFile } from "./types";
 import { expectedPoints, fitPointsPerOpportunity, USAGE_KEYS, type UsageSample } from "./usage";
@@ -145,11 +145,22 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
 
   const list = Object.values(players);
 
+  /** Leads found only by the next game's projection (their prior becomes that projection). */
+  const byProjection = new Set<string>();
   // Season-ending injuries and roles (depth chart + recent usage).
   if (params.seasonEnding || params.roles) {
     const shares = params.roles
       ? usageShares({ players }, stats, sport, params.roles.usageGames)
       : new Map<string, number>();
+    // Who is projected the most touches at each position of each team next game.
+    const projected = params.roles?.projectedLead
+      ? projectedShares({ players }, stats, sport)
+      : new Map<string, number>();
+    const topProjected = new Map<string, number>();
+    for (const [id, share] of projected) {
+      const key = `${players[id]!.team}:${players[id]!.pos}`;
+      topProjected.set(key, Math.max(topProjected.get(key) ?? 0, share));
+    }
     const lastTeamWeek = (team: string) =>
       Math.max(0, ...Object.keys(stats.team_weeks?.[team] ?? {}).map(Number));
     for (const pl of list) {
@@ -166,18 +177,27 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
         : last > 0
           ? Number(sp?.tw?.[String(last)] === pl.team)
           : undefined;
-      pl.role = playerRole(
-        {
-          pos: pl.pos,
-          g: pl.g,
-          lastAvg: pl.lastAvg,
-          prior: priorPpg(pl, params),
-          depth: sp?.dc,
-          usage,
-          injured: pl.inj !== null && pl.inj !== "Questionable",
-        },
-        params.roles,
-      );
+      const roleInputs = {
+        pos: pl.pos,
+        g: pl.g,
+        lastAvg: pl.lastAvg,
+        prior: priorPpg(pl, params),
+        depth: sp?.dc,
+        usage,
+        injured: pl.inj !== null && pl.inj !== "Questionable",
+        nextGamePpg: pl.nextGamePpg,
+        projectedTop:
+          (projected.get(pl.id) ?? 0) > 0 &&
+          projected.get(pl.id) === topProjected.get(`${pl.team}:${pl.pos}`),
+      };
+      pl.role = playerRole(roleInputs, params.roles);
+      if (
+        pl.role === "lead" &&
+        params.roles?.projectedLead &&
+        playerRole(roleInputs, { ...params.roles, projectedLead: undefined }) !== "lead"
+      ) {
+        byProjection.add(pl.id);
+      }
     }
   }
 
@@ -249,7 +269,11 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
           : pl.prevG === 0 && params.rookiePriorGames > 0
             ? params.rookiePriorGames
             : undefined;
-      return [pl.id, { ...pl, seasonAvg, lastAvg, priorGames }] as const;
+      const leadPrior =
+        byProjection.has(pl.id) && pl.nextGamePpg
+          ? { projPpg: pl.nextGamePpg / params.projScale, prevG: 0, prevPpg: null }
+          : {};
+      return [pl.id, { ...pl, seasonAvg, lastAvg, priorGames, ...leadPrior }] as const;
     }),
   );
 
