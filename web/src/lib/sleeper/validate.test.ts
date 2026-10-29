@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isLeagueId,
   isUsername,
+  normalizeUsername,
   parseLeague,
   parseLeagueList,
   parseLeagueUsers,
@@ -33,6 +34,23 @@ describe("input validation", () => {
       expect(isUsername(name)).toBe(false);
     },
   );
+
+  it.each([
+    ["Coach_01", "coach_01"],
+    ["@Coach_01", "coach_01"],
+    ["  @coach_01 ", "coach_01"],
+    ["coach_01\u00a0", "coach_01"],
+    ["\u2068@Coach_01\u2069", "coach_01"],
+    ["co\u200bach_01", "coach_01"],
+  ])("reads the username typed as %j", (typed, name) => {
+    expect(normalizeUsername(typed)).toBe(name);
+  });
+
+  it("keeps what cannot be a username invalid", () => {
+    expect(isUsername(normalizeUsername("@"))).toBe(false);
+    expect(isUsername(normalizeUsername("Big Coach"))).toBe(false);
+    expect(isUsername(normalizeUsername("coach@01"))).toBe(false);
+  });
 });
 
 describe("response validation", () => {

@@ -2,6 +2,7 @@ import { parsePlayerNews, type NewsItem } from "../news";
 import {
   isLeagueId,
   isUsername,
+  normalizeUsername,
   parseLeague,
   parseLeagueList,
   parseLeagueUsers,
@@ -49,13 +50,20 @@ async function get(path: string, signal?: AbortSignal, base = SLEEPER_API): Prom
   }
 }
 
-export async function findUser(username: string, signal?: AbortSignal): Promise<SleeperUser> {
+/** Finds a user by username, typed with or without "@" and in any case. */
+export async function findUser(typed: string, signal?: AbortSignal): Promise<SleeperUser> {
+  const username = normalizeUsername(typed);
   if (!isUsername(username)) {
     throw new UserError(
       "Enter a valid Sleeper username (letters, numbers, dots, dashes or underscores).",
     );
   }
-  const user = parseUser(await get(`/user/${encodeURIComponent(username)}`, signal));
+  const path = `/user/${encodeURIComponent(username)}`;
+  // Sleeper's CDN keeps answers for minutes, a "no such user" too: ask once
+  // more past the cache before telling the visitor the user does not exist.
+  const user =
+    parseUser(await get(path, signal)) ??
+    parseUser(await get(`${path}?fresh=${Date.now()}`, signal));
   if (!user) {
     throw new UserError(
       `No Sleeper user named "${username}". Check the spelling: it is your profile username, not your team name.`,
