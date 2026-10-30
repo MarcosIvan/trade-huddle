@@ -133,6 +133,7 @@ describe("NBA trade value", () => {
     early: player("early", "C", 25),
     late: player("late", "C", 25),
     guard: player("guard", "PG", 25),
+    earlyGuard: player("earlyGuard", "PG", 25),
     rep: player("rep", "PG", 10),
   };
   const model: Model = {
@@ -145,7 +146,13 @@ describe("NBA trade value", () => {
   const adp = (pick: number) => ({ n: "", p: "", fp: [], t: "AAA", adp: { std: pick } });
   const file: StatsFile = {
     ...stats,
-    players: { star: adp(1), early: adp(8), late: adp(150), guard: adp(150) },
+    players: {
+      star: adp(1),
+      early: adp(8),
+      late: adp(150),
+      guard: adp(150),
+      earlyGuard: adp(8),
+    },
   };
   const scores = playerScores(model, file, [], NBA);
   const trade = (id: string) => scores.get(id)!.trade;
@@ -153,6 +160,16 @@ describe("NBA trade value", () => {
   it("discounts centers the draft market does not rate, less for those it does", () => {
     expect(trade("late")).toBeLessThan(trade("early"));
     expect(trade("late")).toBeLessThan(trade("guard"));
+  });
+
+  it("values an early draft pick above a late one who produces the same", () => {
+    expect(trade("earlyGuard")).toBeGreaterThan(trade("guard"));
+  });
+
+  it("keeps the trade value weights at 100, like the NFL's", () => {
+    const sum = (w: Record<string, number>) => Object.values(w).reduce((s, x) => s + x, 0);
+    expect(sum(NBA.tradeValue.weights)).toBe(100);
+    expect(sum(NFL.tradeValue.weights)).toBe(100);
   });
 
   it("keeps the best player at the top of the scale", () => {

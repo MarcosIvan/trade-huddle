@@ -36,5 +36,6 @@ later one changes it, the later one says what it replaces.
 | [0027](0027-mid-season-trade-value.md)                | Mid-season trade value recalibration                                    |
 | [0028](0028-new-starters-from-the-projection.md)      | New starters seen in the next game's projection                         |
 | [0029](0029-free-agency-tab.md)                       | Free agency tab: free agent list, pick ideas and pick analyzer          |
+| [0030](0030-nba-trade-value-early-season.md)          | NBA trade value against the early-season market                         |
 
 How the pieces fit together: [architecture.md](../architecture.md).
