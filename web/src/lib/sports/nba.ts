@@ -34,7 +34,9 @@ const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
  */
 export const NBA_TRADE_VALUE: TradeValueParams = {
   ...NFL.tradeValue,
-  weights: { base: 5, market: 10, expected: 40, season: 10, recent: 5, scarcity: 30, usage: 0 },
+  // The draft market weighs twice the NFL's: early in the season trade markets still lean on
+  // where players were drafted. Its weight fades with games played (ADR 0030).
+  weights: { base: 5, market: 20, expected: 30, season: 10, recent: 5, scarcity: 30, usage: 0 },
   leadShare: {},
   minorPositions: [],
   scarcityPower: 1,
@@ -44,8 +46,8 @@ export const NBA_TRADE_VALUE: TradeValueParams = {
   // The draft market's measure is one half at pick 30 (the 3rd round in 12-team leagues).
   adpHalf: 30,
   // Trade markets price centers below what points leagues score for them (rebounds and
-  // blocks): up to 35% off, fading for centers the draft market already rates highly.
-  positionMarket: { C: 0.35 },
+  // blocks): up to 20% off, fading for centers the draft market already rates highly (ADR 0030).
+  positionMarket: { C: 0.2 },
   // An 82-game season: the games a player misses cost his fantasy team. This season's
   // share of his team's games, as if he had 40 more at a typical 80% (backtest: ADR 0022).
   durability: { lastSeason: 0, shrinkGames: 40, typical: 0.8 },
