@@ -1,7 +1,14 @@
 export { adpFormat, buildModel, modelSlots, rosterPlayers } from "./build";
 export { durability, teamGames } from "./durability";
 export { bestLineup, type Lineup } from "./lineup";
-export { currentPeriod, lineupPeriods, periodDate, periodWeek, weekPeriods } from "./periods";
+export {
+  currentPeriod,
+  lineupPeriods,
+  periodDate,
+  periodsAhead,
+  periodWeek,
+  weekPeriods,
+} from "./periods";
 export {
   LEADERS_SHOWN,
   positionLeaders,
@@ -115,7 +122,6 @@ export {
   listable,
   pageCount,
   pageOf,
-  projectedPeriods,
   type FreeAgentData,
   type GameAhead,
   type FreeAgentRow,

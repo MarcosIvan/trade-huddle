@@ -25,7 +25,9 @@ toward replacement level, and before the injury rule:
 - It only counts when the player is expected to play: a positive projection
   and an injury status that still lets him start. A player listed out would
   otherwise drag his whole season toward zero.
-- The next game is the lineup week, once it comes after every week played.
+- The next game is the lineup week, once it comes after every week played,
+  or for a team whose game of the lineup week is not in the stats yet
+  (update below).
 - In the backtest only the projection for the week right after the
   checkpoint is visible: later weeks' projections were made later, with
   information the model could not have had.
@@ -57,3 +59,21 @@ it was (MAE 5.530 before, 5.536 now; 5.543 had the weight stayed at 0.75).
   new data is needed.
 - Players without a projection (deep bench, no team) keep the previous
   estimate.
+
+## Update (2026-10-30): weeks that already started
+
+The daily build counts a week as played once its first game is (the
+Thursday game), but the lineup week only moves on after the last one
+(Monday). From Friday to Monday no week came after every week played, so
+every player lost his next game: this projection, the lead by projection
+and the projected usage share of ADR 0028. A new starter found by the
+projection fell from 39th to 57th among running backs in a 12-team PPR
+league until the Tuesday build.
+
+The next game is now per team (`periodsAhead`): the lineup week stays ahead
+for a team with no game of that week in `team_weeks` yet. Teams that already
+played it have no next game until the following week's projection. The
+free agency list's week projection uses the same rule. In the NBA (no team
+totals by game day) game days after the last one played stay the periods
+ahead, as before. The points backtest is unchanged (MAE 3.290, rank 0.472):
+it builds stats only at complete weeks.

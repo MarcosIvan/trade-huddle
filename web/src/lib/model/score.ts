@@ -42,7 +42,7 @@
  */
 import type { SportConfig } from "../sports/types";
 import { durability } from "./durability";
-import { lineupPeriods } from "./periods";
+import { periodsAhead } from "./periods";
 import type { Model, Player, StatsFile } from "./types";
 import { USAGE_KEYS } from "./usage";
 import { priorPpg } from "./value";
@@ -128,17 +128,19 @@ export function projectedShares(
   sport: SportConfig,
 ): Map<string, number> {
   const { leadShare } = sport.tradeValue;
-  const lastPlayed = Math.max(0, ...stats.weeks);
-  const period = lineupPeriods(stats).find((x) => x > lastPlayed);
   const shares = new Map<string, number>();
-  if (period === undefined) return shares;
   const tgt = stats.keys.indexOf(USAGE_KEYS[0]);
   const att = stats.keys.indexOf(USAGE_KEYS[1]);
   const touches = new Map<string, number>();
   const team = new Map<string, number>();
+  // Each team's next game: a team that already played this week has none projected.
+  const nextPeriod = new Map<string, number | undefined>();
   for (const p of Object.values(model.players)) {
-    const packed = stats.players[p.id]?.wp?.[String(period)];
-    if (!packed || !p.team) continue;
+    if (!p.team) continue;
+    if (!nextPeriod.has(p.team)) nextPeriod.set(p.team, periodsAhead(stats, p.team)[0]);
+    const period = nextPeriod.get(p.team);
+    const packed = period === undefined ? undefined : stats.players[p.id]?.wp?.[String(period)];
+    if (!packed) continue;
     let n = 0;
     for (let i = 0; i + 1 < packed.length; i += 2) {
       if (packed[i] === tgt || packed[i] === att) n += packed[i + 1]!;
