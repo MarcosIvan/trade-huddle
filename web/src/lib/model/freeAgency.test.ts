@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { freeAgentRows, listable, pageCount, pageOf, projectedPeriods } from "./freeAgency";
+import { freeAgentRows, listable, pageCount, pageOf } from "./freeAgency";
 import { makeScorer } from "./scoring";
 import type { Model, Player, StatsFile } from "./types";
 
@@ -72,15 +72,18 @@ describe("free agency list", () => {
     expect(rows[0]!.matchups).toEqual([{ opponent: "BBB", home: false }]);
   });
 
-  it("projects only the periods of the lineup week still to play", () => {
-    const days = {
+  it("keeps the projection of a team still to play a week others started", () => {
+    // Week 3 began: team BBB played its game, AAA has not yet.
+    const midWeek = {
       ...stats,
-      period: "day",
       weeks: [1, 2, 3],
-      lineup_week: 1,
-      day_weeks: { "1": 1, "2": 1, "3": 1, "4": 1, "5": 2 },
+      team_weeks: { AAA: { "1": [1] }, BBB: { "1": [1], "3": [1] } },
     } as unknown as StatsFile;
-    expect(projectedPeriods(days)).toEqual([4]);
+    const onB = { ...model, players: { ...model.players, a: player("a", "WR", { team: "BBB" }) } };
+    const rows = freeAgentRows(onB, midWeek, score, rostered, "WR", "projections", "points", worth);
+    expect(rows[0]).toMatchObject({ points: 13, games: 1 });
+    expect(rows[0]!.matchups).toEqual([{ opponent: "BBB", home: false }]);
+    expect(rows.find((r) => r.player.id === "a")).toMatchObject({ points: 0, games: 0 });
   });
 });
 

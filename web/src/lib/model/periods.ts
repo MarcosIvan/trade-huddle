@@ -20,6 +20,20 @@ export function lineupPeriods(stats: StatsFile): number[] {
 }
 
 /**
+ * The lineup week's periods still to play, for a team when given. Periods
+ * after the last one played are ahead for everyone. A period some teams
+ * already played (the NFL's Thursday game) is still ahead for a team whose
+ * game is not in the stats yet (`team_weeks`, NFL only).
+ */
+export function periodsAhead(stats: StatsFile, team?: string): number[] {
+  const lastPlayed = Math.max(0, ...stats.weeks);
+  const played = team && stats.team_weeks ? (stats.team_weeks[team] ?? {}) : null;
+  return lineupPeriods(stats).filter(
+    (period) => period > lastPlayed || (played !== null && !(String(period) in played)),
+  );
+}
+
+/**
  * The first period still to play: the lineup week's first period, or the one
  * after the last period played when the season has no lineup week.
  */

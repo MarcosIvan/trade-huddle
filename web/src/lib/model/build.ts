@@ -1,5 +1,5 @@
 import type { ModelParams, SportConfig } from "../sports/types";
-import { lineupPeriods } from "./periods";
+import { periodsAhead } from "./periods";
 import { replacementLevels } from "./replacement";
 import { playerRole, seasonOver } from "./role";
 import { projectedShares, usageShares } from "./score";
@@ -89,10 +89,6 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
   const supported = (x: string | undefined): x is string =>
     x !== undefined && sport.positions.includes(x);
 
-  // The next game: the lineup week's first projected game after every period played so far.
-  const lastPlayed = Math.max(0, ...stats.weeks);
-  const upcoming = lineupPeriods(stats).filter((period) => period > lastPlayed);
-
   // Preseason projections: season totals (divided by the season's games) or per game already.
   const projGames = stats.proj_per_game ? 1 : (stats.season_games ?? DEFAULT_SEASON_GAMES);
 
@@ -115,7 +111,10 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
     });
     games.set(id, played);
     const prevG = p.prev ? p.prev.g : 0;
-    const nextGame = upcoming.map((period) => p.wp?.[String(period)]).find(Boolean);
+    // The next game: his team's first projected game of the lineup week not played yet.
+    const nextGame = periodsAhead(stats, p.t)
+      .map((period) => p.wp?.[String(period)])
+      .find(Boolean);
     players[id] = {
       id,
       name: p.n || `Player ${id}`,

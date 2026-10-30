@@ -185,6 +185,32 @@ describe("roles and season-ending injuries in the model", () => {
     );
   });
 
+  it("keeps the next game of a team still to play a week others started", () => {
+    // Week 4 began: team BBB played its game, AAA has not yet.
+    const other = rb({
+      t: "BBB",
+      w: { "4": week(12, 50) },
+      tw: { "4": "BBB" },
+      wp: { "4": [1, 10] },
+    });
+    const file = stats({ rookie: { ...rookie, wp: nextGame }, other });
+    const midWeek: StatsFile = {
+      ...file,
+      weeks: [1, 2, 3, 4],
+      team_weeks: { ...file.team_weeks, BBB: { "4": [0, 12, 0] } },
+    };
+    const before = run(file).model;
+    const { model } = run(midWeek);
+    expect(model.players.rookie!.role).toBe("lead");
+    expect(model.players.rookie!.nextGamePpg).toBe(before.players.rookie!.nextGamePpg);
+    expect(projectedShares(model, midWeek, NFL).get("rookie")).toBeCloseTo(
+      projectedShares(before, file, NFL).get("rookie")!,
+    );
+    // BBB's game is played: nothing projected for him until next week's projection.
+    expect(model.players.other!.nextGamePpg).toBeNull();
+    expect(projectedShares(model, midWeek, NFL).has("other")).toBe(false);
+  });
+
   it("takes part of the usage measure from the next game's projected share", () => {
     const file = stats({
       rookie: { ...rookie, wp: nextGame },

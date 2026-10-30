@@ -3,7 +3,7 @@
  * their season stats or their projection for the week ahead, like Sleeper's
  * player list (ADR 0029).
  */
-import { lineupPeriods } from "./periods";
+import { periodsAhead } from "./periods";
 import type { Scorer } from "./scoring";
 import type { Model, PackedStats, Player, StatsFile } from "./types";
 import { opponents } from "./weekly";
@@ -55,15 +55,6 @@ function addPacked(stats: StatsFile, totals: Record<string, number>, packed: Pac
 }
 
 /**
- * The periods of the week ahead still to play: the lineup week's periods
- * after the last one played (in the NBA, the game days left in the week).
- */
-export function projectedPeriods(stats: StatsFile): number[] {
-  const lastPlayed = Math.max(0, ...stats.weeks);
-  return lineupPeriods(stats).filter((period) => period > lastPlayed);
-}
-
-/**
  * The league's free agents at a position: everyone on no roster who is
  * `listable`, with season stats or the week's projection under the league's
  * scoring, ranked by trade value or fantasy points (ties go to the other).
@@ -78,15 +69,24 @@ export function freeAgentRows(
   by: FreeAgentSort,
   worth: (p: Player) => number,
 ): FreeAgentRow[] {
-  const periods = data === "projections" ? projectedPeriods(stats) : stats.weeks;
   const source = data === "projections" ? "wp" : "w";
-  // Each projected period's games, by team.
-  const schedule = data === "projections" ? periods.map((period) => opponents(stats, period)) : [];
+  // The periods each team still plays this week, and each period's games by team.
+  const ahead = new Map<string, number[]>();
+  const periodsOf = (team: string) => {
+    if (!ahead.has(team)) ahead.set(team, periodsAhead(stats, team));
+    return ahead.get(team)!;
+  };
+  const byPeriod = new Map<number, Map<string, GameAhead>>();
+  const gamesOf = (period: number) => {
+    if (!byPeriod.has(period)) byPeriod.set(period, opponents(stats, period));
+    return byPeriod.get(period)!;
+  };
   const key = (r: FreeAgentRow) => (by === "value" ? [r.value, r.points] : [r.points, r.value]);
   return Object.values(model.players)
     .filter((p) => p.pos === pos && !rostered.has(p.id) && listable(p))
     .map((p) => {
       const sp = stats.players[p.id];
+      const periods = data === "projections" ? periodsOf(p.team) : stats.weeks;
       const totals: Record<string, number> = {};
       let points = 0;
       let games = 0;
@@ -105,7 +105,9 @@ export function freeAgentRows(
         ppg: games > 0 ? points / games : null,
         stats: totals,
         matchups:
-          data === "projections" ? schedule.flatMap((byTeam) => byTeam.get(p.team) ?? []) : [],
+          data === "projections"
+            ? periods.flatMap((period) => gamesOf(period).get(p.team) ?? [])
+            : [],
       };
     })
     .sort((a, b) => {
