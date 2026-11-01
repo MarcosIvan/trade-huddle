@@ -28,6 +28,7 @@ import {
   positionCheck,
   positionNeeds,
   sideValue,
+  tradeSides,
   suggestTrades,
   teamNeeds,
   withFreeAgents,
@@ -389,6 +390,21 @@ describe("side value", () => {
 
   it("keeps two good players from adding up to a star", () => {
     expect(sideValue([45, 45]) / 100).toBeLessThan(0.9);
+  });
+});
+
+describe("trade sides", () => {
+  it("counts every player in full when both sides send as many", () => {
+    expect(tradeSides([40, 10], [30, 20])).toEqual([50, 50]);
+    expect(tradeSides([30, 20, 10], [25, 20, 15])).toEqual([60, 60]);
+    expect(tradeSides([30], [25])).toEqual([30, 25]);
+  });
+
+  it("discounts the extra players on both sides of an uneven trade", () => {
+    expect(tradeSides([40], [30, 20])).toEqual([40, sideValue([30, 20])]);
+    const [give, get] = tradeSides([30, 20, 10], [35, 25]);
+    expect(give).toBeCloseTo(30 + 0.55 * 20 + 0.4 * 10);
+    expect(get).toBeCloseTo(35 + 0.55 * 25);
   });
 });
 

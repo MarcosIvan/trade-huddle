@@ -32,8 +32,9 @@ export interface TradeResult {
   fairness: number;
   /**
    * Trade value you send and get, when trade values are known (otherwise value
-   * above replacement). Each side's best player counts in full, the next ones
-   * less (see SIDE_DEPTH): two good players do not add up to a star.
+   * above replacement). With as many players on each side, every player counts
+   * in full; in an uneven trade each side's best player counts in full and the
+   * next ones less (see SIDE_DEPTH): two good players do not add up to a star.
    */
   sGive: number;
   sGet: number;
@@ -181,17 +182,30 @@ export function withFreeAgents(
 const sumVorp = (list: readonly Valued[]) => list.reduce((s, p) => s + p.vorp, 0);
 
 /**
- * Weight of each player on a side of a trade, best first: extra players count
- * less. Fitted so that trades of 2 or 3 players for fewer stay as fair as on
- * the linear trade value scale (ADR 0013).
+ * Weight of each player on a side of an uneven trade, best first: extra
+ * players count less. Fitted so that trades of 2 or 3 players for fewer stay
+ * as fair as on the linear trade value scale (ADR 0013).
  */
 export const SIDE_DEPTH = [1, 0.55, 0.4] as const;
 
-/** A side's trade value: best player in full, the next ones discounted. */
+/** A side's trade value in an uneven trade: best player in full, the next ones discounted. */
 export function sideValue(values: readonly number[]): number {
   return [...values]
     .sort((a, b) => b - a)
     .reduce((s, v, i) => s + v * (SIDE_DEPTH[i] ?? SIDE_DEPTH[SIDE_DEPTH.length - 1]!), 0);
+}
+
+/**
+ * Trade value of both sides: with as many players on each side every player
+ * counts in full; otherwise both sides use the SIDE_DEPTH discount (ADR 0031).
+ */
+export function tradeSides(
+  give: readonly number[],
+  get: readonly number[],
+): [give: number, get: number] {
+  if (give.length !== get.length) return [sideValue(give), sideValue(get)];
+  const sum = (values: readonly number[]) => values.reduce((s, v) => s + v, 0);
+  return [sum(give), sum(get)];
 }
 
 /**
@@ -685,8 +699,7 @@ export function evaluateTrade(
   // Fairness compares trade values when known, otherwise value above replacement.
   const valueOf = (p: Player) => scores?.get(p.id) ?? 0;
   const sumScore = (list: readonly Player[]) => list.reduce((s, p) => s + valueOf(p), 0);
-  const sGive = scores ? sideValue(give.map(valueOf)) : vGive;
-  const sGet = scores ? sideValue(get.map(valueOf)) : vGet;
+  const [sGive, sGet] = scores ? tradeSides(give.map(valueOf), get.map(valueOf)) : [vGive, vGet];
   const hi = Math.max(sGive, sGet);
   const lo = Math.min(sGive, sGet);
   const fairness = hi > 0 ? lo / hi : 1;
@@ -905,8 +918,7 @@ const tooUneven = (
   get: readonly Player[],
   worth: (p: Player) => number,
 ) => {
-  const a = sideValue(give.map(worth));
-  const b = sideValue(get.map(worth));
+  const [a, b] = tradeSides(give.map(worth), get.map(worth));
   return Math.min(a, b) < 0.75 * Math.max(a, b);
 };
 

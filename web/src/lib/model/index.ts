@@ -76,6 +76,7 @@ export {
   positionNeeds,
   sideValue,
   SIDE_DEPTH,
+  tradeSides,
   type FairnessLevel,
   freeAgent,
   freeAgentPool,
