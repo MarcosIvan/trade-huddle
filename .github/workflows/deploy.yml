@@ -10,10 +10,12 @@ name: Build and deploy
 
 on:
   schedule:
-    # Every morning, 09:17 UTC: stats, injuries and next week's projections.
-    # Off the hour on purpose: GitHub delays scheduled runs under load, most
-    # of all at the top of the hour (runs at "0 10" started 4-9 hours late).
-    - cron: "17 9 * * *"
+    # Every night, 05:17 UTC (02:17 in Brasília): stats, injuries and next
+    # week's projections. Off the hour on purpose: GitHub delays scheduled runs
+    # under load, most of all at the top of the hour (runs at "0 10" started
+    # 4-9 hours late). Early because runs at "17 9" still started 4-10 hours
+    # late, so the data was only refreshed in the afternoon.
+    - cron: "17 5 * * *"
   workflow_dispatch:
   push:
     branches: [main]

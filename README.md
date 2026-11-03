@@ -51,7 +51,7 @@ Every number is computed under **your league's own scoring rules**.
 ## How it works
 
 ```
-Every day at 09:17 UTC (GitHub Actions)             In the visitor's browser
+Every day at 05:17 UTC (GitHub Actions)             In the visitor's browser
 ───────────────────────────────────────             ─────────────────────────────
 pipeline/ (Python)                                  web/ (Next.js static export)
   └─ Sleeper public API                               ├─ data/nfl/stats.json
@@ -253,7 +253,7 @@ Not needed to use the site. If you want your own:
 1. Fork the repository.
 2. _Settings → Pages → Build and deployment → Source:_ **GitHub Actions**.
 3. _Actions → Build and deploy → Run workflow_. After that it runs every day at
-   09:17 UTC and on every push to `main`.
+   05:17 UTC and on every push to `main`.
 4. Open `https://<your-user>.github.io/<repo-name>/`.
 5. Optional, to show up on Google: add the site to
    [Google Search Console](https://search.google.com/search-console) as a
