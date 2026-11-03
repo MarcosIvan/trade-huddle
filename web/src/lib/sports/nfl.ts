@@ -185,7 +185,9 @@ export const NFL: SportConfig = {
       leadUsage: 0.5,
       // A share of the backfield is not a backup's (ADR 0027).
       backupUsage: 0.25,
-      formJump: 0.4,
+      // Recent form (or next game's projection) at least ~2.9x the prior: at 2.5x, a
+      // starter all along made a "new job" out of a hot stretch (ADR 0032).
+      formJump: 0.35,
       minGames: 2,
       reliabilityGames: 2,
       backupValue: 0.6,

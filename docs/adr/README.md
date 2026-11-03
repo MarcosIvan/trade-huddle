@@ -38,5 +38,6 @@ later one changes it, the later one says what it replaces.
 | [0029](0029-free-agency-tab.md)                       | Free agency tab: free agent list, pick ideas and pick analyzer          |
 | [0030](0030-nba-trade-value-early-season.md)          | NBA trade value against the early-season market                         |
 | [0031](0031-even-trades-count-in-full.md)             | Even trades count every player in full                                  |
+| [0032](0032-hot-stretch-is-not-a-new-job.md)          | A hot stretch is not a new job                                          |
 
 How the pieces fit together: [architecture.md](../architecture.md).
