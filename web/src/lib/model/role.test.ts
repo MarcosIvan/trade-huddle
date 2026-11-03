@@ -52,6 +52,13 @@ describe("roles", () => {
     expect(playerRole({ ...base, prior: 2, g: 1 }, ROLES)).toBeNull();
   });
 
+  it("does not make a new job out of a hot stretch by a starter all along", () => {
+    // Recent form 2.6 times his prior: a hot stretch (ADR 0032).
+    expect(playerRole({ ...base, prior: 10, lastAvg: 26 }, ROLES)).toBeNull();
+    // Three times his prior: he took the job.
+    expect(playerRole({ ...base, prior: 10, lastAvg: 30 }, ROLES)).toBe("lead");
+  });
+
   it("calls a backup a player behind the starters with little usage, unless he is hurt", () => {
     const deep: RoleInputs = { ...base, depth: ["RB", 3], usage: 0.1 };
     expect(playerRole(deep, ROLES)).toBe("backup");
