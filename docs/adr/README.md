@@ -39,5 +39,6 @@ later one changes it, the later one says what it replaces.
 | [0030](0030-nba-trade-value-early-season.md)          | NBA trade value against the early-season market                         |
 | [0031](0031-even-trades-count-in-full.md)             | Even trades count every player in full                                  |
 | [0032](0032-hot-stretch-is-not-a-new-job.md)          | A hot stretch is not a new job                                          |
+| [0033](0033-extra-players-count-30-percent.md)        | Extra players in an uneven trade count 30%                              |
 
 How the pieces fit together: [architecture.md](../architecture.md).

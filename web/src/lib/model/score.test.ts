@@ -27,7 +27,7 @@ import {
   isTrueMatch,
   positionCheck,
   positionNeeds,
-  sideValue,
+  EXTRA_PLAYER_WEIGHT,
   tradeSides,
   suggestTrades,
   teamNeeds,
@@ -294,9 +294,10 @@ describe("usage bonus", () => {
 describe("fairness and match", () => {
   const sport: SportConfig = { ...NFL, freeAgentPositions: ["WR"] };
   const slots = ["WR", "WR", "FLEX"];
-  // Me: two good receivers and a bench one. Them: one star receiver, thin behind him.
+  // Me: two good receivers (the first close to the star) and a bench one.
+  // Them: one star receiver, thin behind him.
   const players = {
-    myWr1: player("myWr1", "WR", 16, 7),
+    myWr1: player("myWr1", "WR", 17, 8),
     myWr2: player("myWr2", "WR", 14, 5),
     myWr3: player("myWr3", "WR", 12, 3),
     myRb: player("myRb", "RB", 13, 5),
@@ -331,7 +332,7 @@ describe("fairness and match", () => {
     expect(fairnessLevel(0.8)).toBe("yellow");
   });
 
-  it("rates two receivers (a starter and a bench one) for one better as a match", () => {
+  it("rates a receiver close to the star plus a bench one for the star as a match", () => {
     const give = [players.myWr1, players.myWr3];
     const base = (list: Player[]) => bestLineup(list, model.slots, sport).total;
     const r = evaluateTrade(
@@ -381,18 +382,6 @@ describe("fairness and match", () => {
   });
 });
 
-describe("side value", () => {
-  it("counts the best player in full and the next ones less", () => {
-    expect(sideValue([50])).toBe(50);
-    expect(sideValue([20, 40])).toBeCloseTo(40 + 0.55 * 20);
-    expect(sideValue([10, 30, 20])).toBeCloseTo(30 + 0.55 * 20 + 0.4 * 10);
-  });
-
-  it("keeps two good players from adding up to a star", () => {
-    expect(sideValue([45, 45]) / 100).toBeLessThan(0.9);
-  });
-});
-
 describe("trade sides", () => {
   it("counts every player in full when both sides send as many", () => {
     expect(tradeSides([40, 10], [30, 20])).toEqual([50, 50]);
@@ -400,11 +389,27 @@ describe("trade sides", () => {
     expect(tradeSides([30], [25])).toEqual([30, 25]);
   });
 
-  it("discounts the extra players on both sides of an uneven trade", () => {
-    expect(tradeSides([40], [30, 20])).toEqual([40, sideValue([30, 20])]);
-    const [give, get] = tradeSides([30, 20, 10], [35, 25]);
-    expect(give).toBeCloseTo(30 + 0.55 * 20 + 0.4 * 10);
-    expect(get).toBeCloseTo(35 + 0.55 * 25);
+  it("counts the extra players on the bigger side at EXTRA_PLAYER_WEIGHT", () => {
+    expect(EXTRA_PLAYER_WEIGHT).toBe(0.3);
+    const [one, two] = tradeSides([40], [20, 30]);
+    expect(one).toBe(40);
+    expect(two).toBeCloseTo(30 + 0.3 * 20);
+    const [three, alsoTwo] = tradeSides([30, 10, 20], [35, 25]);
+    expect(three).toBeCloseTo(30 + 20 + 0.3 * 10);
+    expect(alsoTwo).toBe(60);
+    const [star, depth] = tradeSides([36], [15, 15, 15]);
+    expect(star).toBe(36);
+    expect(depth).toBeCloseTo(15 + 0.3 * 15 + 0.3 * 15);
+  });
+
+  it("keeps two good players from adding up to a star", () => {
+    const [star, two] = tradeSides([24], [15, 14]);
+    expect(Math.min(star, two) / Math.max(star, two)).toBeLessThan(0.9);
+  });
+
+  it("lets a star be fairly traded for a near-equal player and a depth player", () => {
+    const [star, two] = tradeSides([26], [24, 12]);
+    expect(Math.min(star, two) / Math.max(star, two)).toBeGreaterThanOrEqual(0.9);
   });
 });
 
