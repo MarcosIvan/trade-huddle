@@ -14,7 +14,7 @@ export interface SideChange {
   last: number;
 }
 
-/** Received minus sent, in trade value (with the side discount in an uneven trade), points per game and last games. */
+/** Received minus sent, in trade value (extra players discounted in an uneven trade), points per game and last games. */
 export function sideChange(
   sGet: number,
   sGive: number,

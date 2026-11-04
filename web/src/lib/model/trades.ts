@@ -33,8 +33,8 @@ export interface TradeResult {
   /**
    * Trade value you send and get, when trade values are known (otherwise value
    * above replacement). With as many players on each side, every player counts
-   * in full; in an uneven trade each side's best player counts in full and the
-   * next ones less (see SIDE_DEPTH): two good players do not add up to a star.
+   * in full; in an uneven trade the extra players on the bigger side count
+   * less (see EXTRA_PLAYER_WEIGHT): two good players do not add up to a star.
    */
   sGive: number;
   sGet: number;
@@ -182,30 +182,29 @@ export function withFreeAgents(
 const sumVorp = (list: readonly Valued[]) => list.reduce((s, p) => s + p.vorp, 0);
 
 /**
- * Weight of each player on a side of an uneven trade, best first: extra
- * players count less. Fitted so that trades of 2 or 3 players for fewer stay
- * as fair as on the linear trade value scale (ADR 0013).
+ * Weight of an extra player in an uneven trade: the players the bigger side
+ * sends beyond the other side's count (its lesser ones) count this share of
+ * their trade value. The team that gets more players must drop someone to fit
+ * them, and two good players do not add up to a star (ADR 0033).
  */
-export const SIDE_DEPTH = [1, 0.55, 0.4] as const;
-
-/** A side's trade value in an uneven trade: best player in full, the next ones discounted. */
-export function sideValue(values: readonly number[]): number {
-  return [...values]
-    .sort((a, b) => b - a)
-    .reduce((s, v, i) => s + v * (SIDE_DEPTH[i] ?? SIDE_DEPTH[SIDE_DEPTH.length - 1]!), 0);
-}
+export const EXTRA_PLAYER_WEIGHT = 0.3;
 
 /**
- * Trade value of both sides: with as many players on each side every player
- * counts in full; otherwise both sides use the SIDE_DEPTH discount (ADR 0031).
+ * Trade value of both sides. Players are paired across the trade and every
+ * paired player counts in full; the extra players on the bigger side (its
+ * lesser ones) count EXTRA_PLAYER_WEIGHT. With as many players on each side
+ * nobody is extra: a plain sum (ADR 0031, ADR 0033).
  */
 export function tradeSides(
   give: readonly number[],
   get: readonly number[],
 ): [give: number, get: number] {
-  if (give.length !== get.length) return [sideValue(give), sideValue(get)];
-  const sum = (values: readonly number[]) => values.reduce((s, v) => s + v, 0);
-  return [sum(give), sum(get)];
+  const paired = Math.min(give.length, get.length);
+  const side = (values: readonly number[]) =>
+    [...values]
+      .sort((a, b) => b - a)
+      .reduce((s, v, i) => s + (i < paired ? v : EXTRA_PLAYER_WEIGHT * v), 0);
+  return [side(give), side(get)];
 }
 
 /**

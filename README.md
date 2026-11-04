@@ -124,9 +124,9 @@ mid-season. A rookie is judged on his own games sooner than a veteran. The
 to his fantasy team.
 
 **Fairness** compares trade value on each side. With as many players on each
-side, every player counts in full; in an uneven trade (2-for-1, 3-for-2) a
-side's second and third players count 55% and 40%, so two good players do
-not add up to a star.
+side, every player counts in full; in an uneven trade (2-for-1, 3-for-2) the
+extra players on the bigger side (its lesser ones) count 30%, so two good
+players do not add up to a star.
 Green is fair (90% or more), yellow could work (75-89%), red means don't.
 
 ## Trade ideas and the trade finder
