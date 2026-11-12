@@ -4,7 +4,7 @@ import {
   periodDate,
   periodWeek,
   playerCard,
-  type DefenseFactors,
+  type MatchupRatings,
   type Player,
   type SeasonRank,
   type StatBenchmarks,
@@ -21,7 +21,7 @@ export function PlayerCardPanel({
   titleId,
   player,
   stats,
-  factors,
+  ratings,
   benchmarks,
   rank,
   sport,
@@ -29,15 +29,15 @@ export function PlayerCardPanel({
   titleId: string;
   player: Player;
   stats: StatsFile;
-  factors: DefenseFactors;
+  ratings: MatchupRatings;
   benchmarks: StatBenchmarks;
   /** Undefined when he has not played this season. */
   rank: SeasonRank | undefined;
   sport: SportConfig;
 }) {
   const card = useMemo(
-    () => playerCard(player, stats, factors, sport),
-    [player, stats, factors, sport],
+    () => playerCard(player, stats, ratings, sport),
+    [player, stats, ratings, sport],
   );
   const status = [player.team || "No team", player.inj].filter(Boolean).join(" · ");
 

@@ -1,6 +1,8 @@
 # ADR 0034: Steadier matchup factors, and team defenses valued with their schedule
 
 - Status: accepted
+- Amended by: ADR 0036 (matchup labels by rank, since the 8% cut left almost
+  every game neutral)
 - Date: 2026-11-12
 - Amends: ADR 0005 (weekly lineup), ADR 0015 (player card matchups), ADR 0026
   (schedule in the analyzer)

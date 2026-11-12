@@ -4,14 +4,13 @@
  * player's position.
  */
 import type { SportConfig } from "../sports/types";
-import { matchupLevel, type MatchupLevel } from "./matchup";
+import type { MatchupRating, MatchupRatings } from "./matchup";
 import { currentPeriod } from "./periods";
 import { starterLine } from "./trades";
 import type { Model, Player, StatsFile } from "./types";
 import { opponents } from "./weekly";
 
-/** Defense factors by team and position (1 = average), as from defenseFactors. */
-export type DefenseFactors = ReadonlyMap<string, ReadonlyMap<string, number>>;
+export type { DefenseFactors } from "./matchup";
 
 export interface CardGame {
   week: number;
@@ -23,9 +22,8 @@ export interface CardGame {
   pts: number | null;
   /** Stat line by stats-file key; empty when he did not play. */
   stats: Readonly<Record<string, number>>;
-  /** What the opponent allows to the position (1 = average); null when unknown. */
-  factor: number | null;
-  level: MatchupLevel | null;
+  /** The opponent's rank and label for the position (matchupRatings); null when unknown. */
+  rating: MatchupRating | null;
 }
 
 export interface PlayerCard {
@@ -54,7 +52,7 @@ function unpack(stats: StatsFile, packed: readonly number[] | undefined): Record
 export function playerCard(
   player: Player,
   stats: StatsFile,
-  factors: DefenseFactors,
+  ratings: MatchupRatings,
   sport: SportConfig,
 ): PlayerCard {
   const sp = stats.players[player.id];
@@ -64,7 +62,7 @@ export function playerCard(
   const game = (week: number, team: string, pts: number | null, packed?: readonly number[]) => {
     const scheduled = stats.schedule?.[String(week)] !== undefined;
     const g = team ? opponents(stats, week).get(team) : undefined;
-    const factor = g ? (factors.get(g.opponent)?.get(player.pos) ?? null) : null;
+    const rating = g ? (ratings.get(g.opponent)?.get(player.pos) ?? null) : null;
     const line = unpack(stats, packed);
     return {
       week,
@@ -73,8 +71,7 @@ export function playerCard(
       bye: Boolean(team) && scheduled && !g,
       pts,
       stats: Object.fromEntries(Object.entries(line).filter(([k]) => shown.has(k))),
-      factor,
-      level: factor === null ? null : matchupLevel(factor),
+      rating,
     };
   };
 

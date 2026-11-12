@@ -9,7 +9,8 @@
  * give to defenses holds up, so their value uses it (scheduleValue.ts, ADR 0034).
  */
 import type { ModelParams } from "../sports/types";
-import { matchupLevel, type MatchupLevel } from "./matchup";
+import { ordinal } from "../format";
+import { matchupRatings, type MatchupLevel } from "./matchup";
 import { currentPeriod, periodWeek } from "./periods";
 import type { LeagueSettings, Model, StatsFile } from "./types";
 import { defenseFactors, opponents } from "./weekly";
@@ -19,7 +20,7 @@ export interface ScheduleStrength {
   games: number;
   /** Average opponent factor for his position (1 = average; above 1 = easier). */
   factor: number;
-  /** Games against defenses that allow clearly more (good) or fewer (tough) than average. */
+  /** Games against defenses rated good or tough for his position (matchupRatings). */
   good: number;
   tough: number;
   /** Easy (good), neutral or tough, against the other teams' schedules. */
@@ -101,8 +102,11 @@ function strengthOver(
       left.set(team, [...(left.get(team) ?? []), game.opponent]);
     }
   }
+  const ratings = matchupRatings(factors);
   const each = (team: string, pos: string) =>
     (left.get(team) ?? []).map((o) => factors.get(o)?.get(pos) ?? 1);
+  const levels = (team: string, pos: string) =>
+    (left.get(team) ?? []).map((o) => ratings.get(o)?.get(pos)?.level ?? "neutral");
   const average = (list: number[]) => list.reduce((s, f) => s + f, 0) / list.length;
   // Every team's factor for a position, easiest first, for the rank.
   const rankings = new Map<string, number[]>();
@@ -125,8 +129,8 @@ function strengthOver(
     return {
       games: games.length,
       factor,
-      good: games.filter((f) => matchupLevel(f) === "good").length,
-      tough: games.filter((f) => matchupLevel(f) === "tough").length,
+      good: levels(team, pos).filter((l) => l === "good").length,
+      tough: levels(team, pos).filter((l) => l === "tough").length,
       level: diff >= edge ? "good" : diff <= -edge ? "tough" : "neutral",
       place: list.filter((f) => f > factor).length + 1,
       of: list.length,
@@ -165,12 +169,6 @@ export function playerSchedules(
   }
   return out;
 }
-
-const ordinal = (n: number) => {
-  const tens = n % 100;
-  const suffix = tens >= 11 && tens <= 13 ? "th" : (["th", "st", "nd", "rd"][n % 10] ?? "th");
-  return `${n}${suffix}`;
-};
 
 /**
  * Schedule strength in words, for a tooltip: what the number means and where it comes from.

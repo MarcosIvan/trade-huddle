@@ -3,6 +3,7 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import {
   defenseFactors,
+  matchupRatings,
   seasonRanks,
   statBenchmarks,
   type Model,
@@ -35,10 +36,17 @@ export function PlayerCardProvider({
   sport: SportConfig;
   children: ReactNode;
 }) {
-  // What each defense allows to each position, the same measure as the weekly lineup's.
-  const factors = useMemo(
+  // Each defense's rank for each position, the same measure as the weekly lineup's.
+  const ratings = useMemo(
     () =>
-      defenseFactors(model, stats, sport.model.matchupShrinkGames, sport.model.matchupShrinkByPos),
+      matchupRatings(
+        defenseFactors(
+          model,
+          stats,
+          sport.model.matchupShrinkGames,
+          sport.model.matchupShrinkByPos,
+        ),
+      ),
     [model, stats, sport],
   );
   // What rosterable players at each position do per game: the reference for each cell's color.
@@ -65,7 +73,7 @@ export function PlayerCardProvider({
             titleId={TITLE_ID}
             player={player}
             stats={stats}
-            factors={factors}
+            ratings={ratings}
             benchmarks={benchmarks}
             rank={ranks.get(player.id)}
             sport={sport}

@@ -25,6 +25,7 @@ const NO_GAME: WeeklyOutlook = {
   opponent: null,
   home: false,
   matchup: 1,
+  rating: null,
   bye: true,
   availability: 1,
   games: [],
