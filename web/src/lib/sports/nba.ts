@@ -43,6 +43,8 @@ export const NBA_TRADE_VALUE: TradeValueParams = {
   // The scale's shape from ADR 0013 (the NFL's moved in ADR 0027).
   curve: 0.8,
   reputationMaxAdp: 0,
+  // Out and Doubtful are game to game in an 82-game season: the injury rule is enough.
+  injuryAvailability: {},
   // The draft market's measure is one half at pick 30 (the 3rd round in 12-team leagues).
   adpHalf: 30,
   // Trade markets price centers below what points leagues score for them (rebounds and

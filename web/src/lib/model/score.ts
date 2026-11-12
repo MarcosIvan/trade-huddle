@@ -18,8 +18,9 @@
  * "recent" are the same games: they count once, at half weight, and the rest
  * goes to base, so three games cannot swing the value alone.
  * The sum is scaled by how scarce his position is in this league (mildly, so
- * positions stay comparable), by his availability (injury or no team; nothing
- * when his season is over), by his role (a backup keeps part of it) and, in
+ * positions stay comparable), by his availability (injury, priced like trade
+ * markets for players out this week, ADR 0035; or no team; nothing when his
+ * season is over), by his role (a backup keeps part of it) and, in
  * sports with long seasons, by the share of his team's games he plays. A
  * player who took a starting job this season is measured on what he does now,
  * not on his preseason prior (model/role.ts, ADR 0023).
@@ -33,7 +34,7 @@
  * position is worth exactly that.
  *
  * Calibrated in ADR 0010 against a market of real trade values; scale shape
- * in ADR 0013; recalibrated at mid-season in ADR 0027.
+ * in ADR 0013; recalibrated at mid-season in ADRs 0027 and 0035.
  *
  * Player Score, 0 to 100, adds his importance to his fantasy team:
  *   80 points × trade value / 40 + 20 points × his value / the best value on his roster.
@@ -165,7 +166,8 @@ const healthyPpg = (p: Player) => (p.injMult > 0 ? p.value / p.injMult : p.value
 function availability(p: Player, sport: SportConfig): number {
   if (p.seasonOver) return 0;
   const rule = p.inj ? sport.model.injury[p.inj] : undefined;
-  const injury = rule ? 1 - (1 - sport.tradeValue.injuryRecovery) * (1 - rule.mult) : 1;
+  const set = p.inj ? sport.tradeValue.injuryAvailability[p.inj] : undefined;
+  const injury = set ?? (rule ? 1 - (1 - sport.tradeValue.injuryRecovery) * (1 - rule.mult) : 1);
   const noTeam = p.noTeam && sport.model.noTeamMult !== null ? sport.model.noTeamMult : 1;
   return injury * noTeam;
 }

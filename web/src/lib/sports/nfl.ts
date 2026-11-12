@@ -97,7 +97,7 @@ const RECEIVING: StatGroup = {
 
 /**
  * Trade value: calibrated in ADR 0010 against real trade values, scale shape in ADR 0013,
- * recalibrated at mid-season in ADR 0027.
+ * recalibrated at mid-season in ADRs 0027 and 0035.
  */
 export const NFL_TRADE_VALUE: TradeValueParams = {
   weights: { base: 5, market: 10, expected: 30, season: 10, recent: 5, scarcity: 25, usage: 15 },
@@ -116,8 +116,12 @@ export const NFL_TRADE_VALUE: TradeValueParams = {
   adpHalf: 40,
   adpCurve: 2,
   reputationMaxAdp: 60,
-  reputationGames: 8,
+  // The lift keeps 3 / (3 + games) of the gap: half after 3 games (ADR 0035).
+  reputationGames: 3,
   injuryRecovery: 0.4,
+  // Trade markets pay less for a player out this week than the injury rule takes away
+  // (0.94 and 0.97 from it): ADR 0035.
+  injuryAvailability: { Out: 0.88, Doubtful: 0.92 },
   positionMarket: {},
   // 17 games: a few missed ones are the injury status's business.
   durability: null,

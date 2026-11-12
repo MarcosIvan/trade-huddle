@@ -239,6 +239,12 @@ export interface TradeValueParams {
   /** An injured player keeps this share of the value his injury rule takes away. */
   injuryRecovery: number;
   /**
+   * Trade value availability for these injury statuses, in place of the one from the
+   * injury rule and `injuryRecovery` (missing statuses keep it). Trade value only: the
+   * rest-of-season points, lineups and trade ideas keep the injury rule.
+   */
+  injuryAvailability: Readonly<Record<string, number>>;
+  /**
    * Market discount by position, 0 to 1: for positions trade markets price
    * below what the league's scoring says. A player there loses this share of
    * his value times (1 − his market measure), so it fades for players the

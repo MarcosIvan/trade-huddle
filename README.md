@@ -110,18 +110,20 @@ a market discount for centers the draft market rates low
 ([ADR 0020](docs/adr/0020-nba-model-and-sport-per-league.md)).
 
 Scarce positions are scaled up (running backs, and quarterbacks in superflex),
-injured players keep part of their value, and nobody goes below 1. A player
+injured players keep part of their value (a player out this week keeps 88%,
+doubtful 92%, as trade markets price them), and nobody goes below 1. A player
 out long term (IR, PUP) is judged on last season rather than on a preseason
 projection that already left out the games he misses, so his absence is
 discounted once. Values sit on a curve that keeps lesser players closer to the
 top, as trade markets do: a player worth a quarter of the best player's raw
 value shows about a third of 40. A star
 (drafted in the top 60) off to a slow start keeps part of the value of his
-draft rank at his position, less as games are played. The weights were
-calibrated against a market of real trade values, and checked again at
-mid-season. A rookie is judged on his own games sooner than a veteran. The
-**Player Score** (0-100, next to each name) adds how important the player is
-to his fantasy team.
+draft rank at his position, half of it after 3 games and less after that. The
+weights were calibrated against a market of real trade values, and checked
+again at mid-season
+([ADR 0035](docs/adr/0035-trade-value-closer-to-the-market.md)). A rookie is
+judged on his own games sooner than a veteran. The **Player Score** (0-100,
+next to each name) adds how important the player is to his fantasy team.
 
 **Fairness** compares trade value on each side. With as many players on each
 side, every player counts in full; in an uneven trade (2-for-1, 3-for-2) the
