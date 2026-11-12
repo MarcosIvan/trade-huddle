@@ -8,6 +8,7 @@
  * play is rated that way and the week counts his best one (`bestGame`).
  */
 import type { ModelParams } from "../sports/types";
+import { matchupRatings, type MatchupRating } from "./matchup";
 import { weekPeriods } from "./periods";
 import { makeScorer } from "./scoring";
 import type { LeagueSettings, Model, Player, StatsFile } from "./types";
@@ -19,6 +20,8 @@ export interface GameOutlook {
   home: boolean;
   /** Opponent's points-allowed factor for the position (1 = average defense). */
   matchup: number;
+  /** The opponent's rank and label for the position; null before any game is rated. */
+  rating: MatchupRating | null;
   /** Expected points in this game, availability included. */
   pts: number;
 }
@@ -34,6 +37,8 @@ export interface WeeklyOutlook {
   home: boolean;
   /** The first game's matchup factor (1 = average defense). */
   matchup: number;
+  /** The first game's matchup rating; null on a bye or before any game is rated. */
+  rating: MatchupRating | null;
   bye: boolean;
   /** Chance of playing each game, from the injury report. */
   availability: number;
@@ -171,6 +176,7 @@ export function weeklyOutlook(
     params.matchupShrinkGames,
     params.matchupShrinkByPos,
   );
+  const ratings = matchupRatings(factors);
   const oppByWeek = new Map(stats.weeks.map((w) => [w, opponents(stats, w)] as const));
   const out = new Map<string, WeeklyOutlook>();
   for (const p of Object.values(model.players)) {
@@ -196,6 +202,7 @@ export function weeklyOutlook(
         opponent: game.opponent,
         home: game.home,
         matchup,
+        rating: ratings.get(game.opponent)?.get(p.pos) ?? null,
         pts: Math.max(0, pts * availability),
       });
     }
@@ -207,6 +214,7 @@ export function weeklyOutlook(
       opponent: first?.opponent ?? null,
       home: first?.home ?? false,
       matchup: first?.matchup ?? 1,
+      rating: first?.rating ?? null,
       bye: !first,
       availability,
       games,

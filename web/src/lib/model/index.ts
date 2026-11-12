@@ -100,7 +100,14 @@ export { verdict, type Verdict } from "./verdict";
 export { defenseFactors, weeklyOutlook, type GameOutlook, type WeeklyOutlook } from "./weekly";
 export { weekLineup, type WeekLineup, type WeekRated } from "./weekLineup";
 export { rosterNotes, sideChange, type SideChange } from "./analyzer";
-export { MATCHUP_EDGE, matchupLevel, matchupNote, type MatchupLevel } from "./matchup";
+export {
+  MATCHUP_SHARE,
+  matchupNote,
+  matchupRatings,
+  type MatchupLevel,
+  type MatchupRating,
+  type MatchupRatings,
+} from "./matchup";
 export {
   BENCHMARK_DEPTH,
   playerCard,

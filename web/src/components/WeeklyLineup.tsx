@@ -1,6 +1,5 @@
 import { fmt } from "@/lib/format";
 import {
-  matchupLevel,
   matchupNote,
   type Model,
   type WeekLineup,
@@ -24,12 +23,12 @@ function Games({ o, pos }: { o: WeeklyOutlook; pos: string }) {
         <span
           key={g.period}
           className={weekly.game}
-          title={matchupNote(g.opponent, g.matchup, pos)}
+          title={g.rating ? matchupNote(g.opponent, g.rating, pos) : undefined}
         >
           <span className={weekly.opp}>
             {g.home ? "vs" : "@"} {g.opponent}
           </span>
-          {o.availability > 0 && <MatchupBadge level={matchupLevel(g.matchup)} compact />}
+          {o.availability > 0 && g.rating && <MatchupBadge level={g.rating.level} compact />}
         </span>
       ))}
     </span>
@@ -52,11 +51,14 @@ function Matchup({ o, pos, noTeam }: { o: WeeklyOutlook; pos: string; noTeam: bo
     );
   }
   return (
-    <span className={weekly.matchup} title={matchupNote(o.opponent, o.matchup, pos)}>
+    <span
+      className={weekly.matchup}
+      title={o.rating ? matchupNote(o.opponent, o.rating, pos) : undefined}
+    >
       <span className={weekly.opp}>
         {o.home ? "vs" : "@"} {o.opponent}
       </span>
-      <MatchupBadge level={matchupLevel(o.matchup)} />
+      {o.rating && <MatchupBadge level={o.rating.level} />}
     </span>
   );
 }

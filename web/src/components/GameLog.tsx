@@ -14,10 +14,10 @@ import { MatchupBadge } from "./MatchupBadge";
 
 /** Good, neutral or tough (as in the weekly lineup); the number in the tooltip. */
 function Matchup({ game, pos }: { game: CardGame; pos: string }) {
-  if (game.level === null || game.factor === null || !game.opponent) {
-    return <span className="muted">–</span>;
-  }
-  return <MatchupBadge level={game.level} title={matchupNote(game.opponent, game.factor, pos)} />;
+  if (!game.rating || !game.opponent) return <span className="muted">–</span>;
+  return (
+    <MatchupBadge level={game.rating.level} title={matchupNote(game.opponent, game.rating, pos)} />
+  );
 }
 
 function Opponent({ game }: { game: CardGame }) {

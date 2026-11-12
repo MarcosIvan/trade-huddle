@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { NFL } from "../sports/nfl";
+import { matchupRatings } from "./matchup";
 import { playerCard, seasonRanks, statLevel } from "./playerCard";
 import type { Model, Player, StatsFile } from "./types";
 
@@ -51,11 +52,13 @@ const stats: StatsFile = {
 };
 
 // BBB allows 20% more to running backs, CCC 20% fewer, DDD about the average.
-const factors = new Map([
-  ["BBB", new Map([["RB", 1.2]])],
-  ["CCC", new Map([["RB", 0.8]])],
-  ["DDD", new Map([["RB", 1.03]])],
-]);
+const ratings = matchupRatings(
+  new Map([
+    ["BBB", new Map([["RB", 1.2]])],
+    ["CCC", new Map([["RB", 0.8]])],
+    ["DDD", new Map([["RB", 1.03]])],
+  ]),
+);
 
 describe("player card", () => {
   const p = player([
@@ -63,7 +66,7 @@ describe("player card", () => {
     { week: 2, pts: 11 },
     { week: 3, pts: null },
   ]);
-  const card = playerCard(p, stats, factors, NFL);
+  const card = playerCard(p, stats, ratings, NFL);
 
   it("lists each game played with its opponent, points and stat line", () => {
     expect(card.games.map((g) => [g.week, g.opponent, g.home, g.pts])).toEqual([
@@ -83,8 +86,8 @@ describe("player card", () => {
   });
 
   it("rates every game, played or to come, by what the defense allows to the position", () => {
-    expect(card.games.map((g) => g.level)).toEqual(["good", "tough"]);
-    expect(card.upcoming.map((g) => [g.week, g.opponent, g.bye, g.level])).toEqual([
+    expect(card.games.map((g) => g.rating?.level ?? null)).toEqual(["good", "tough"]);
+    expect(card.upcoming.map((g) => [g.week, g.opponent, g.bye, g.rating?.level ?? null])).toEqual([
       [3, "DDD", false, "neutral"],
       [4, null, true, null],
       [5, "CCC", false, "tough"],
@@ -99,7 +102,7 @@ describe("player card", () => {
         { week: 3, pts: 9 },
       ]),
       stats,
-      factors,
+      ratings,
       NFL,
     );
     expect(early.games.map((g) => g.week)).toEqual([1, 2, 3]);
@@ -107,8 +110,8 @@ describe("player card", () => {
   });
 
   it("has no games to come without a schedule or a team", () => {
-    expect(playerCard(p, { ...stats, schedule: undefined }, factors, NFL).upcoming).toEqual([]);
-    expect(playerCard({ ...p, noTeam: true, team: "" }, stats, factors, NFL).upcoming).toEqual([]);
+    expect(playerCard(p, { ...stats, schedule: undefined }, ratings, NFL).upcoming).toEqual([]);
+    expect(playerCard({ ...p, noTeam: true, team: "" }, stats, ratings, NFL).upcoming).toEqual([]);
   });
 });
 

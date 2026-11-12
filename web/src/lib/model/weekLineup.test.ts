@@ -24,6 +24,7 @@ const game = (pts: number, extra: Partial<WeeklyOutlook> = {}): WeeklyOutlook =>
   opponent: "BBB",
   home: true,
   matchup: 1,
+  rating: null,
   bye: false,
   availability: 1,
   games: [],
