@@ -128,6 +128,20 @@ describe("playerScores", () => {
     expect(s.get("twin")!.trade).toBeCloseTo(TRADE_VALUE_MAX * 0.7 ** TRADE_VALUE_CURVE, 1);
   });
 
+  it("prices a player out this week at the sport's set availability, not the injury rule's", () => {
+    const out = player("out", "RB", 9.9, 12, { inj: "Out", injMult: 0.9 });
+    const doubtful = player("doubtful", "RB", 10.45, 13, { inj: "Doubtful", injMult: 0.95 });
+    const all = { ...players, out, doubtful };
+    const s = playerScores({ ...model, players: all }, emptyStats, [], NFL);
+    expect(s.get("out")!.availability).toBe(NFL.tradeValue.injuryAvailability.Out);
+    expect(s.get("doubtful")!.availability).toBe(NFL.tradeValue.injuryAvailability.Doubtful);
+    // Without a set share, the injury rule decides: 1 − (1 − recovery) × (1 − 0.9).
+    const ruleOnly = { ...NFL, tradeValue: { ...NFL.tradeValue, injuryAvailability: {} } };
+    const r = playerScores({ ...model, players: all }, emptyStats, [], ruleOnly);
+    expect(r.get("out")!.availability).toBeCloseTo(1 - (1 - NFL.tradeValue.injuryRecovery) * 0.1);
+    expect(r.get("out")!.trade).toBeGreaterThan(s.get("out")!.trade);
+  });
+
   it("gives 1 to a player nothing is known about (no games, projection or draft)", () => {
     const ghost = player("ghost", "RB", 8, 0, {
       g: 0,
@@ -208,7 +222,7 @@ describe("trade value", () => {
 describe("reputation lift", () => {
   // Four receivers: a hot one drafted late, a steady one, a star off to a slow start
   // (drafted first) and a player drafted past the star range.
-  const scores = (starGames: number, starAdp = 5) => {
+  const scores = (starGames: number, starAdp = 5, sport: SportConfig = NFL) => {
     const players = {
       hot: player("hot", "WR", 20, 8),
       steady: player("steady", "WR", 16, 5),
@@ -223,8 +237,12 @@ describe("reputation lift", () => {
       ),
     };
     const model: Model = { players, repl: { WR: 9 }, slots: ["WR"], teams: 1, adpFormat: "ppr" };
-    return playerScores(model, stats, [], NFL);
+    return playerScores(model, stats, [], sport);
   };
+  const withGames = (reputationGames: number): SportConfig => ({
+    ...NFL,
+    tradeValue: { ...NFL.tradeValue, reputationGames },
+  });
 
   it("lifts a star below his draft rank's value, and nobody else", () => {
     const s = scores(3);
@@ -238,6 +256,16 @@ describe("reputation lift", () => {
 
   it("fades as games pile up", () => {
     expect(scores(12).get("star")!.reputation).toBeLessThan(scores(3).get("star")!.reputation);
+  });
+
+  it("closes k / (k + games) of the gap, k being the sport's reputation games", () => {
+    // `reputation` is lift / (value + lift): lift / value is r / (1 − r). Same value and
+    // gap, so the two lifts compare as 3 / (3 + 6) against 8 / (8 + 6).
+    const lift = (k: number) => {
+      const r = scores(6, 5, withGames(k)).get("star")!.reputation;
+      return r / (1 - r);
+    };
+    expect(lift(3) / lift(8)).toBeCloseTo(3 / 9 / (8 / 14), 5);
   });
 });
 

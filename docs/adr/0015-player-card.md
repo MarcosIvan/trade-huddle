@@ -2,6 +2,8 @@
 
 - Status: accepted
 - Date: 2026-10-02
+- Amended by: ADR 0034 (the matchup factor mixes in more games of an average
+  defense, so fewer games are rated good or tough)
 
 ## Context
 

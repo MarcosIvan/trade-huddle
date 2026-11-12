@@ -37,7 +37,8 @@ export function PlayerCardProvider({
 }) {
   // What each defense allows to each position, the same measure as the weekly lineup's.
   const factors = useMemo(
-    () => defenseFactors(model, stats, sport.model.matchupShrinkGames),
+    () =>
+      defenseFactors(model, stats, sport.model.matchupShrinkGames, sport.model.matchupShrinkByPos),
     [model, stats, sport],
   );
   // What rosterable players at each position do per game: the reference for each cell's color.

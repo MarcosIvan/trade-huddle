@@ -61,7 +61,7 @@ const nfl = {
   players: Object.fromEntries(Object.entries(TEAMS).map(([id, t]) => [id, { tw: { 1: t, 2: t } }])),
 } as unknown as StatsFile;
 
-const NO_SHRINK = { matchupShrinkGames: 0 };
+const NO_SHRINK = { matchupShrinkGames: 0, matchupShrinkByPos: {} };
 /** Playoffs in weeks 5 and 6 (four teams, two rounds). */
 const LEAGUE = { settings: { playoff_week_start: 5, playoff_teams: 4 } };
 
@@ -158,6 +158,13 @@ describe("scheduleNote", () => {
     );
     expect(scheduleNote(s.get("d1")!.playoffs!, "RB", "Playoffs")).toBe(
       "Playoffs: opponents allow 20% fewer points than average to RBs (2 games: 0 good, 2 tough); 3rd easiest of 4. Based on games so far; information only.",
+    );
+  });
+
+  it("says when the position's value counts the schedule", () => {
+    const s = playerSchedules(model, nfl, LEAGUE, NO_SHRINK);
+    expect(scheduleNote(s.get("b1")!.playoffs!, "RB", "Playoffs", true)).toMatch(
+      /Based on games so far; counted in the value\.$/,
     );
   });
 });

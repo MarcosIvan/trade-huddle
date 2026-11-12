@@ -2,6 +2,8 @@
 
 - Status: accepted
 - Date: 2026-10-15
+- Amended by: ADR 0034 (32 games of average defense, 8 for team defenses; the
+  NFL's team defenses' value now uses the schedule)
 
 ## Context
 

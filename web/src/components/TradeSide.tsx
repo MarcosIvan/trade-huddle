@@ -13,6 +13,14 @@ import styles from "./TradeSide.module.css";
 
 const SCHEDULE_HINT =
   "what his opponents' defenses allowed to his position so far; green is easier, red harder. Rank among every team's schedule (1 = easiest). Information only: trade value and fairness ignore it.";
+/** The hint where some positions' value uses the schedule (the NFL's team defenses). */
+const scheduleHint = (counted: readonly string[]) =>
+  counted.length
+    ? SCHEDULE_HINT.replace(
+        "Information only: trade value and fairness ignore it.",
+        `Information only, except for ${counted.join(", ")}: their value counts it.`,
+      )
+    : SCHEDULE_HINT;
 
 function ByeWeek({ schedule }: { schedule: PlayerSchedule | undefined }) {
   if (!schedule?.bye) return <span className="muted">–</span>;
@@ -31,15 +39,21 @@ const LEVEL_CLASS = { good: "up", neutral: "muted", tough: "down" } as const;
 function StrengthCell({
   strength,
   pos,
+  counted,
   stretch,
 }: {
   strength: ScheduleStrength | null | undefined;
   pos: string;
+  /** His position's value uses the schedule. */
+  counted: boolean;
   stretch: string;
 }) {
   if (!strength) return <span className="muted">–</span>;
   return (
-    <span className={LEVEL_CLASS[strength.level]} title={scheduleNote(strength, pos, stretch)}>
+    <span
+      className={LEVEL_CLASS[strength.level]}
+      title={scheduleNote(strength, pos, stretch, counted)}
+    >
       {strength.place} of {strength.of}
     </span>
   );
@@ -67,6 +81,7 @@ export function TradeSide({
   const RECENT = sport.model.recentGames;
   // Teams play every week in multi-game sports (the NBA): no bye column there.
   const showBye = !sport.multiGameWeeks;
+  const hint = scheduleHint(Object.keys(sport.model.scheduleValue));
   const TRADE_VALUE_HINT = useTradeValueHint();
   const stats = [
     { label: "Trade value", value: change.trade, hint: TRADE_VALUE_HINT },
@@ -113,12 +128,12 @@ export function TradeSide({
                     Bye
                   </th>
                 )}
-                <th scope="col" className="num" title={`Regular season left: ${SCHEDULE_HINT}`}>
+                <th scope="col" className="num" title={`Regular season left: ${hint}`}>
                   Regular
                   <br />
                   schedule
                 </th>
-                <th scope="col" className="num" title={`League playoff weeks: ${SCHEDULE_HINT}`}>
+                <th scope="col" className="num" title={`League playoff weeks: ${hint}`}>
                   Playoffs
                   <br />
                   schedule
@@ -154,6 +169,7 @@ export function TradeSide({
                     <StrengthCell
                       strength={schedules.get(p.id)?.regular}
                       pos={p.pos}
+                      counted={p.pos in sport.model.scheduleValue}
                       stretch="Regular season left"
                     />
                   </td>
@@ -161,6 +177,7 @@ export function TradeSide({
                     <StrengthCell
                       strength={schedules.get(p.id)?.playoffs}
                       pos={p.pos}
+                      counted={p.pos in sport.model.scheduleValue}
                       stretch="Playoffs"
                     />
                   </td>

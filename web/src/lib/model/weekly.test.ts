@@ -64,6 +64,12 @@ describe("defenseFactors", () => {
       Math.abs(raw.get("BBB")!.get("WR")! - 1),
     );
   });
+
+  it("takes a position's own shrink when given", () => {
+    const raw = defenseFactors(model, stats, 0);
+    const own = defenseFactors(model, stats, 100, { WR: 0 });
+    expect(own.get("BBB")!.get("WR")).toBe(raw.get("BBB")!.get("WR"));
+  });
 });
 
 describe("weeklyOutlook", () => {

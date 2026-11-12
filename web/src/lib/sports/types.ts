@@ -88,10 +88,21 @@ export interface ModelParams {
   /** Roles from the depth chart and recent usage (model/role.ts); null turns them off. */
   roles: RoleParams | null;
 
+  /**
+   * Rest-of-season value adjusted for the opponents left, by position (model/scheduleValue.ts):
+   * only where the schedule shows up in later points. Empty turns it off.
+   */
+  scheduleValue: Readonly<Record<string, ScheduleValueRule>>;
+
   /** Weekly lineup: exponent on the opponent's points-allowed factor (0 ignores matchups). */
   matchupWeight: number;
-  /** Weekly lineup: games of "average defense" mixed into each defense's factor. */
+  /**
+   * Games of "average defense" mixed into each defense's points-allowed factor, for the
+   * weekly lineup, the matchup labels and the schedule (docs/adr/0034-matchup-shrink-and-defense-schedule.md).
+   */
   matchupShrinkGames: number;
+  /** matchupShrinkGames for some positions (missing ones use matchupShrinkGames). */
+  matchupShrinkByPos: Readonly<Record<string, number>>;
   /** Weekly lineup: exponent on the player's results against similar defenses. */
   similarWeight: number;
   /** Weekly lineup: weight of Sleeper's weekly projection in the final number. */
@@ -120,6 +131,13 @@ export interface ModelParams {
   balancedDiff: number;
   /** Value difference (share of the larger side) still called "Slightly favors". */
   slightDiff: number;
+}
+
+export interface ScheduleValueRule {
+  /** Share of the gap to the position's average value kept (1 keeps the value as is). */
+  regress: number;
+  /** Exponent on the opponents' average factor (0 ignores the schedule). */
+  elasticity: number;
 }
 
 export interface SeasonEndingParams {
@@ -220,6 +238,12 @@ export interface TradeValueParams {
   reputationGames: number;
   /** An injured player keeps this share of the value his injury rule takes away. */
   injuryRecovery: number;
+  /**
+   * Trade value availability for these injury statuses, in place of the one from the
+   * injury rule and `injuryRecovery` (missing statuses keep it). Trade value only: the
+   * rest-of-season points, lineups and trade ideas keep the injury rule.
+   */
+  injuryAvailability: Readonly<Record<string, number>>;
   /**
    * Market discount by position, 0 to 1: for positions trade markets price
    * below what the league's scoring says. A player there loses this share of
