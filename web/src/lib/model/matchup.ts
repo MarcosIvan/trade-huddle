@@ -1,20 +1,52 @@
 /**
  * How hard a matchup is. Each defense's factor (what it allows to a position
  * against the league average, 1 = average, from defenseFactors) is ranked
- * among every defense's for that position; the easiest quarter is good and
- * the hardest quarter tough (ADR 0036). Shared by the weekly lineup, the
- * player card and the analyzer's schedule.
+ * among every defense's for that position, then split in five: great,
+ * good, neutral, tough and brutal (ADR 0037, amending ADR 0036). Shared
+ * by the weekly lineup, the player card and the analyzer's schedule.
  */
 import { ordinal } from "../format";
 
-/** How a defense treats a position: good allows more than most, tough fewer. */
-export type MatchupLevel = "good" | "neutral" | "tough";
+/** How a defense treats a position, from the easiest (great) to the hardest (brutal). */
+export type MatchupLevel = "great" | "good" | "neutral" | "tough" | "brutal";
+
+/** The five levels, easiest first. */
+export const MATCHUP_LEVELS: readonly MatchupLevel[] = [
+  "great",
+  "good",
+  "neutral",
+  "tough",
+  "brutal",
+];
+
+/** Great or good: the opponent is among the easier ones. */
+export const isGood = (l: MatchupLevel) => l === "great" || l === "good";
+/** Tough or brutal: the opponent is among the harder ones. */
+export const isTough = (l: MatchupLevel) => l === "tough" || l === "brutal";
 
 /** Defense factors by team and position (1 = average), as from defenseFactors. */
 export type DefenseFactors = ReadonlyMap<string, ReadonlyMap<string, number>>;
 
-/** Share of the defenses, at each end of a position's ranking, rated good or tough: 8 of 32. */
-export const MATCHUP_SHARE = 0.25;
+/**
+ * Share of a ranking, at each end, rated good or better (and tough or worse):
+ * 13 of 32, so only the middle fifth is neutral.
+ */
+export const MATCHUP_SHARE = 0.4;
+/** Share at each end rated great (and brutal): 6 of 32. */
+export const MATCHUP_STRONG_SHARE = 0.2;
+
+/**
+ * The level of a place in a ranking of `of`, given how many rank above it
+ * (allow more) and below it (allow fewer). The good side needs a factor above
+ * average and the tough side one below, so ties at the average stay neutral.
+ */
+export function rankLevel(above: number, below: number, of: number, factor: number): MatchupLevel {
+  const strong = Math.round(of * MATCHUP_STRONG_SHARE);
+  const ends = Math.round(of * MATCHUP_SHARE);
+  if (factor > 1 && above < ends) return above < strong ? "great" : "good";
+  if (factor < 1 && below < ends) return below < strong ? "brutal" : "tough";
+  return "neutral";
+}
 
 export interface MatchupRating {
   /** What the defense allows to the position against the league average (1 = average). */
@@ -30,9 +62,10 @@ export interface MatchupRating {
 export type MatchupRatings = ReadonlyMap<string, ReadonlyMap<string, MatchupRating>>;
 
 /**
- * Ranks every defense for every position. Good: among the easiest quarter and
- * allowing more than average; tough: among the hardest quarter and allowing
- * fewer. Defenses with the same factor share a place, so a league where every
+ * Ranks every defense for every position. Great: among the easiest fifth
+ * (6 of 32); good: the next ones down to 13; the middle fifth neutral; then
+ * tough and brutal, mirrored. Good needs a factor above average, tough
+ * one below. Defenses with the same factor share a place, so a league where every
  * defense is still average (no games yet) has no good or tough matchup.
  */
 export function matchupRatings(factors: DefenseFactors): Map<string, Map<string, MatchupRating>> {
@@ -46,12 +79,9 @@ export function matchupRatings(factors: DefenseFactors): Map<string, Map<string,
     for (const [pos, factor] of perPos) {
       const all = byPos.get(pos)!;
       const of = all.length;
-      const ends = Math.round(of * MATCHUP_SHARE);
       const above = all.filter((f) => f > factor).length;
       const below = all.filter((f) => f < factor).length;
-      const level: MatchupLevel =
-        above < ends && factor > 1 ? "good" : below < ends && factor < 1 ? "tough" : "neutral";
-      ratings.set(pos, { factor, rank: above + 1, of, level });
+      ratings.set(pos, { factor, rank: above + 1, of, level: rankLevel(above, below, of, factor) });
     }
     out.set(defense, ratings);
   }

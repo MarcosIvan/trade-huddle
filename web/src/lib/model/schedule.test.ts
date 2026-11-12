@@ -99,18 +99,23 @@ describe("playerSchedules", () => {
 
   it("rates the regular season's opponents left by what they allowed to the position", () => {
     // Weeks 3-4: AAA meets only DDD (1.6); DDD meets only AAA (0.8).
-    expect(s.get("a1")!.regular).toMatchObject({ games: 1, good: 1, tough: 0, level: "good" });
+    expect(s.get("a1")!.regular).toMatchObject({ games: 1, good: 1, tough: 0, level: "great" });
     expect(s.get("a1")!.regular!.factor).toBeCloseTo(1.6);
-    expect(s.get("d1")!.regular).toMatchObject({ games: 1, level: "tough" });
+    expect(s.get("d1")!.regular).toMatchObject({ games: 1, level: "brutal" });
     expect(s.get("d1")!.regular!.factor).toBeCloseTo(0.8);
   });
 
   it("rates the playoff weeks apart", () => {
     // Weeks 5-6: BBB meets AAA (0.8) and DDD (1.6); DDD meets CCC and BBB (0.8 each).
-    expect(s.get("b1")!.playoffs).toMatchObject({ games: 2, good: 1, tough: 1, level: "good" });
+    expect(s.get("b1")!.playoffs).toMatchObject({
+      games: 2,
+      good: 1,
+      tough: 1,
+      level: "great",
+    });
     expect(s.get("b1")!.playoffs!.factor).toBeCloseTo(1.2);
     // AAA meets BBB and CCC (0.8 each) too: tied for third.
-    expect(s.get("d1")!.playoffs).toMatchObject({ level: "tough", place: 3, of: 4 });
+    expect(s.get("d1")!.playoffs).toMatchObject({ level: "brutal", place: 3, of: 4 });
   });
 
   it("ranks the schedules, easiest first, ties sharing a place", () => {

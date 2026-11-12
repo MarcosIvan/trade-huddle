@@ -14,16 +14,17 @@ describe("matchupRatings", () => {
     expect(rb("D1").of).toBe(8);
   });
 
-  it("calls the easiest quarter good and the hardest quarter tough", () => {
+  it("splits the ranking in five: great, good, neutral, tough, brutal", () => {
+    // Of 8: the two at each end are great (tough), the next one good (tough).
     expect(RB.map((_, i) => rb(`D${i + 1}`).level)).toEqual([
+      "great",
+      "great",
       "good",
-      "good",
-      "neutral",
-      "neutral",
       "neutral",
       "neutral",
       "tough",
-      "tough",
+      "brutal",
+      "brutal",
     ]);
   });
 
@@ -34,7 +35,9 @@ describe("matchupRatings", () => {
     );
     const r = matchupRatings(low);
     expect(r.get("D1")!.get("RB")!.level).toBe("neutral");
-    expect(r.get("D4")!.get("RB")!.level).toBe("tough");
+    expect(r.get("D2")!.get("RB")!.level).toBe("neutral");
+    expect(r.get("D3")!.get("RB")!.level).toBe("tough");
+    expect(r.get("D4")!.get("RB")!.level).toBe("brutal");
   });
 
   it("rates nobody while every defense is still average", () => {

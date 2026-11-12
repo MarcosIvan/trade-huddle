@@ -86,11 +86,11 @@ describe("player card", () => {
   });
 
   it("rates every game, played or to come, by what the defense allows to the position", () => {
-    expect(card.games.map((g) => g.rating?.level ?? null)).toEqual(["good", "tough"]);
+    expect(card.games.map((g) => g.rating?.level ?? null)).toEqual(["great", "brutal"]);
     expect(card.upcoming.map((g) => [g.week, g.opponent, g.bye, g.rating?.level ?? null])).toEqual([
       [3, "DDD", false, "neutral"],
       [4, null, true, null],
-      [5, "CCC", false, "tough"],
+      [5, "CCC", false, "brutal"],
     ]);
   });
 

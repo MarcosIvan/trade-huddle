@@ -101,7 +101,7 @@ worker. The main pieces, in the order they are used:
 | `analyzer.ts`      | What the analyzer says about a trade: each side's change, free agents for uneven trades                                   |
 | `weekly.ts`        | This week's outlook against the opponent                                                                                  |
 | `weekLineup.ts`    | This week's best lineup, bench and injured reserve                                                                        |
-| `matchup.ts`       | Each defense's rank by position: good, neutral or tough, and the tooltip ([ADR 0036](adr/0036-matchup-labels-by-rank.md)) |
+| `matchup.ts`       | Each defense's rank by position: great to brutal, and the tooltip ([ADR 0037](adr/0037-matchup-labels-in-five-levels.md)) |
 | `schedule.ts`      | Bye weeks and schedule strength for the analyzer ([ADR 0026](adr/0026-schedule-in-the-analyzer.md))                       |
 | `scheduleValue.ts` | Team defenses' value with the opponents left ([ADR 0034](adr/0034-matchup-shrink-and-defense-schedule.md))                |
 | `playerCard.ts`    | The player card: season game by game, stat colors, season rank                                                            |
@@ -118,8 +118,9 @@ files ([ADR 0018](adr/0018-front-components.md)):
 
 - `Modal` and `ModalHeader`: the one dialog behind the player card and the
   news (Escape, backdrop click and the close button all close it);
-- `MatchupBadge`: the Good / Neutral / Tough badge of the weekly lineup and
-  the player card;
+- `MatchupBadge`: the Great / Good / Neutral / Tough / Brutal badge
+  of the weekly lineup and the player card, and `MatchupTone`, the same colors
+  around the analyzer's schedule ranks;
 - `Player` (`PlayerCell`, `PosBadge`, `TradeValue`…), `Section`,
   `BalanceMeter` (the fairness meter and the pickup meter, over one value
   bar) and `IdeaFrame` (the card around trade and pick ideas): the building

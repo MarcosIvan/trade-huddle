@@ -249,7 +249,8 @@ test.describe("player news", () => {
       "playoffs schedule",
     ]);
     const ranks = analyzer.locator("td span[title*='information only']");
-    await expect(ranks.first()).toHaveText(/^\d+ of \d+$/);
+    // The rank, then the level for screen readers (the color is not the only signal).
+    await expect(ranks.first()).toHaveText(/^\d+ of \d+ \((Great|Good|Neutral|Tough|Brutal)\)$/);
     await expect(ranks.first()).toHaveAttribute("title", /^(Regular season left|Playoffs): /);
     expect(await accessibilityProblems(page)).toEqual([]);
   });

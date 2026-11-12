@@ -91,7 +91,6 @@ export {
   byeWeeks,
   playerSchedules,
   playoffWeeks,
-  SCHEDULE_EDGE,
   scheduleNote,
   type PlayerSchedule,
   type ScheduleStrength,
@@ -101,7 +100,11 @@ export { defenseFactors, weeklyOutlook, type GameOutlook, type WeeklyOutlook } f
 export { weekLineup, type WeekLineup, type WeekRated } from "./weekLineup";
 export { rosterNotes, sideChange, type SideChange } from "./analyzer";
 export {
+  isGood,
+  isTough,
+  MATCHUP_LEVELS,
   MATCHUP_SHARE,
+  MATCHUP_STRONG_SHARE,
   matchupNote,
   matchupRatings,
   type MatchupLevel,
