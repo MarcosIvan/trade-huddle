@@ -7,12 +7,13 @@ import {
   type ScheduleStrength,
   type SideChange,
 } from "@/lib/model";
+import { MatchupTone } from "./MatchupBadge";
 import { Delta, FormValue, PlayerCell, TradeValue, useTradeValueHint } from "./Player";
 import { useSport } from "./SportContext";
 import styles from "./TradeSide.module.css";
 
 const SCHEDULE_HINT =
-  "what his opponents' defenses allowed to his position so far; green is easier, red harder. Rank among every team's schedule (1 = easiest). Information only: trade value and fairness ignore it.";
+  "what his opponents' defenses allowed to his position so far; colored like the matchups, from great (strong green) to brutal (strong red). Rank among every team's schedule (1 = easiest). Information only: trade value and fairness ignore it.";
 /** The hint where some positions' value uses the schedule (the NFL's team defenses). */
 const scheduleHint = (counted: readonly string[]) =>
   counted.length
@@ -33,9 +34,7 @@ function ByeWeek({ schedule }: { schedule: PlayerSchedule | undefined }) {
   );
 }
 
-const LEVEL_CLASS = { good: "up", neutral: "muted", tough: "down" } as const;
-
-/** His schedule's rank among every team's for his position, colored easy (green) to tough (red). */
+/** His schedule's rank among every team's for his position, colored as the matchup tags. */
 function StrengthCell({
   strength,
   pos,
@@ -50,12 +49,9 @@ function StrengthCell({
 }) {
   if (!strength) return <span className="muted">–</span>;
   return (
-    <span
-      className={LEVEL_CLASS[strength.level]}
-      title={scheduleNote(strength, pos, stretch, counted)}
-    >
+    <MatchupTone level={strength.level} title={scheduleNote(strength, pos, stretch, counted)}>
       {strength.place} of {strength.of}
-    </span>
+    </MatchupTone>
   );
 }
 

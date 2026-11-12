@@ -10,7 +10,7 @@
  */
 import type { ModelParams } from "../sports/types";
 import { ordinal } from "../format";
-import { matchupRatings, type MatchupLevel } from "./matchup";
+import { isGood, isTough, matchupRatings, rankLevel, type MatchupLevel } from "./matchup";
 import { currentPeriod, periodWeek } from "./periods";
 import type { LeagueSettings, Model, StatsFile } from "./types";
 import { defenseFactors, opponents } from "./weekly";
@@ -20,10 +20,10 @@ export interface ScheduleStrength {
   games: number;
   /** Average opponent factor for his position (1 = average; above 1 = easier). */
   factor: number;
-  /** Games against defenses rated good or tough for his position (matchupRatings). */
+  /** Games against defenses rated good or better, or tough or worse, for his position (matchupRatings). */
   good: number;
   tough: number;
-  /** Easy (good), neutral or tough, against the other teams' schedules. */
+  /** From great to brutal, by his schedule's place among every team's (as matchups). */
   level: MatchupLevel;
   /** His team's schedule among every team's, for his position: 1 = easiest. */
   place: number;
@@ -39,9 +39,6 @@ export interface PlayerSchedule {
   regular: ScheduleStrength | null;
   playoffs: ScheduleStrength | null;
 }
-
-/** A schedule this share easier (or harder) than average is easy (or tough). */
-export const SCHEDULE_EDGE = 0.03;
 
 /** The weeks a league's playoffs take, from Sleeper's settings; empty when it does not say. */
 export function playoffWeeks(league: LeagueSettings): number[] {
@@ -118,21 +115,21 @@ function strengthOver(
     }
     return list;
   };
-  const edge = SCHEDULE_EDGE - 1e-9;
   return (team, pos) => {
     const games = each(team, pos);
     // Before any game is played there is nothing to rate the defenses by.
     if (!games.length || !factors.size) return null;
     const factor = average(games);
     const list = ranking(pos);
-    const diff = factor - 1;
+    const above = list.filter((f) => f > factor).length;
+    const below = list.filter((f) => f < factor).length;
     return {
       games: games.length,
       factor,
-      good: levels(team, pos).filter((l) => l === "good").length,
-      tough: levels(team, pos).filter((l) => l === "tough").length,
-      level: diff >= edge ? "good" : diff <= -edge ? "tough" : "neutral",
-      place: list.filter((f) => f > factor).length + 1,
+      good: levels(team, pos).filter(isGood).length,
+      tough: levels(team, pos).filter(isTough).length,
+      level: rankLevel(above, below, list.length, factor),
+      place: above + 1,
       of: list.length,
     };
   };

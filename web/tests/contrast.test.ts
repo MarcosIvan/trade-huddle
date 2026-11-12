@@ -82,6 +82,11 @@ const TEXT: [string, string][] = [
   ["warn", "warn-soft"],
   ["bad", "surface"],
   ["bad", "bad-soft"],
+  // Matchup levels, as bold text on the tables' backgrounds.
+  ...["great", "good", "tough", "brutal"].flatMap((m): [string, string][] => [
+    [`match-${m}`, "surface"],
+    [`match-${m}`, "bg"],
+  ]),
 ];
 
 const GRAPHICS: [string, string][] = [

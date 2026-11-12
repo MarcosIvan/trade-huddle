@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { MatchupBadge } from "./MatchupBadge";
+import { MATCHUP_LEVELS } from "@/lib/model";
+import { MatchupBadge, MatchupTone } from "./MatchupBadge";
 
 describe("MatchupBadge", () => {
   it("reads without color: an icon hidden from screen readers and the word", () => {
@@ -10,12 +11,14 @@ describe("MatchupBadge", () => {
   });
 
   it("labels every level", () => {
-    const html = (["good", "neutral", "tough"] as const).map((level) =>
+    const html = MATCHUP_LEVELS.map((level) =>
       renderToStaticMarkup(<MatchupBadge level={level} />),
     );
-    expect(html[0]).toContain('<span aria-hidden="true">▲</span> <span>Good</span>');
-    expect(html[1]).toContain('<span aria-hidden="true">●</span> <span>Neutral</span>');
-    expect(html[2]).toContain('<span aria-hidden="true">▼</span> <span>Tough</span>');
+    expect(html[0]).toContain('<span aria-hidden="true">▲▲</span> <span>Great</span>');
+    expect(html[1]).toContain('<span aria-hidden="true">▲</span> <span>Good</span>');
+    expect(html[2]).toContain('<span aria-hidden="true">●</span> <span>Neutral</span>');
+    expect(html[3]).toContain('<span aria-hidden="true">▼</span> <span>Tough</span>');
+    expect(html[4]).toContain('<span aria-hidden="true">▼▼</span> <span>Brutal</span>');
   });
 
   it("keeps the word for screen readers when compact", () => {
@@ -23,5 +26,18 @@ describe("MatchupBadge", () => {
     expect(html).toContain(
       '<span aria-hidden="true">▲</span> <span class="visually-hidden">Good</span>',
     );
+  });
+});
+
+describe("MatchupTone", () => {
+  it("colors any content as the level and names the level for screen readers", () => {
+    const html = renderToStaticMarkup(
+      <MatchupTone level="brutal" title="hard road">
+        30 of 32
+      </MatchupTone>,
+    );
+    expect(html).toContain("brutal");
+    expect(html).toContain('title="hard road"');
+    expect(html).toContain('30 of 32<span class="visually-hidden"> (Brutal)</span>');
   });
 });

@@ -31,6 +31,11 @@
   --warn-soft: #fcefd2;
   --bad: #b42318;
   --bad-soft: #fde4e1;
+  /* Matchup text, from great (strongest green) to brutal (strongest red). */
+  --match-great: #0b5e2c;
+  --match-good: #15803d;
+  --match-tough: #c8372b;
+  --match-brutal: #8f1a12;
 
   --bar-give: #6f7f93;
   --bar-get: #0b5cd6;
@@ -73,6 +78,11 @@
     --warn-soft: #33270c;
     --bad: #ff8a80;
     --bad-soft: #3a1614;
+    /* Matchup text, from great (strongest green) to brutal (strongest red). */
+    --match-great: #22b863;
+    --match-good: #9be8bb;
+    --match-tough: #ffb3ab;
+    --match-brutal: #ef5350;
     --bar-give: #6c7c92;
     --bar-get: #6fa8ff;
     --qb: #ff8fa8;
@@ -108,6 +118,11 @@
   --warn-soft: #33270c;
   --bad: #ff8a80;
   --bad-soft: #3a1614;
+  /* Matchup text, from great (strongest green) to brutal (strongest red). */
+  --match-great: #22b863;
+  --match-good: #9be8bb;
+  --match-tough: #ffb3ab;
+  --match-brutal: #ef5350;
   --bar-give: #6c7c92;
   --bar-get: #6fa8ff;
   --qb: #ff8fa8;

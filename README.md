@@ -39,8 +39,8 @@ For your league, Trade Huddle:
    rank in fantasy points at his position and overall, his season week by week,
    with fantasy points under your league's scoring, rushing and receiving
    (passing for QBs), each number colored against what the position
-   usually does, and every opponent, past and to come, marked as a good,
-   neutral or tough matchup, as in the weekly lineup.
+   usually does, and every opponent, past and to come, marked from a great
+   to a brutal matchup, as in the weekly lineup.
 
 Every number is computed under **your league's own scoring rules**.
 

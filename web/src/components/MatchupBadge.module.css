@@ -1,25 +1,25 @@
+/* Bold text in the level's color, no background: strongest green for great, a
+   lighter green for good, gray in the middle, then a lighter and the strongest red. */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
-.compact {
-  padding: 1px 5px;
+.great {
+  color: var(--match-great);
 }
 .good {
-  background: var(--good-soft);
-  color: var(--good);
-}
-.tough {
-  background: var(--bad-soft);
-  color: var(--bad);
+  color: var(--match-good);
 }
 .neutral {
-  background: var(--surface-2);
-  color: var(--ink-2);
+  color: var(--muted);
+}
+.tough {
+  color: var(--match-tough);
+}
+.brutal {
+  color: var(--match-brutal);
 }
