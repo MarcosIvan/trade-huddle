@@ -2,10 +2,11 @@
  * Schedule facts for the trade analyzer: each player's bye week and the
  * strength of the schedule he has left, from what his opponents' defenses
  * allowed to his position so far (the weekly lineup's defense factors), for
- * the regular season's weeks left and, apart, the league's playoff weeks. Information
- * only: it never changes trade value or fairness. What a defense allowed so
- * far barely predicts what it allows later (ADR 0026), so it is shown as
- * context, never turned into points.
+ * the regular season's weeks left and, apart, the league's playoff weeks. For
+ * players it is information only: what a defense allowed so far barely
+ * predicts what it allows later (ADR 0026), so it is shown as context, never
+ * turned into points. The NFL's team defenses are the exception: what offenses
+ * give to defenses holds up, so their value uses it (scheduleValue.ts, ADR 0034).
  */
 import type { ModelParams } from "../sports/types";
 import { matchupLevel, type MatchupLevel } from "./matchup";
@@ -69,7 +70,7 @@ export function byeWeeks(stats: StatsFile): Map<string, number> {
 }
 
 /** The periods still to play, split into the regular season and the league's playoff weeks. */
-function periodsLeft(
+export function periodsLeft(
   stats: StatsFile,
   league: LeagueSettings,
 ): { regular: number[]; playoffs: number[] } {
@@ -138,9 +139,14 @@ export function playerSchedules(
   model: Model,
   stats: StatsFile,
   league: LeagueSettings,
-  params: Pick<ModelParams, "matchupShrinkGames">,
+  params: Pick<ModelParams, "matchupShrinkGames" | "matchupShrinkByPos">,
 ): Map<string, PlayerSchedule> {
-  const factors = defenseFactors(model, stats, params.matchupShrinkGames);
+  const factors = defenseFactors(
+    model,
+    stats,
+    params.matchupShrinkGames,
+    params.matchupShrinkByPos,
+  );
   const byes = byeWeeks(stats);
   const thisWeek = periodWeek(stats, currentPeriod(stats));
   const periods = periodsLeft(stats, league);
@@ -166,8 +172,16 @@ const ordinal = (n: number) => {
   return `${n}${suffix}`;
 };
 
-/** Schedule strength in words, for a tooltip: what the number means and where it comes from. */
-export function scheduleNote(s: ScheduleStrength, pos: string, stretch: string): string {
+/**
+ * Schedule strength in words, for a tooltip: what the number means and where it comes from.
+ * `counted`: the position's value uses the schedule (ModelParams.scheduleValue).
+ */
+export function scheduleNote(
+  s: ScheduleStrength,
+  pos: string,
+  stretch: string,
+  counted = false,
+): string {
   const pct = Math.round(Math.abs(s.factor - 1) * 100);
   const allow =
     pct === 0
@@ -175,5 +189,5 @@ export function scheduleNote(s: ScheduleStrength, pos: string, stretch: string):
       : `${stretch}: opponents allow ${pct}% ${s.factor > 1 ? "more" : "fewer"} points than average to ${pos}s`;
   const rank = s.place === 1 ? "the easiest" : `${ordinal(s.place)} easiest`;
   const games = `${s.games} game${s.games === 1 ? "" : "s"}`;
-  return `${allow} (${games}: ${s.good} good, ${s.tough} tough); ${rank} of ${s.of}. Based on games so far; information only.`;
+  return `${allow} (${games}: ${s.good} good, ${s.tough} tough); ${rank} of ${s.of}. Based on games so far; ${counted ? "counted in the value" : "information only"}.`;
 }

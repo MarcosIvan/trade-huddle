@@ -3,7 +3,8 @@
 - Status: accepted
 - Date: 2026-09-28
 - Amended by: ADR 0011 (the projection's own weight is now 0.65, as our value
-  already holds 30% of it)
+  already holds 30% of it); ADR 0034 (32 games of average defense instead of
+  two, 8 for team defenses)
 
 ## Context
 

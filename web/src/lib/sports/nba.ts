@@ -100,8 +100,11 @@ export const NBA: SportConfig = {
       Out: { mult: 0.9, startable: true },
     },
     weekAvailability: { GTD: 0.6, DTD: 0.75, Questionable: 0.6, Out: 0, IR: 0, Sus: 0, NA: 0 },
-    // A defense's factor mixes in this many games of an average defense.
-    matchupShrinkGames: 8,
+    // A defense's factor mixes in this many games of an average defense: what NBA
+    // defenses allowed so far barely holds up (docs/adr/0034-matchup-shrink-and-defense-schedule.md).
+    matchupShrinkGames: 64,
+    matchupShrinkByPos: {},
+    scheduleValue: {},
     benchDepth: {},
   },
   tradeValue: NBA_TRADE_VALUE,

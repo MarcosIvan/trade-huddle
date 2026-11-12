@@ -1,6 +1,7 @@
 import type { ModelParams, SportConfig } from "../sports/types";
 import { periodsAhead } from "./periods";
 import { replacementLevels } from "./replacement";
+import { scheduleValues } from "./scheduleValue";
 import { playerRole, seasonOver } from "./role";
 import { projectedShares, usageShares } from "./score";
 import { average, makeScorer } from "./scoring";
@@ -284,6 +285,10 @@ export function buildModel(stats: StatsFile, league: LeagueSettings, sport: Spor
   for (const pl of list) Object.assign(pl, estimate(inputs.get(pl.id)!, null, params));
   let repl = replacementLevels(list, slots, teams, sport);
   for (const pl of list) Object.assign(pl, estimate(inputs.get(pl.id)!, repl, params));
+  // Positions whose schedule shows up in later points (the NFL's team defenses).
+  for (const [id, value] of scheduleValues({ players }, stats, league, params)) {
+    players[id]!.value = value;
+  }
   repl = replacementLevels(list, slots, teams, sport);
   for (const pl of list) pl.vorp = Math.max(0, pl.value - (repl[pl.pos] ?? 0));
 

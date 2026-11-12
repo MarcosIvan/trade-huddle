@@ -59,12 +59,14 @@ export function opponents(
 /**
  * How many points each defense allows to each position, relative to the
  * league average (1 = average), from the games played so far. Few games mean
- * a noisy number, so each factor is pulled toward 1 by `shrink` games.
+ * a noisy number, so each factor is pulled toward 1 by `shrink` games
+ * (`shrinkByPos` for the positions it lists).
  */
 export function defenseFactors(
-  model: Model,
+  model: Pick<Model, "players">,
   stats: StatsFile,
   shrink: number,
+  shrinkByPos: Readonly<Record<string, number>> = {},
 ): Map<string, Map<string, number>> {
   const allowed = new Map<string, Map<string, number>>();
   const games = new Map<string, number>();
@@ -106,7 +108,8 @@ export function defenseFactors(
     for (const [pos, avg] of leagueAvg) {
       if (avg <= 0 || !g) continue;
       const raw = (byPos.get(pos) ?? 0) / g / avg;
-      f.set(pos, (g * raw + shrink) / (g + shrink));
+      const k = shrinkByPos[pos] ?? shrink;
+      f.set(pos, (g * raw + k) / (g + k));
     }
     factors.set(defense, f);
   }
@@ -162,7 +165,12 @@ export function weeklyOutlook(
       ? weekPeriods(stats, week).filter((d) => d > lastPlayed)
       : weekPeriods(stats, week);
   const oppByPeriod = new Map(periods.map((d) => [d, opponents(stats, d)] as const));
-  const factors = defenseFactors(model, stats, params.matchupShrinkGames);
+  const factors = defenseFactors(
+    model,
+    stats,
+    params.matchupShrinkGames,
+    params.matchupShrinkByPos,
+  );
   const oppByWeek = new Map(stats.weeks.map((w) => [w, opponents(stats, w)] as const));
   const out = new Map<string, WeeklyOutlook>();
   for (const p of Object.values(model.players)) {

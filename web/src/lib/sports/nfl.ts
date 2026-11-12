@@ -38,8 +38,10 @@ export const PROTOTYPE_MODEL: ModelParams = {
   nextGameBlend: {},
   seasonEnding: null,
   roles: null,
+  scheduleValue: {},
   matchupWeight: 0,
   matchupShrinkGames: 4,
+  matchupShrinkByPos: {},
   similarWeight: 0,
   weekProjWeight: 0,
   weekAvailability: {
@@ -199,7 +201,14 @@ export const NFL: SportConfig = {
     // already holds 30% of that projection (nextGameBlend), so it weighs about 75%.
     weekProjWeight: 0.65,
     matchupWeight: 0.5,
-    matchupShrinkGames: 2,
+    // What a defense allowed so far is mostly noise: each factor mixes in 32 games of an
+    // average defense. What offenses give to team defenses holds up better: 8 games
+    // (docs/adr/0034-matchup-shrink-and-defense-schedule.md).
+    matchupShrinkGames: 32,
+    matchupShrinkByPos: { DEF: 8 },
+    // Team defenses: value pulled 40% toward the average, then scaled by the opponents
+    // left (factor^1.5). Rest-of-season MAE 1.824 -> 1.758 out of sample (ADR 0034).
+    scheduleValue: { DEF: { regress: 0.6, elasticity: 1.5 } },
     // Bench depth per team, calibrated against draft ADP (docs/adr/0002-positional-scarcity.md).
     benchDepth: { QB: 0, RB: 1.5, WR: 1, TE: 0.25 },
   },

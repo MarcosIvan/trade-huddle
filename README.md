@@ -233,7 +233,7 @@ NEXT_PUBLIC_BASE_PATH=/trade-huddle npm run test:e2e
 
 The value model's backtests run with
 `npm run backtest` (and `backtest:scarcity`, `backtest:teammates`,
-`backtest:weekly`, `backtest:schedule`) after building the past seasons they use with
+`backtest:weekly`, `backtest:schedule`, `backtest:matchups`) after building the past seasons they use with
 `python -m trade_huddle_data build --season 2024` (and `2025`). The NBA's runs
 with `npm run backtest:nba`, on seasons built with `--sport nba`
 ([ADR 0022](docs/adr/0022-nba-calibration.md)). The pipeline's own checks

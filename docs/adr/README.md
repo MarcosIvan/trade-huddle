@@ -40,5 +40,6 @@ later one changes it, the later one says what it replaces.
 | [0031](0031-even-trades-count-in-full.md)             | Even trades count every player in full                                  |
 | [0032](0032-hot-stretch-is-not-a-new-job.md)          | A hot stretch is not a new job                                          |
 | [0033](0033-extra-players-count-30-percent.md)        | Extra players in an uneven trade count 30%                              |
+| [0034](0034-matchup-shrink-and-defense-schedule.md)   | Steadier matchup factors, and team defenses valued with their schedule  |
 
 How the pieces fit together: [architecture.md](../architecture.md).
