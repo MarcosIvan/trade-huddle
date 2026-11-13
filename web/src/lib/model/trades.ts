@@ -1,5 +1,7 @@
 import type { SportConfig } from "../sports/types";
+import type { IdeaReason } from "./ideaReason";
 import { bestLineup } from "./lineup";
+import { positionStrength } from "./positionStrength";
 import type { FreeAgent, Model, Player, Valued } from "./types";
 
 export interface TradeResult {
@@ -87,6 +89,8 @@ export interface TradeIdea extends TradeResult {
   score: number;
   /** Set when the idea only fills a spot because too few deals pass every rule. */
   problems?: string[];
+  /** Why it helps each side (attached after the search, see withReasons). */
+  reason?: IdeaReason;
 }
 
 /** A team's roster, as model players. */
@@ -227,20 +231,7 @@ export function teamNeeds(
   sport: SportConfig,
 ): Map<number, TeamNeeds> {
   const { min } = positionNeeds(model.slots, sport);
-  const strength = new Map<number, Record<string, number>>();
-  for (const t of rosters) {
-    const byPos: Record<string, number> = {};
-    for (const [pos, k] of Object.entries(min)) {
-      if (!k) continue;
-      const best = t.players
-        .filter((p) => p.pos === pos && p.startable)
-        .map((p) => p.value)
-        .sort((a, b) => b - a)
-        .slice(0, k);
-      byPos[pos] = best.reduce((s, v) => s + v, 0) / k;
-    }
-    strength.set(t.rid, byPos);
-  }
+  const strength = new Map(rosters.map((t) => [t.rid, positionStrength(t.players, min)]));
   const out = new Map<number, TeamNeeds>();
   for (const [rid, mine] of strength) {
     const need: Record<string, number> = {};

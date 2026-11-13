@@ -12,6 +12,11 @@ export interface Team {
   /** Players in the injured reserve slots; null when unknown. */
   reserveIds: string[] | null;
   record: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  /** Points for so far. */
+  fpts: number;
 }
 
 /** Rosters with display names: team name, then display name, then "Team N". */
@@ -29,6 +34,10 @@ export function buildTeams(rosters: SleeperRoster[], users: SleeperLeagueUser[])
       playerIds: r.players,
       reserveIds: r.reserve,
       record: `${r.wins}-${r.losses}${r.ties ? `-${r.ties}` : ""}`,
+      wins: r.wins,
+      losses: r.losses,
+      ties: r.ties,
+      fpts: r.fpts,
     };
   });
 }

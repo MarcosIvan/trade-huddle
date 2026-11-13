@@ -74,6 +74,8 @@ export const NBA: SportConfig = {
   tradePositions: POSITIONS,
   defaultTeams: 12,
   multiGameWeeks: true,
+  // Time on court in seconds ("sp"): last season's totals carry it, not minutes ("min").
+  playingTime: { key: "sp", scale: 1 / 60, label: "Min", title: "Minutes played", whole: true },
   gameLog: Object.fromEntries(POSITIONS.map((pos) => [pos, [BOX_SCORE]])),
   model: {
     ...NFL.model,

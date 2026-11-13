@@ -1,5 +1,5 @@
 import type { Team } from "@/lib/league";
-import { isTrueMatch, type TradeIdea } from "@/lib/model";
+import { isTrueMatch, reasonText, type TradeIdea } from "@/lib/model";
 import { BalanceMeter } from "./BalanceMeter";
 import { IdeaChip, IdeaFrame, IdeaHandle, IdeaSide } from "./IdeaFrame";
 import { Delta } from "./Player";
@@ -37,6 +37,15 @@ export function IdeaCard({
           <IdeaSide label="You send" players={idea.give} />
           <IdeaSide label="You get" players={idea.get} />
         </>
+      }
+      reason={
+        idea.reason && (
+          <span
+            title={`Ranks among the league's ${idea.reason.teams} teams: at a position by the players each lineup starts there, in starting lineups by the best lineup's points per game`}
+          >
+            {reasonText(idea.reason)}
+          </span>
+        )
       }
       chips={
         <>

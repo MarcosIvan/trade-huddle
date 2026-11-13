@@ -62,12 +62,20 @@
   font-weight: 700;
   color: var(--ink);
 }
+/* The league at the end of the page: position needs, and playoff odds beside them. */
+.league {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 40px;
+}
 /* Full-width sections below the grid, apart from it and from each other. */
 .spaced {
   margin-top: 48px;
 }
 
 @media (max-width: 960px) {
+  .league,
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }

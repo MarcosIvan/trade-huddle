@@ -65,6 +65,10 @@
   font-weight: 700;
   white-space: nowrap;
 }
+.reason {
+  color: var(--ink-2);
+  font-size: 15px;
+}
 .impacts {
   display: flex;
   flex-wrap: wrap;

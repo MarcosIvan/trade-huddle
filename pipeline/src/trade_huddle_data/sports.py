@@ -27,6 +27,9 @@ class SportConfig:
     period: str = "week"
     #: Sleeper's preseason projections are season totals (NFL) or per-game averages (NBA).
     projections_per_game: bool = False
+    #: Stats kept even though an exclusion matches them: playing time for the
+    #: player card (a player's offensive snaps and his team's).
+    keep_exact: frozenset[str] = frozenset()
 
 
 NFL = SportConfig(
@@ -63,6 +66,7 @@ NFL = SportConfig(
         "_yac",
         "_per_play",
     ),
+    keep_exact=frozenset({"off_snp", "tm_off_snp"}),
     usage_keys=("rec_tgt", "rush_att", "rec_rz_tgt"),
     season_games=17,
     adp_max=240,

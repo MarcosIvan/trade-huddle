@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { NBA } from "../sports/nba";
 import { NFL } from "../sports/nfl";
 import { matchupRatings } from "./matchup";
-import { playerCard, seasonRanks, statLevel } from "./playerCard";
+import { cardColumns, columnValue, playerCard, seasonRanks, statLevel } from "./playerCard";
 import type { Model, Player, StatsFile } from "./types";
 
 const keys = ["rush_att", "rush_yd", "rush_td", "rec", "rec_yd", "pass_yd", "fum"];
@@ -175,5 +176,22 @@ describe("seasonRanks", () => {
 
   it("leaves out players who have not played", () => {
     expect(ranks.has("out")).toBe(false);
+  });
+});
+
+describe("playing time in the game log", () => {
+  it("comes first, only for positions with a game log", () => {
+    expect(cardColumns("WR", NFL)[0]?.key).toBe("off_snp");
+    expect(cardColumns("K", NFL)).toEqual([]);
+    expect(cardColumns("C", NBA)[0]?.label).toBe("Min");
+  });
+
+  it("shows a share of the team's snaps, and nothing without the team's count", () => {
+    const snaps = NFL.playingTime!;
+    expect(columnValue(snaps, { off_snp: 45, tm_off_snp: 60 })).toBe(0.75);
+    expect(columnValue(snaps, { tm_off_snp: 60 })).toBe(0);
+    expect(columnValue(snaps, { off_snp: 45 })).toBeUndefined();
+    // NBA time on court comes in seconds.
+    expect(columnValue(NBA.playingTime!, { sp: 2022 })).toBeCloseTo(33.7);
   });
 });

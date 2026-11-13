@@ -181,6 +181,15 @@ export interface StatColumn {
   title: string;
   /** Fewer is better (interceptions). */
   lowerIsBetter?: boolean;
+  /**
+   * The column shows `key` as a share of this stat (a player's offensive snaps
+   * of his team's), as a percentage.
+   */
+  per?: string;
+  /** The stat is multiplied by this before it is shown (seconds to minutes: 1/60). */
+  scale?: number;
+  /** Shown as a whole number (minutes), not as the source has it. */
+  whole?: boolean;
 }
 
 /** A group of game log columns under one heading (Rushing, Receiving...). */
@@ -288,6 +297,11 @@ export interface SportConfig {
   multiGameWeeks?: boolean;
   /** The player card's game log: stat groups shown for each position, in order. */
   gameLog: Readonly<Record<string, readonly StatGroup[]>>;
+  /**
+   * How much a player was on the field in each game, shown in the game log
+   * right after the fantasy points: snap share (NFL) or minutes (NBA).
+   */
+  playingTime?: StatColumn;
   model: ModelParams;
   tradeValue: TradeValueParams;
 }

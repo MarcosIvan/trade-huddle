@@ -54,14 +54,15 @@ export function IdeaChip({
 
 /**
  * The card around a trade or pick idea: an optional star, a title, the two
- * sides, chips with what changes, a meter and the button that opens it in the
- * analyzer.
+ * sides, an optional line on why it helps, chips with what changes, a meter
+ * and the button that opens it in the analyzer.
  */
 export function IdeaFrame({
   titleId,
   title,
   star,
   sides,
+  reason,
   chips,
   meter,
   onOpen,
@@ -71,6 +72,8 @@ export function IdeaFrame({
   /** The star's words ("Best match"); none without a star. */
   star: string | null;
   sides: ReactNode;
+  /** One line on why the idea helps; none when left out. */
+  reason?: ReactNode;
   chips: ReactNode;
   meter: ReactNode;
   onOpen: () => void;
@@ -91,6 +94,7 @@ export function IdeaFrame({
         </h3>
       </div>
       <div className={styles.swap}>{sides}</div>
+      {reason && <p className={styles.reason}>{reason}</p>}
       <div className={styles.impacts}>{chips}</div>
       {meter}
       <div className={styles.foot}>

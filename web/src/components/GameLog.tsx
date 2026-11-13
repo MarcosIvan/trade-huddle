@@ -1,5 +1,7 @@
 import { fmt, shortDate } from "@/lib/format";
 import {
+  cardColumns,
+  columnValue,
   matchupNote,
   PTS_KEY,
   statLevel,
@@ -8,7 +10,7 @@ import {
   type PlayerCard,
   type StatLevel,
 } from "@/lib/model";
-import type { SportConfig } from "@/lib/sports/types";
+import type { SportConfig, StatColumn } from "@/lib/sports/types";
 import styles from "./GameLog.module.css";
 import { MatchupBadge } from "./MatchupBadge";
 
@@ -41,6 +43,7 @@ function StatCell({
   value,
   text,
   average,
+  averageText = fmt,
   what,
   lowerIsBetter,
   sideRole,
@@ -50,6 +53,8 @@ function StatCell({
   value: number;
   text: string;
   average: number | undefined;
+  /** How the average reads in the tooltip (a share as a percentage). */
+  averageText?: (x: number) => string;
   what: string;
   lowerIsBetter?: boolean;
   /** A stat of the position's second group (a receiver's rushing): a zero is no failure. */
@@ -64,7 +69,9 @@ function StatCell({
     <td
       className={cls}
       title={
-        average === undefined ? undefined : `The position averages ${fmt(average)} ${what} a game`
+        average === undefined
+          ? undefined
+          : `The position averages ${averageText(average)} ${what} a game`
       }
     >
       {text}
@@ -79,6 +86,17 @@ const dateLabel = (iso: string | null) => (iso ? shortDate(iso) : "–");
 /** Stats are counts (yards, catches): whole numbers, a decimal only when the source has one. */
 const count = (x: number | undefined) =>
   x === undefined ? "0" : Number.isInteger(x) ? String(x) : fmt(x);
+
+/** A column's number as shown: a share as a percentage, minutes whole, counts as they come. */
+function cellText(c: StatColumn, x: number | undefined): string {
+  if (c.per) return x === undefined ? "–" : `${Math.round(x * 100)}%`;
+  if (c.whole) return String(Math.round(x ?? 0));
+  return count(x);
+}
+
+/** What the tooltip's average speaks of: "38% share of the team's offensive snaps". */
+const averageText = (c: StatColumn, average: number) =>
+  c.per ? `${Math.round(average * 100)}%` : fmt(average);
 
 /**
  * The player's season in one table, week by week: opponent, matchup, fantasy
@@ -104,11 +122,14 @@ export function GameLog({
   days?: { date: (period: number) => string | null; week: (period: number) => number };
 }) {
   const groups = sport.gameLog[player.pos] ?? [];
-  const columns = groups.flatMap((g) => g.columns);
+  // Playing time (when the position has a game log) comes first, then the groups.
+  const columns = cardColumns(player.pos, sport);
+  const time = groups.length ? sport.playingTime : undefined;
   // The first group is the position's main role (a receiver's receiving).
   const primary = new Set(groups[0]?.columns.map((c) => c.key));
   // Each group's first column carries the divider that sets the groups apart.
   const starts = new Set(groups.map((g) => g.columns[0]?.key));
+  if (time) starts.add(time.key);
   const rows = [...card.games, ...card.upcoming];
   const toCome = new Set(card.upcoming);
   // Columns before the fantasy points: the date and its week on game days, the week otherwise.
@@ -125,7 +146,7 @@ export function GameLog({
         <thead>
           {groups.length > 0 && (
             <tr>
-              <td colSpan={lead + 3} />
+              <td colSpan={lead + 3 + (time ? 1 : 0)} />
               {groups.map((g) => (
                 <th
                   key={g.label}
@@ -149,19 +170,17 @@ export function GameLog({
               {/* "Pts" is also a basketball stat: there the column says fantasy points. */}
               {columns.some((c) => c.key === "pts") ? "FPts" : "Pts"}
             </th>
-            {groups.map((g) =>
-              g.columns.map((c) => (
-                <th
-                  key={`${g.label}-${c.key}`}
-                  scope="col"
-                  className={`num ${starts.has(c.key) ? styles.start : ""}`}
-                  title={c.title}
-                >
-                  <span aria-hidden="true">{c.label}</span>
-                  <span className="visually-hidden">{c.title}</span>
-                </th>
-              )),
-            )}
+            {columns.map((c) => (
+              <th
+                key={c.key}
+                scope="col"
+                className={`num ${starts.has(c.key) ? styles.start : ""}`}
+                title={c.title}
+              >
+                <span aria-hidden="true">{c.label}</span>
+                <span className="visually-hidden">{c.title}</span>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -184,18 +203,23 @@ export function GameLog({
                     what="fantasy points"
                     bold
                   />
-                  {columns.map((c) => (
-                    <StatCell
-                      key={c.key}
-                      value={g.stats[c.key] ?? 0}
-                      text={count(g.stats[c.key])}
-                      average={average[c.key]}
-                      what={c.title.toLowerCase()}
-                      lowerIsBetter={c.lowerIsBetter}
-                      sideRole={!primary.has(c.key)}
-                      start={starts.has(c.key)}
-                    />
-                  ))}
+                  {columns.map((c) => {
+                    const value = columnValue(c, g.stats);
+                    return (
+                      <StatCell
+                        key={c.key}
+                        value={value ?? 0}
+                        text={cellText(c, value)}
+                        // A share without its base (no snap counts) is left uncolored.
+                        average={c.per && value === undefined ? undefined : columnValue(c, average)}
+                        averageText={(x) => averageText(c, x)}
+                        what={c.per ? c.title.replace(/^Share /, "") : c.title.toLowerCase()}
+                        lowerIsBetter={c.lowerIsBetter}
+                        sideRole={c !== time && !primary.has(c.key)}
+                        start={starts.has(c.key)}
+                      />
+                    );
+                  })}
                 </>
               ) : !toCome.has(g) && !g.bye ? (
                 // A week gone by without him: said across the row, not left blank like a game to come.
@@ -221,7 +245,7 @@ export function GameLog({
             <td className={`num ${styles.pts}`}>{fmt(card.pts)}</td>
             {columns.map((c) => (
               <td key={c.key} className={`num ${starts.has(c.key) ? styles.start : ""}`}>
-                {count(card.totals[c.key])}
+                {cellText(c, columnValue(c, card.totals))}
               </td>
             ))}
           </tr>

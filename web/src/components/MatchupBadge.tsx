@@ -42,17 +42,20 @@ export function MatchupBadge({
  */
 export function MatchupTone({
   level,
+  word,
   title,
   children,
 }: {
   level: MatchupLevel;
+  /** What the level means here, for screen readers (the badge's word by default). */
+  word?: string;
   title?: string;
   children: ReactNode;
 }) {
   return (
     <span className={`${styles.badge} ${styles[level]}`} title={title}>
       {children}
-      <span className="visually-hidden"> ({LEVELS[level].label})</span>
+      <span className="visually-hidden"> ({word ?? LEVELS[level].label})</span>
     </span>
   );
 }

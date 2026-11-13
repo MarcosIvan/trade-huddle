@@ -6,14 +6,18 @@ import {
   parseLeague,
   parseLeagueList,
   parseLeagueUsers,
+  parseMatchups,
   parseRosters,
+  parseTrades,
   parseState,
   parseUser,
   ResponseShapeError,
   type LeagueSummary,
   type SleeperLeague,
   type SleeperLeagueUser,
+  type SleeperMatchup,
   type SleeperRoster,
+  type SleeperTrade,
   type SleeperUser,
 } from "./validate";
 
@@ -134,6 +138,37 @@ export async function fetchLeague(leagueId: string, signal?: AbortSignal): Promi
   ]);
   if (!league) throw new UserError("League not found. Check the league ID or link.");
   return { league, rosters, users };
+}
+
+/**
+ * Every listed week's matchups: final scores for weeks played, the pairings
+ * for weeks to come (Sleeper sets the whole regular season in advance).
+ */
+export async function fetchMatchups(
+  leagueId: string,
+  weeks: readonly number[],
+  signal?: AbortSignal,
+): Promise<Map<number, SleeperMatchup[]>> {
+  if (!isLeagueId(leagueId)) throw new UserError("That league link is not valid.");
+  const base = `/league/${encodeURIComponent(leagueId)}/matchups`;
+  const lists = await Promise.all(
+    weeks.map((w) => get(`${base}/${encodeURIComponent(String(w))}`, signal).then(parseMatchups)),
+  );
+  return new Map(weeks.map((w, i) => [w, lists[i]!]));
+}
+
+/** The league's completed trades in the listed weeks, newest first. */
+export async function fetchTrades(
+  leagueId: string,
+  weeks: readonly number[],
+  signal?: AbortSignal,
+): Promise<SleeperTrade[]> {
+  if (!isLeagueId(leagueId)) throw new UserError("That league link is not valid.");
+  const base = `/league/${encodeURIComponent(leagueId)}/transactions`;
+  const lists = await Promise.all(
+    weeks.map((w) => get(`${base}/${encodeURIComponent(String(w))}`, signal).then(parseTrades)),
+  );
+  return lists.flat().sort((a, b) => b.created - a.created);
 }
 
 /** Sleeper player IDs: digits, or a team code for defenses. */

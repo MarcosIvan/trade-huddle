@@ -264,6 +264,50 @@ test.describe("player news", () => {
   });
 });
 
+test.describe("a Sleeper league's standing", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockSleeper(page);
+    await page.goto("./");
+    await page.getByLabel("Sleeper username").fill(USERNAME);
+    await page.getByRole("button", { name: "Find my leagues" }).click();
+    await page.getByRole("button", { name: /Hostile League/ }).click();
+    await ideasReady(page);
+  });
+
+  test("ends with the position needs, the playoff odds and the league's trades", async ({
+    page,
+  }) => {
+    const trades = page.locator("#league-trades");
+    await expect(trades.locator("article")).toHaveCount(1);
+    await expect(trades.getByText("You got")).toBeVisible();
+    await expect(trades.getByText(/Points since/).first()).toBeVisible();
+
+    const needs = page.locator("#needs");
+    await expect(needs.locator("tbody tr")).toHaveCount(12);
+    await expect(needs.getByRole("rowheader", { name: "You" })).toBeVisible();
+    await expect(needs.getByRole("columnheader", { name: "Bench" }).first()).toBeVisible();
+
+    const odds = page.locator("#playoffs");
+    await expect(odds.locator("tbody tr")).toHaveCount(12);
+    await expect(odds.getByRole("rowheader", { name: "You" })).toBeVisible();
+
+    // After the analyzer, in this order: needs and odds side by side, then the trades last.
+    const top = async (id: string) => (await page.locator(id).boundingBox())!.y;
+    expect(await top("#analyzer")).toBeLessThan(await top("#needs"));
+    expect(await top("#needs")).toBeLessThan(await top("#league-trades"));
+    expect(await top("#playoffs")).toBeLessThan(await top("#league-trades"));
+    await expectNoEmptySpace(page);
+  });
+
+  test("leaves the league's trades and playoff odds out of the demo", async ({ page }) => {
+    await page.goto("./?demo");
+    await ideasReady(page);
+    await expect(page.locator("#needs tbody tr")).toHaveCount(12);
+    await expect(page.locator("#playoffs")).toHaveCount(0);
+    await expect(page.locator("#league-trades")).toHaveCount(0);
+  });
+});
+
 test.describe("demo league", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("./?demo");
@@ -316,6 +360,12 @@ test.describe("demo league", () => {
   }) => {
     await expect(page.getByText(/Fills (your|their) need/)).toHaveCount(0);
     await expect(page.getByText("What is missing")).toHaveCount(0);
+  });
+
+  test("says in one line why each trade idea helps", async ({ page }) => {
+    await expect(page.locator("#ideas article").first()).toContainText(
+      /You (go from|strengthen|add depth)/,
+    );
   });
 
   test("finds deals for a chosen player", async ({ page }) => {

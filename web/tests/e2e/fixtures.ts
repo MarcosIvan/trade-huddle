@@ -44,7 +44,7 @@ function playerNews() {
 
 const demo = JSON.parse(readFileSync("public/data/nfl/demo_league.json", "utf8")) as {
   league: Record<string, unknown>;
-  rosters: { roster_id: number; owner_id: string }[];
+  rosters: { roster_id: number; owner_id: string; players: string[] }[];
   users: { user_id: string; display_name: string; metadata?: { team_name?: string } }[];
   my_roster_id: number;
 };
@@ -98,11 +98,56 @@ function sleeperLeague() {
       ...demo.league,
       league_id: LEAGUE_ID,
       name: HOSTILE.league,
-      settings: { ...(demo.league.settings as object), playoff_week_start: 7, playoff_teams: 4 },
+      settings: {
+        ...(demo.league.settings as object),
+        playoff_week_start: 7,
+        playoff_teams: 4,
+        last_scored_leg: 3,
+      },
     },
     rosters: demo.rosters,
     users,
   };
+}
+
+/** Matchups for the six regular season weeks: 1-2, 3-4... with scores for the 3 weeks played. */
+function sleeperMatchups(): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (let week = 1; week <= 6; week++) {
+    out[`/v1/league/${LEAGUE_ID}/matchups/${week}`] = demo.rosters.map((r) => ({
+      roster_id: r.roster_id,
+      matchup_id: Math.ceil(r.roster_id / 2),
+      points: week <= 3 ? 90 + ((r.roster_id * 7 + week * 3) % 40) : 0,
+      starters: r.players.slice(0, 9),
+      players_points: Object.fromEntries(r.players.map((id) => [id, week <= 3 ? 10 : 0])),
+    }));
+  }
+  return out;
+}
+
+/**
+ * One trade in week 2 between the user's team and the hostile-named team:
+ * each gets the other's first player.
+ */
+function sleeperTrades(): Record<string, unknown> {
+  const mine = demo.rosters.find((r) => r.roster_id === demo.my_roster_id)!;
+  const theirs = demo.rosters[0]!;
+  const trade = {
+    transaction_id: "111",
+    type: "trade",
+    status: "complete",
+    leg: 2,
+    created: Date.UTC(2026, 8, 20),
+    roster_ids: [mine.roster_id, theirs.roster_id],
+    adds: { [theirs.players[0]!]: mine.roster_id, [mine.players[0]!]: theirs.roster_id },
+    draft_picks: [],
+    waiver_budget: [],
+  };
+  const out: Record<string, unknown> = {};
+  for (let week = 1; week <= 4; week++) {
+    out[`/v1/league/${LEAGUE_ID}/transactions/${week}`] = week === 2 ? [trade] : [];
+  }
+  return out;
 }
 
 /** A fictional NBA points league: two teams of 13, with a stats file in the NBA's format. */
@@ -194,6 +239,8 @@ export async function mockSleeper(page: Page): Promise<void> {
     [`/v1/league/${LEAGUE_ID}`]: league,
     [`/v1/league/${LEAGUE_ID}/rosters`]: rosters,
     [`/v1/league/${LEAGUE_ID}/users`]: users,
+    ...sleeperMatchups(),
+    ...sleeperTrades(),
   };
   await page.route("https://api.sleeper.app/**", (route) => {
     const path = new URL(route.request().url()).pathname;
