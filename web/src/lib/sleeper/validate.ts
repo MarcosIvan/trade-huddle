@@ -106,6 +106,10 @@ export interface SleeperLeague {
     playoff_week_start?: number;
     playoff_teams?: number;
     playoff_round_type?: number;
+    /** The last week with final scores. */
+    last_scored_leg?: number;
+    /** 1 when every team also plays the week's median score. */
+    league_average_match?: number;
   };
 }
 
@@ -137,6 +141,8 @@ export function parseLeague(x: unknown): SleeperLeague | null {
       playoff_week_start: num(settings.playoff_week_start),
       playoff_teams: num(settings.playoff_teams),
       playoff_round_type: num(settings.playoff_round_type),
+      last_scored_leg: num(settings.last_scored_leg),
+      league_average_match: num(settings.league_average_match),
     },
   };
 }
@@ -151,6 +157,8 @@ export interface SleeperRoster {
   wins: number;
   losses: number;
   ties: number;
+  /** Points for so far (Sleeper splits them into whole and hundredths). */
+  fpts: number;
 }
 
 export function parseRosters(x: unknown): SleeperRoster[] {
@@ -170,6 +178,7 @@ export function parseRosters(x: unknown): SleeperRoster[] {
         wins: num(s.wins) ?? 0,
         losses: num(s.losses) ?? 0,
         ties: num(s.ties) ?? 0,
+        fpts: (num(s.fpts) ?? 0) + (num(s.fpts_decimal) ?? 0) / 100,
       },
     ];
   });
@@ -193,6 +202,99 @@ export function parseLeagueUsers(x: unknown): SleeperLeagueUser[] {
         user_id: userId,
         display_name: str(u.display_name) ?? str(u.username) ?? "",
         team_name: str(meta.team_name) || undefined,
+      },
+    ];
+  });
+}
+
+/** One team's game in one week. */
+export interface SleeperMatchup {
+  roster_id: number;
+  /** Shared by the two teams of a game; null when the team has no game that week. */
+  matchup_id: number | null;
+  points: number;
+  /** The players it started that week. */
+  starters: string[];
+  /** Each player's points that week. */
+  players_points: Record<string, number>;
+}
+
+const numbers = (x: unknown): Record<string, number> => {
+  const out: Record<string, number> = {};
+  if (isObject(x)) {
+    for (const [k, v] of Object.entries(x)) {
+      const n = num(v);
+      if (n !== undefined) out[k] = n;
+    }
+  }
+  return out;
+};
+
+export function parseMatchups(x: unknown): SleeperMatchup[] {
+  if (!Array.isArray(x)) throw new ResponseShapeError("matchups");
+  return x.flatMap((m) => {
+    if (!isObject(m)) return [];
+    const rosterId = num(m.roster_id);
+    if (rosterId === undefined || !Number.isInteger(rosterId)) return [];
+    return [
+      {
+        roster_id: rosterId,
+        matchup_id: num(m.matchup_id) ?? null,
+        points: num(m.points) ?? 0,
+        starters: strings(m.starters),
+        players_points: numbers(m.players_points),
+      },
+    ];
+  });
+}
+
+/** A completed trade: who got which players, draft picks and FAAB. */
+export interface SleeperTrade {
+  transaction_id: string;
+  /** The week it went through. */
+  leg: number;
+  /** When, in milliseconds since 1970. */
+  created: number;
+  roster_ids: number[];
+  /** Player ID to the roster that received him. */
+  adds: Record<string, number>;
+  draft_picks: { season: string; round: number; owner_id: number }[];
+  waiver_budget: { receiver: number; amount: number }[];
+}
+
+/** The completed trades in one week's transactions; waivers, signings and failed trades left out. */
+export function parseTrades(x: unknown): SleeperTrade[] {
+  if (!Array.isArray(x)) throw new ResponseShapeError("transactions");
+  return x.flatMap((t) => {
+    if (!isObject(t) || t.type !== "trade" || t.status !== "complete") return [];
+    const transactionId = id(t.transaction_id);
+    const leg = num(t.leg);
+    if (!transactionId || leg === undefined) return [];
+    const rosterIds = Array.isArray(t.roster_ids)
+      ? t.roster_ids.filter((r): r is number => num(r) !== undefined)
+      : [];
+    const picks = Array.isArray(t.draft_picks) ? t.draft_picks.filter(isObject) : [];
+    const faab = Array.isArray(t.waiver_budget) ? t.waiver_budget.filter(isObject) : [];
+    return [
+      {
+        transaction_id: transactionId,
+        leg,
+        created: num(t.created) ?? 0,
+        roster_ids: rosterIds,
+        adds: numbers(t.adds),
+        draft_picks: picks.flatMap((d) => {
+          const round = num(d.round);
+          const owner = num(d.owner_id);
+          const season = id(d.season);
+          return round === undefined || owner === undefined || !season
+            ? []
+            : [{ season, round, owner_id: owner }];
+        }),
+        waiver_budget: faab.flatMap((w) => {
+          const receiver = num(w.receiver);
+          const amount = num(w.amount);
+          return receiver === undefined || amount === undefined ? [] : [{ receiver, amount }];
+        }),
       },
     ];
   });

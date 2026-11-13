@@ -72,7 +72,13 @@ with the hash of every inline script to each page
    rank, his season week by week and his schedule, built in the browser from the stats file
    ([ADR 0015](adr/0015-player-card.md), [`lib/model/playerCard.ts`](../web/src/lib/model/playerCard.ts),
    [`components/PlayerCard.tsx`](../web/src/components/PlayerCard.tsx)).
-8. **Storage.** Only small preferences are kept, in the visitor's own
+8. **League.** The matchups of every regular season week
+   (`/league/<id>/matchups/<week>`) and the completed trades
+   (`/league/<id>/transactions/<week>`) feed the playoff odds and the
+   league trade report, fetched once per league
+   ([`hooks/useLeagueMatchups.ts`](../web/src/hooks/useLeagueMatchups.ts),
+   [ADR 0041](adr/0041-playoff-odds.md), [ADR 0042](adr/0042-league-trade-report.md)).
+9. **Storage.** Only small preferences are kept, in the visitor's own
    `localStorage` (username, last league, theme),
    and every access is guarded ([`lib/storage.ts`](../web/src/lib/storage.ts)).
 
@@ -83,28 +89,33 @@ Nothing is sent anywhere except the read-only calls to Sleeper.
 Plain TypeScript, no React and no DOM, so it is easy to test and to run in a
 worker. The main pieces, in the order they are used:
 
-| File               | Role                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `scoring.ts`       | Fantasy points = sum of stat × league weight                                                                              |
-| `usage.ts`         | Expected points from opportunity (targets, carries)                                                                       |
-| `value.ts`         | Points per game from here on: production, prior, availability                                                             |
-| `teammates.ts`     | Adjustment when a key teammate returns (tested, off: [ADR 0004](adr/0004-teammate-returns.md))                            |
-| `role.ts`          | Season-ending injuries and roles from the depth chart ([ADR 0023](adr/0023-roles-and-season-ending-injuries.md))          |
-| `replacement.ts`   | Replacement level per position for this league                                                                            |
-| `lineup.ts`        | Best starting lineup for the league's slots                                                                               |
-| `score.ts`         | Trade value (1–40) and Player Score (0–100)                                                                               |
-| `verdict.ts`       | Fairness of a trade (the traffic light)                                                                                   |
-| `trades.ts`        | Trade ideas and the trade finder (around a player or a position)                                                          |
-| `leaders.ts`       | Position leaders by trade value or season points ([ADR 0025](adr/0025-finder-by-position-and-leaders.md))                 |
-| `freeAgency.ts`    | The free agent list: season stats or the week's projection, paged ([ADR 0029](adr/0029-free-agency-tab.md))               |
-| `pickups.ts`       | Pick ideas and the pick analyzer: add a free agent, drop a player ([ADR 0029](adr/0029-free-agency-tab.md))               |
-| `analyzer.ts`      | What the analyzer says about a trade: each side's change, free agents for uneven trades                                   |
-| `weekly.ts`        | This week's outlook against the opponent                                                                                  |
-| `weekLineup.ts`    | This week's best lineup, bench and injured reserve                                                                        |
-| `matchup.ts`       | Each defense's rank by position: great to brutal, and the tooltip ([ADR 0037](adr/0037-matchup-labels-in-five-levels.md)) |
-| `schedule.ts`      | Bye weeks and schedule strength for the analyzer ([ADR 0026](adr/0026-schedule-in-the-analyzer.md))                       |
-| `scheduleValue.ts` | Team defenses' value with the opponents left ([ADR 0034](adr/0034-matchup-shrink-and-defense-schedule.md))                |
-| `playerCard.ts`    | The player card: season game by game, stat colors, season rank                                                            |
+| File                  | Role                                                                                                                                                |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scoring.ts`          | Fantasy points = sum of stat × league weight                                                                                                        |
+| `usage.ts`            | Expected points from opportunity (targets, carries)                                                                                                 |
+| `value.ts`            | Points per game from here on: production, prior, availability                                                                                       |
+| `teammates.ts`        | Adjustment when a key teammate returns (tested, off: [ADR 0004](adr/0004-teammate-returns.md))                                                      |
+| `role.ts`             | Season-ending injuries and roles from the depth chart ([ADR 0023](adr/0023-roles-and-season-ending-injuries.md))                                    |
+| `replacement.ts`      | Replacement level per position for this league                                                                                                      |
+| `lineup.ts`           | Best starting lineup for the league's slots                                                                                                         |
+| `score.ts`            | Trade value (1–40) and Player Score (0–100)                                                                                                         |
+| `verdict.ts`          | Fairness of a trade (the traffic light)                                                                                                             |
+| `trades.ts`           | Trade ideas and the trade finder (around a player or a position)                                                                                    |
+| `ideaReason.ts`       | Why a trade idea helps: each side's rank at a position or in starting lineups, before and after ([ADR 0038](adr/0038-why-each-trade-idea-helps.md)) |
+| `needsMap.ts`         | The league's position needs: each team's roster, lineup, starters and bench ranks ([ADR 0040](adr/0040-position-needs-map.md))                      |
+| `playoffs.ts`         | Playoff odds: the rest of the regular season simulated ([ADR 0041](adr/0041-playoff-odds.md))                                                       |
+| `tradeReport.ts`      | The league's trades: value today and points since ([ADR 0042](adr/0042-league-trade-report.md))                                                     |
+| `positionStrength.ts` | Each team's strength and rank at each position, shared by the teams' needs and the reasons                                                          |
+| `leaders.ts`          | Position leaders by trade value or season points ([ADR 0025](adr/0025-finder-by-position-and-leaders.md))                                           |
+| `freeAgency.ts`       | The free agent list: season stats or the week's projection, paged ([ADR 0029](adr/0029-free-agency-tab.md))                                         |
+| `pickups.ts`          | Pick ideas and the pick analyzer: add a free agent, drop a player ([ADR 0029](adr/0029-free-agency-tab.md))                                         |
+| `analyzer.ts`         | What the analyzer says about a trade: each side's change, free agents for uneven trades                                                             |
+| `weekly.ts`           | This week's outlook against the opponent                                                                                                            |
+| `weekLineup.ts`       | This week's best lineup, bench and injured reserve                                                                                                  |
+| `matchup.ts`          | Each defense's rank by position: great to brutal, and the tooltip ([ADR 0037](adr/0037-matchup-labels-in-five-levels.md))                           |
+| `schedule.ts`         | Bye weeks and schedule strength for the analyzer ([ADR 0026](adr/0026-schedule-in-the-analyzer.md))                                                 |
+| `scheduleValue.ts`    | Team defenses' value with the opponents left ([ADR 0034](adr/0034-matchup-shrink-and-defense-schedule.md))                                          |
+| `playerCard.ts`       | The player card: season game by game, playing time, stat colors, season rank                                                                        |
 
 Why each piece works the way it does is recorded in the
 [architecture decision records](adr/README.md).

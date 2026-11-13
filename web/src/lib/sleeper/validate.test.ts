@@ -6,7 +6,9 @@ import {
   parseLeague,
   parseLeagueList,
   parseLeagueUsers,
+  parseMatchups,
   parseRosters,
+  parseTrades,
   parseState,
   parseUser,
   ResponseShapeError,
@@ -103,7 +105,7 @@ describe("response validation", () => {
         owner_id: "u1",
         players: ["10", 11],
         reserve: ["10"],
-        settings: { wins: 3, losses: 1 },
+        settings: { wins: 3, losses: 1, fpts: 412, fpts_decimal: 58 },
       },
       { roster_id: "2" },
       { roster_id: 3, owner_id: null, players: null, reserve: null },
@@ -119,6 +121,7 @@ describe("response validation", () => {
         wins: 3,
         losses: 1,
         ties: 0,
+        fpts: 412.58,
       },
       // Sleeper's null means no one in the IR slots; a missing field means unknown.
       {
@@ -130,6 +133,7 @@ describe("response validation", () => {
         wins: 0,
         losses: 0,
         ties: 0,
+        fpts: 0,
       },
       {
         roster_id: 4,
@@ -140,6 +144,7 @@ describe("response validation", () => {
         wins: 0,
         losses: 0,
         ties: 0,
+        fpts: 0,
       },
     ]);
     expect(() => parseRosters({})).toThrow(ResponseShapeError);
@@ -155,5 +160,63 @@ describe("response validation", () => {
     ]);
     // Stored as text; React renders it escaped. It is never used as HTML, a URL or a style.
     expect(user?.team_name).toBe('<img src=x onerror="alert(1)">');
+  });
+});
+
+describe("matchups and trades", () => {
+  it("reads each team's week: game, points, starters and each player's points", () => {
+    expect(
+      parseMatchups([
+        {
+          roster_id: 1,
+          matchup_id: 2,
+          points: 101.5,
+          starters: ["10", 11],
+          players_points: { "10": 12.5, "11": "x" },
+        },
+        { roster_id: 2, matchup_id: null },
+        { roster_id: "3" },
+        null,
+      ]),
+    ).toEqual([
+      {
+        roster_id: 1,
+        matchup_id: 2,
+        points: 101.5,
+        starters: ["10", "11"],
+        players_points: { "10": 12.5 },
+      },
+      { roster_id: 2, matchup_id: null, points: 0, starters: [], players_points: {} },
+    ]);
+    expect(() => parseMatchups({})).toThrow(ResponseShapeError);
+  });
+
+  it("keeps only completed trades, with who got what", () => {
+    const trades = parseTrades([
+      {
+        transaction_id: "77",
+        type: "trade",
+        status: "complete",
+        leg: 4,
+        created: 1700000000000,
+        roster_ids: [1, 2],
+        adds: { "10": 2, "11": 1 },
+        draft_picks: [{ season: "2027", round: 2, owner_id: 1 }, { round: 1 }],
+        waiver_budget: [{ sender: 1, receiver: 2, amount: 10 }],
+      },
+      { transaction_id: "78", type: "trade", status: "failed", leg: 4 },
+      { transaction_id: "79", type: "waiver", status: "complete", leg: 4 },
+    ]);
+    expect(trades).toEqual([
+      {
+        transaction_id: "77",
+        leg: 4,
+        created: 1700000000000,
+        roster_ids: [1, 2],
+        adds: { "10": 2, "11": 1 },
+        draft_picks: [{ season: "2027", round: 2, owner_id: 1 }],
+        waiver_budget: [{ receiver: 2, amount: 10 }],
+      },
+    ]);
   });
 });

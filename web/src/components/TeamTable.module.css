@@ -1,0 +1,34 @@
+/* Tables with a row per fantasy team: the position needs map, playoff odds. */
+.table th,
+.table td {
+  padding: 8px 6px;
+  white-space: nowrap;
+}
+/* Team names head their rows: drawn like the other cells, so each row's line runs unbroken. */
+.table .team {
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom-width: 1px;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+/* Your row stands out on the surface color: the rank colors keep their contrast on it. */
+.mine th,
+.mine td {
+  background: var(--surface);
+}
+.table .mine .team {
+  font-weight: 800;
+}
+/* A divider before each position's starters, as in the player card's stat groups. */
+.table .start {
+  border-left: 2px solid var(--line);
+}
+.table .group {
+  text-align: center;
+}

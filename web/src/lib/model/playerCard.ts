@@ -3,7 +3,7 @@
  * and the games left, each rated by how much its defense allows to the
  * player's position.
  */
-import type { SportConfig } from "../sports/types";
+import type { SportConfig, StatColumn } from "../sports/types";
 import type { MatchupRating, MatchupRatings } from "./matchup";
 import { currentPeriod } from "./periods";
 import { starterLine } from "./trades";
@@ -48,6 +48,34 @@ function unpack(stats: StatsFile, packed: readonly number[] | undefined): Record
   return out;
 }
 
+/**
+ * Every stat column of a position's game log: its playing time first, when
+ * the position has a game log, then its stat groups.
+ */
+export function cardColumns(pos: string, sport: SportConfig): StatColumn[] {
+  const groups = sport.gameLog[pos] ?? [];
+  if (!groups.length) return [];
+  const time = sport.playingTime ? [sport.playingTime] : [];
+  return [...time, ...groups.flatMap((g) => g.columns)];
+}
+
+/**
+ * A column's number from a stat line (one game's, the season's totals or a
+ * position's averages): the stat itself (times its `scale`), or its share of
+ * `per` (undefined when `per` is missing, as for a player with no snap counts).
+ */
+export function columnValue(
+  column: StatColumn,
+  line: Readonly<Record<string, number>>,
+): number | undefined {
+  if (!column.per) {
+    const x = line[column.key];
+    return x === undefined ? undefined : x * (column.scale ?? 1);
+  }
+  const of = line[column.per];
+  return of ? (line[column.key] ?? 0) / of : undefined;
+}
+
 /** The player's season game by game and the games he has left. */
 export function playerCard(
   player: Player,
@@ -56,9 +84,7 @@ export function playerCard(
   sport: SportConfig,
 ): PlayerCard {
   const sp = stats.players[player.id];
-  const shown = new Set(
-    (sport.gameLog[player.pos] ?? []).flatMap((g) => g.columns.map((c) => c.key)),
-  );
+  const shown = new Set(cardColumns(player.pos, sport).flatMap((c) => [c.key, c.per ?? c.key]));
   const game = (week: number, team: string, pts: number | null, packed?: readonly number[]) => {
     const scheduled = stats.schedule?.[String(week)] !== undefined;
     const g = team ? opponents(stats, week).get(team) : undefined;

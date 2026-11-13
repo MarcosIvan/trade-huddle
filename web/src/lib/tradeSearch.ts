@@ -14,6 +14,7 @@ import {
   type Model,
   type Player,
   type TradeIdea,
+  withReasons,
 } from "./model";
 import { sportOf } from "./sports";
 
@@ -37,6 +38,12 @@ export interface SearchResponse {
   ideas: IdeaIds[];
 }
 
+const toIds = <T extends { give: Player[]; get: Player[] }>(r: T) => ({
+  ...r,
+  give: r.give.map((p) => p.id),
+  get: r.get.map((p) => p.id),
+});
+
 export function runSearch({
   requestId,
   model,
@@ -50,11 +57,9 @@ export function runSearch({
     rid: r.rid,
     players: rosterPlayers(model, r.playerIds, r.reserveIds),
   }));
-  const ideas = suggestTrades(myRid, teams, model, sportOf(sport), new Map(tradeScores), ideal);
-  return {
-    requestId,
-    ideas: ideas.map((r) => ({ ...r, give: r.give.map((p) => p.id), get: r.get.map((p) => p.id) })),
-  };
+  const config = sportOf(sport);
+  const ideas = suggestTrades(myRid, teams, model, config, new Map(tradeScores), ideal);
+  return { requestId, ideas: withReasons(ideas, myRid, teams, model, config).map(toIds) };
 }
 
 export function hydrateIdeas(ideas: IdeaIds[], model: Model): TradeIdea[] {
@@ -80,12 +85,6 @@ export interface FinderResponse {
   ideas: IdeaIds[];
 }
 
-const toIds = <T extends { give: Player[]; get: Player[] }>(r: T) => ({
-  ...r,
-  give: r.give.map((p) => p.id),
-  get: r.get.map((p) => p.id),
-});
-
 export function runFinder({
   requestId,
   model,
@@ -106,5 +105,5 @@ export function runFinder({
     finder.mode === "target"
       ? findTargetTrades(finder.target, myRid, teams, model, config, scores, ideal)
       : findTrades(finder.mode, finder.playerId, myRid, teams, model, config, scores, ideal);
-  return { requestId, ideas: ideas.map(toIds) };
+  return { requestId, ideas: withReasons(ideas, myRid, teams, model, config).map(toIds) };
 }

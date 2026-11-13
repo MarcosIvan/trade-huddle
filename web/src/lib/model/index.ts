@@ -2,6 +2,14 @@ export { adpFormat, buildModel, modelSlots, rosterPlayers } from "./build";
 export { durability, teamGames } from "./durability";
 export { bestLineup, type Lineup } from "./lineup";
 export {
+  ideaReason,
+  ordinal,
+  reasonText,
+  withReasons,
+  type IdeaReason,
+  type RankMove,
+} from "./ideaReason";
+export {
   currentPeriod,
   lineupPeriods,
   periodDate,
@@ -16,6 +24,38 @@ export {
   type Leader,
   type LeaderSort,
 } from "./leaders";
+export {
+  needsMap,
+  ownSlots,
+  type NeedsCell,
+  type NeedsMap,
+  type NeedsRow,
+  type PositionCells,
+} from "./needsMap";
+export {
+  DEFAULT_SPREAD,
+  oddsLevel,
+  oddsText,
+  playoffByes,
+  playoffOdds,
+  projectedRecord,
+  scoringSpread,
+  SIMULATIONS,
+  type PlayoffInput,
+  type PlayoffOdds,
+  type PlayoffTable,
+  type PlayoffTeam,
+  type WeekScore,
+} from "./playoffs";
+export { positionRank, positionStrength } from "./positionStrength";
+export {
+  tradeReport,
+  type LeagueTrade,
+  type ReportSide,
+  type ReportTrade,
+  type StartedWeek,
+  type TradeSideIn,
+} from "./tradeReport";
 export { replacementLevels } from "./replacement";
 export {
   playerScores,
@@ -113,6 +153,8 @@ export {
 } from "./matchup";
 export {
   BENCHMARK_DEPTH,
+  cardColumns,
+  columnValue,
   playerCard,
   PTS_KEY,
   seasonRanks,

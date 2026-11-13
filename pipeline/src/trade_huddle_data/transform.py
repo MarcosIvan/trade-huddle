@@ -26,6 +26,8 @@ def played(stats: Stats) -> bool:
 
 
 def keep_key(key: str, sport: SportConfig) -> bool:
+    if key in sport.keep_exact:
+        return True
     return not (
         key in sport.exclude_exact
         or key.startswith(sport.exclude_prefixes)

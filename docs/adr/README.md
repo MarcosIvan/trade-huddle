@@ -44,5 +44,6 @@ later one changes it, the later one says what it replaces.
 | [0035](0035-trade-value-closer-to-the-market.md)      | Trade value closer to the market: shorter reputation, players out       |
 | [0036](0036-matchup-labels-by-rank.md)                | Matchup labels by rank                                                  |
 | [0037](0037-matchup-labels-in-five-levels.md)         | Matchup labels in five levels                                           |
+| [0038](0038-why-each-trade-idea-helps.md)             | Why each trade idea helps, in one line                                  |
 
 How the pieces fit together: [architecture.md](../architecture.md).

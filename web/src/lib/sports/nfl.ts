@@ -149,6 +149,12 @@ export const NFL: SportConfig = {
   // One-QB leagues: every team has its quarterback, so QB trades rarely happen.
   ideaSkipPositions: ["QB"],
   defaultTeams: 12,
+  playingTime: {
+    key: "off_snp",
+    per: "tm_off_snp",
+    label: "Snap%",
+    title: "Share of the team's offensive snaps",
+  },
   gameLog: {
     QB: [PASSING, RUSHING],
     RB: [RUSHING, RECEIVING],

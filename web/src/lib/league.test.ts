@@ -16,6 +16,7 @@ const roster = (
   wins: 0,
   losses: 0,
   ties: 0,
+  fpts: 0,
   ...extra,
 });
 

@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { LeagueView } from "@/hooks/useLeague";
+import { useLeagueMatchups } from "@/hooks/useLeagueMatchups";
+import { useLeagueTrades } from "@/hooks/useLeagueTrades";
+import { usePlayoffOdds } from "@/hooks/usePlayoffOdds";
 import { useTradeIdeas } from "@/hooks/useTradeIdeas";
 import { fmt } from "@/lib/format";
 import type { UserLeague } from "@/lib/sleeper/client";
@@ -21,8 +24,10 @@ import { SportContext } from "./SportContext";
 import { WeeklyLineup } from "./WeeklyLineup";
 import { FreeAgency } from "./FreeAgency";
 import { LeaguePicker } from "./LeaguePicker";
+import { NeedsMap } from "./NeedsMap";
 import { NewsProvider } from "./News";
 import { PlayerCardProvider } from "./PlayerCard";
+import { PlayoffOdds } from "./PlayoffOdds";
 import { Notices } from "./Notices";
 import { PositionLeaders } from "./PositionLeaders";
 import { Section } from "./Section";
@@ -31,6 +36,7 @@ import { TeamLineup } from "./TeamLineup";
 import { TradeAnalyzer } from "./TradeAnalyzer";
 import { NO_FINDER_CHOICE, TradeFinder, type FinderChoice } from "./TradeFinder";
 import { TradeIdeas } from "./TradeIdeas";
+import { TradeReport } from "./TradeReport";
 import styles from "./LeagueScreen.module.css";
 
 interface AnalyzerState {
@@ -100,6 +106,10 @@ export function LeagueScreen({
   const [tab, setTab] = useState<View>("team");
 
   const { ideas, searching } = useTradeIdeas(model, teams, myRid, tradeScores, ideal, sport);
+  // The league's matchups feed the playoff odds and the trade report (not in the demo).
+  const matchups = useLeagueMatchups(view);
+  const odds = usePlayoffOdds(view, matchups);
+  const leagueTrades = useLeagueTrades(view, matchups, tradeScores);
 
   // Trade finder: sell or get one player, or get a top player at a position.
   const [finder, setFinder] = useState<FinderChoice & { forRid: number }>({
@@ -291,6 +301,28 @@ export function LeagueScreen({
                       }
                     />
                   </Section>
+
+                  <div className={`${styles.league} ${styles.spaced}`}>
+                    <Section id="needs" title="Position needs">
+                      <NeedsMap model={model} teams={teams} myRid={myRid} />
+                    </Section>
+                    {odds && (
+                      <Section id="playoffs" title="Playoff odds">
+                        <PlayoffOdds table={odds} teams={teams} myRid={myRid} />
+                      </Section>
+                    )}
+                  </div>
+
+                  {leagueTrades && (
+                    <Section id="league-trades" title="League trades" className={styles.spaced}>
+                      <TradeReport
+                        trades={leagueTrades}
+                        teams={teams}
+                        myRid={myRid}
+                        model={model}
+                      />
+                    </Section>
+                  )}
                 </div>
               )}
             </div>

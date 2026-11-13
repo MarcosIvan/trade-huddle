@@ -38,9 +38,16 @@ For your league, Trade Huddle:
 8. **Opens a player card**: click a name to see his season totals, his
    rank in fantasy points at his position and overall, his season week by week,
    with fantasy points under your league's scoring, rushing and receiving
-   (passing for QBs), each number colored against what the position
-   usually does, and every opponent, past and to come, marked from a great
-   to a brutal matchup, as in the weekly lineup.
+   (passing for QBs), his playing time (snap share in the NFL, minutes in
+   the NBA), each number colored against what the position usually does,
+   and every opponent, past and to come, marked from a great to a brutal
+   matchup, as in the weekly lineup.
+9. **Reports on the league's trades**: every completed trade this season,
+   with who is ahead by value today and by points scored since.
+10. **Maps the league**: every team's rank with its roster, its lineup and
+    its starters and bench at each position (position needs), and each
+    team's chances of making the playoffs, from the rest of the season
+    simulated.
 
 Every number is computed under **your league's own scoring rules**.
 
@@ -57,7 +64,7 @@ pipeline/ (Python)                                  web/ (Next.js static export)
   └─ Sleeper public API                               ├─ data/nfl/stats.json
        ├─ player directory                            ├─ Sleeper API (live):
        ├─ last season's totals, preseason             │    user → leagues → league,
-       │  projections and draft ADP                   │    rosters, users
+       │  projections and draft ADP                   │    rosters, users, matchups, trades
        ├─ this season, week by week                   ├─ score games with the
        └─ schedule and weekly projections             │  league's scoring rules
           ↓                                           ├─ value players, build lineups
@@ -173,7 +180,10 @@ your roster's lean, then the best matches (each side getting the best player
 at a position where it is weak). The last card goes to the best fair 1-for-1
 when the other two are 2-for-2 and one passes every rule. When fewer than
 three deals pass, the nearest ones fill the list
-([ADR 0014](docs/adr/0014-even-trade-ideas.md)). The **trade finder** applies the same rules, shapes and
+([ADR 0014](docs/adr/0014-even-trade-ideas.md)). Each card says in one line why the deal
+helps: where each team climbs among the league's teams, at a position or in
+starting lineups, and what it costs you
+([ADR 0038](docs/adr/0038-why-each-trade-idea-helps.md)). The **trade finder** applies the same rules, shapes and
 ranking around one player and also always shows three deals, starring every
 true match ([ADR 0008](docs/adr/0008-trade-finder.md)). Asked for a position,
 it only builds 2-for-2 deals that bring you a player in the chosen tier

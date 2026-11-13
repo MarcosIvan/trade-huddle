@@ -61,9 +61,9 @@ class TestHelpers:
             "pts_ppr",
             "pos_rank_ppr",
             "rank_ppr",
-            "off_snp",
+            "def_snp",
             "rec_ypr",
-            "tm_off_snp",
+            "tm_def_snp",
             "idp_tkl",
         ],
     )
@@ -75,6 +75,10 @@ class TestHelpers:
         ["rec", "rec_yd", "rec_tgt", "rec_rz_tgt", "bonus_rec_te", "pts_allow_14_20", "fgm_50p"],
     )
     def test_keeps_scoring_and_usage_keys(self, key: str) -> None:
+        assert keep_key(key, NFL)
+
+    @pytest.mark.parametrize("key", ["off_snp", "tm_off_snp"])
+    def test_keeps_offensive_snaps_for_playing_time(self, key: str) -> None:
         assert keep_key(key, NFL)
 
     def test_key_index_packs_nonzero_numbers(self) -> None:
@@ -153,7 +157,13 @@ class TestBuildStats:
         alpha = data["players"]["100"]
         assert alpha["prev"]["g"] == 16
         assert unpack(data, alpha["prev"]["s"]) == {"rec": 80, "rec_yd": 1000}
-        assert unpack(data, alpha["w"]["1"]) == {"rec": 5, "rec_yd": 70, "rec_tgt": 8}
+        # Ranks are dropped; offensive snaps stay for the player card's playing time.
+        assert unpack(data, alpha["w"]["1"]) == {
+            "rec": 5,
+            "rec_yd": 70,
+            "rec_tgt": 8,
+            "off_snp": 60,
+        }
         assert unpack(data, alpha["w"]["2"]) == {
             "rec": 7,
             "rec_yd": 110,
