@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  blendActual,
   DEFAULT_SPREAD,
   oddsLevel,
   oddsText,
@@ -113,6 +114,50 @@ describe("playoffOdds", () => {
     expect(table.rows.map((r) => r.place)).toEqual([1, 2, 3, 4]);
   });
 
+  it("weakens a team in the weeks it is short, by its strength in each week left", () => {
+    const even = [1, 2, 3, 4].map((rid) => team(rid, 3, 3, 100));
+    const base = {
+      weeks,
+      lastScored: 6,
+      playoffStart: 11,
+      playoffTeams: 2,
+      medianGame: false,
+      sims: 2000,
+    };
+    const full = new Map([7, 8, 9, 10].map((w) => [w, 100]));
+    const short = new Map([...full, [8, 40], [9, 40]]);
+    const table = playoffOdds({
+      ...base,
+      teams: even.map((t) => ({ ...t, weekly: t.rid === 1 ? short : full })),
+    });
+    const one = table.rows.find((r) => r.rid === 1)!;
+    const others = table.rows.filter((r) => r.rid !== 1);
+    expect(one.projWins).toBeLessThan(Math.min(...others.map((r) => r.projWins)));
+    // Without a strength for every team that week, the plain strength is used: all even.
+    const partial = playoffOdds({
+      ...base,
+      teams: even.map((t) => (t.rid === 1 ? { ...t, weekly: short } : t)),
+    });
+    for (const r of partial.rows) expect(r.projWins).toBeCloseTo(5, 0);
+  });
+
+  it("is less sure of a favorite when strengths may be off", () => {
+    const input = {
+      teams: [team(1, 4, 2, 115), team(2, 3, 3, 100), team(3, 3, 3, 100), team(4, 2, 4, 85)],
+      weeks,
+      lastScored: 6,
+      playoffStart: 11,
+      playoffTeams: 2,
+      medianGame: false,
+      sims: 3000,
+    };
+    const sure = playoffOdds({ ...input, strengthSpread: 0 });
+    const unsure = playoffOdds({ ...input, strengthSpread: 0.15 });
+    const odds = (t: typeof sure, rid: number) => t.rows.find((r) => r.rid === rid)!.playoffs;
+    expect(odds(unsure, 1)).toBeLessThan(odds(sure, 1));
+    expect(odds(unsure, 4)).toBeGreaterThan(odds(sure, 4));
+  });
+
   it("is the same every time for the same input", () => {
     const input = {
       teams: [team(1, 3, 3, 100), team(2, 3, 3, 100), team(3, 3, 3, 100), team(4, 3, 3, 100)],
@@ -178,5 +223,46 @@ describe("odds in words", () => {
 
   it("never rounds a chance to a sure thing", () => {
     expect([0, 0.004, 0.5, 0.996, 1].map(oddsText)).toEqual(["0%", "<1%", "50%", ">99%", "100%"]);
+  });
+});
+
+describe("blendActual", () => {
+  // Two teams with the same lineup; team 1 scored 120 a week, team 2 80.
+  const scored = new Map([
+    [
+      1,
+      [
+        { rid: 1, matchupId: 1, points: 120 },
+        { rid: 2, matchupId: 1, points: 80 },
+      ],
+    ],
+  ]);
+  const teams = [
+    {
+      ...team(1, 1, 0, 100),
+      weekly: new Map([
+        [2, 100],
+        [3, 50],
+      ]),
+    },
+    team(2, 0, 1, 100),
+  ];
+
+  it("moves each team's strength halfway toward its share of the points scored", () => {
+    const [one, two] = blendActual(teams, scored, 1, 0.5);
+    expect(one!.strength).toBeCloseTo(110);
+    expect(two!.strength).toBeCloseTo(90);
+  });
+
+  it("keeps a short week short", () => {
+    const [one] = blendActual(teams, scored, 1, 0.5);
+    const [full, short] = [...one!.weekly!.values()];
+    expect(full).toBeCloseTo(110);
+    expect(short).toBeCloseTo(55);
+  });
+
+  it("leaves the lineup alone before any week is scored or with no weight", () => {
+    expect(blendActual(teams, scored, 0, 0.5)).toEqual(teams);
+    expect(blendActual(teams, scored, 1, 0)).toEqual(teams);
   });
 });

@@ -37,10 +37,13 @@ export {
   oddsLevel,
   oddsText,
   playoffByes,
+  ACTUAL_WEIGHT,
+  blendActual,
   playoffOdds,
   projectedRecord,
   scoringSpread,
   SIMULATIONS,
+  STRENGTH_SPREAD,
   type PlayoffInput,
   type PlayoffOdds,
   type PlayoffTable,
@@ -48,6 +51,7 @@ export {
   type WeekScore,
 } from "./playoffs";
 export { positionRank, positionStrength } from "./positionStrength";
+export { weekStrength, weekValue } from "./weekStrength";
 export {
   tradeReport,
   type LeagueTrade,
