@@ -1,9 +1,11 @@
 /**
  * Playoff odds: the rest of the regular season played many times over, from
  * the league's own schedule (Sleeper's matchups, set for every week ahead)
- * and each team's strength today. A team's weekly score is drawn around the
- * league's average weekly score scaled by its best lineup's strength against
- * the league's average lineup; the spread is how much the league's own
+ * and each team's strength in each week left (byes and game counts
+ * included, weekStrength.ts). A team's weekly score is drawn around the
+ * league's average weekly score scaled by its strength that week against the
+ * league's average, half from its lineup and half from what it scored so
+ * far, and by how far off that strength may be, drawn once per season; the spread is how much the league's own
  * weekly scores swung around each team's average. Standings go by wins (a
  * tie counts half), then points for, Sleeper's default tiebreaker. Division
  * winners are not seeded apart.
@@ -27,6 +29,11 @@ export interface PlayoffTeam {
   fpts: number;
   /** Its best lineup's points per game today (any scale shared by every team). */
   strength: number;
+  /**
+   * Its strength in each week left (any scale shared by every team and week),
+   * when known: a week where every team has one uses it instead of `strength`.
+   */
+  weekly?: ReadonlyMap<number, number>;
 }
 
 export interface PlayoffInput {
@@ -40,6 +47,16 @@ export interface PlayoffInput {
   playoffTeams: number;
   /** The league plays everyone against the week's median too (Sleeper's "league average match"). */
   medianGame: boolean;
+  /**
+   * How far off a team's strength may be, as a share of it (a standard
+   * deviation, drawn once per season for each team; default STRENGTH_SPREAD).
+   */
+  strengthSpread?: number;
+  /**
+   * The share of a team's strength taken from its points per week so far,
+   * the rest from its lineup (default ACTUAL_WEIGHT).
+   */
+  actualWeight?: number;
   /** Seasons played (default SIMULATIONS). */
   sims?: number;
   /** The random seed: the same input gives the same odds. */
@@ -76,8 +93,69 @@ export const SIMULATIONS = 10000;
 /** The spread of a weekly score, as a share of the average, when too few weeks are known. */
 export const DEFAULT_SPREAD = 0.18;
 
+/**
+ * How far off a team's strength may be: the model's view of a roster misses
+ * what it does not see (who manages it, who breaks out, who gets hurt). Set
+ * by checking past seasons' odds against what happened (ADR 0041).
+ */
+export const STRENGTH_SPREAD = 0.2;
+
+/**
+ * The share of a team's strength taken from what it scored so far: the
+ * lineup misses what the model does not see, the points so far catch some of
+ * it (checked on a past season, ADR 0041).
+ */
+export const ACTUAL_WEIGHT = 0.5;
+
 /** Weeks with final scores needed before the league's own spread is used. */
 const MIN_SPREAD_WEEKS = 3;
+
+/** Each team's points per week so far, in the weeks it played. */
+function pointsPerWeek(
+  weeks: ReadonlyMap<number, readonly WeekScore[]>,
+  lastScored: number,
+): Map<number, number> {
+  const sum = new Map<number, number>();
+  const count = new Map<number, number>();
+  for (const [week, scores] of weeks) {
+    if (week > lastScored) continue;
+    for (const s of scores) {
+      if (s.matchupId === null || s.points <= 0) continue;
+      sum.set(s.rid, (sum.get(s.rid) ?? 0) + s.points);
+      count.set(s.rid, (count.get(s.rid) ?? 0) + 1);
+    }
+  }
+  return new Map([...sum].map(([rid, total]) => [rid, total / count.get(rid)!]));
+}
+
+/**
+ * Teams with their strength blended with what they scored so far: each
+ * team's share of the league's average lineup and of its average points per
+ * week, weighted, applied to its strength in every week (byes stay).
+ */
+export function blendActual(
+  teams: readonly PlayoffTeam[],
+  weeks: ReadonlyMap<number, readonly WeekScore[]>,
+  lastScored: number,
+  weight: number,
+): PlayoffTeam[] {
+  const ppw = pointsPerWeek(weeks, lastScored);
+  const mean = (list: number[]) => list.reduce((s, v) => s + v, 0) / (list.length || 1);
+  const meanStrength = mean(teams.map((t) => t.strength));
+  const meanPoints = mean([...ppw.values()]);
+  if (weight <= 0 || meanStrength <= 0 || meanPoints <= 0) return [...teams];
+  return teams.map((t) => {
+    const points = ppw.get(t.rid);
+    if (points === undefined || t.strength <= 0) return t;
+    const lineup = t.strength / meanStrength;
+    const factor = ((1 - weight) * lineup + (weight * points) / meanPoints) / lineup;
+    return {
+      ...t,
+      strength: t.strength * factor,
+      weekly: t.weekly && new Map([...t.weekly].map(([w, v]) => [w, v * factor])),
+    };
+  });
+}
 
 /** Teams that skip the first round: up to the next power of two (6 teams: 2 byes). */
 export function playoffByes(teams: number): number {
@@ -139,8 +217,10 @@ export function scoringSpread(
 }
 
 export function playoffOdds(input: PlayoffInput): PlayoffTable {
-  const { teams, weeks, lastScored, playoffStart, playoffTeams, medianGame } = input;
+  const { weeks, lastScored, playoffStart, playoffTeams, medianGame } = input;
+  const teams = blendActual(input.teams, weeks, lastScored, input.actualWeight ?? ACTUAL_WEIGHT);
   const sims = input.sims ?? SIMULATIONS;
+  const strengthSpread = input.strengthSpread ?? STRENGTH_SPREAD;
   const rand = random(input.seed ?? 1);
   const byes = Math.min(playoffByes(playoffTeams), playoffTeams);
   const left = [...weeks.keys()]
@@ -149,8 +229,18 @@ export function playoffOdds(input: PlayoffInput): PlayoffTable {
 
   const { average, spread } = scoringSpread(weeks, lastScored);
   const meanStrength = teams.reduce((s, t) => s + t.strength, 0) / (teams.length || 1);
-  const expected = new Map(
-    teams.map((t) => [t.rid, meanStrength > 0 ? (average * t.strength) / meanStrength : average]),
+  // Weeks where every team has its own strength, and their average over all of them:
+  // a weak week for one team (a bye) lowers its score, not everyone's.
+  const known = left.filter((w) => teams.every((t) => t.weekly?.has(w)));
+  const knownAll = known.flatMap((w) => teams.map((t) => t.weekly!.get(w)!));
+  const meanWeekly = knownAll.reduce((s, v) => s + v, 0) / (knownAll.length || 1);
+  const scaled = (strength: number, mean: number) =>
+    mean > 0 ? (average * strength) / mean : average;
+  // Each week's expected score, by team index.
+  const expected = left.map((w) =>
+    teams.map((t) =>
+      known.includes(w) ? scaled(t.weekly!.get(w)!, meanWeekly) : scaled(t.strength, meanStrength),
+    ),
   );
   // Each week's games: pairs of teams sharing a matchup id.
   const games = left.map((w) => {
@@ -172,16 +262,18 @@ export function playoffOdds(input: PlayoffInput): PlayoffTable {
   const points = new Array<number>(n);
   const score = new Array<number>(n);
   const order = teams.map((_, i) => i);
+  const form = new Array<number>(n);
 
   for (let sim = 0; sim < sims; sim++) {
     teams.forEach((t, i) => {
       wins[i] = t.wins + t.ties / 2;
       losses[i] = t.losses + t.ties / 2;
       points[i] = t.fpts;
+      form[i] = Math.max(0, 1 + strengthSpread * normal(rand));
     });
-    for (const week of games) {
-      teams.forEach((t, i) => {
-        score[i] = expected.get(t.rid)! + spread * normal(rand);
+    for (const [k, week] of games.entries()) {
+      teams.forEach((_, i) => {
+        score[i] = expected[k]![i]! * form[i]! + spread * normal(rand);
         points[i]! += score[i]!;
       });
       for (const [a, b] of week) {
