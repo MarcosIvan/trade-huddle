@@ -29,6 +29,10 @@ the playoffs and of a first-round bye (`model/playoffs.ts`):
   against the week's median. Division winners are not seeded apart.
 - **Byes**: as many as fill the bracket to the next power of two (6 playoff
   teams: the top 2 seeds).
+- **Order**: teams are listed in today's standings, by the same rule, with
+  their place in a `#` column; projected record and odds stay on each
+  team's row, so they need not be in order themselves. The odds answer
+  "where can this team end up", which reads best next to where it is now.
 - 10,000 seasons with a fixed seed, so the same data always gives the same
   odds. The projected record is shown in whole games (wins rounded, losses
   the rest).
