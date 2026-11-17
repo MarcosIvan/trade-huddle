@@ -17,8 +17,8 @@ function Odds({ p, what }: { p: number; what: string }) {
 
 /**
  * Every team's chances of making the playoffs (and of a first-round bye),
- * from the rest of the regular season simulated; best odds first, yours
- * highlighted.
+ * from the rest of the regular season simulated; in today's standings
+ * order, yours highlighted.
  */
 export function PlayoffOdds({
   table,
@@ -36,10 +36,13 @@ export function PlayoffOdds({
         <caption className="visually-hidden">
           Each team&apos;s record, projected record and chances of making the playoffs
           {table.byes > 0 ? " and of a first-round bye" : ""}, with {table.weeksLeft} regular season
-          weeks left, best chances first
+          weeks left, in today&apos;s standings order
         </caption>
         <thead>
           <tr>
+            <th scope="col" className="num" title="Place in the standings today">
+              #
+            </th>
             <th scope="col">Team</th>
             <th scope="col" className="num" title="Wins and losses so far">
               Record
@@ -68,6 +71,7 @@ export function PlayoffOdds({
         <tbody>
           {table.rows.map((r) => (
             <tr key={r.rid} className={r.rid === myRid ? styles.mine : undefined}>
+              <td className="num">{r.place}</td>
               <th scope="row" className={styles.team}>
                 {r.rid === myRid ? "You" : name(r.rid)}
               </th>

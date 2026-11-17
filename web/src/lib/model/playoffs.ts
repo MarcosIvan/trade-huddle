@@ -48,6 +48,8 @@ export interface PlayoffInput {
 
 export interface PlayoffOdds {
   rid: number;
+  /** Its place in the standings today, from 1. */
+  place: number;
   wins: number;
   losses: number;
   ties: number;
@@ -61,7 +63,7 @@ export interface PlayoffOdds {
 }
 
 export interface PlayoffTable {
-  /** Best odds first. */
+  /** In today's standings order. */
   rows: PlayoffOdds[];
   /** Regular season weeks still to play. */
   weeksLeft: number;
@@ -210,17 +212,30 @@ export function playoffOdds(input: PlayoffInput): PlayoffTable {
     }
   }
 
-  const rows = teams.map((t, i) => ({
-    rid: t.rid,
-    wins: t.wins,
-    losses: t.losses,
-    ties: t.ties,
-    projWins: winsSum[i]! / sims,
-    projLosses: lossesSum[i]! / sims,
-    playoffs: madeIt[i]! / sims,
-    bye: gotBye[i]! / sims,
-  }));
-  rows.sort((a, b) => b.playoffs - a.playoffs || b.projWins - a.projWins || a.rid - b.rid);
+  // Today's standings, by the same rule as the simulated ones: wins (a tie
+  // counts half), then points for.
+  const standing = teams
+    .map((_, i) => i)
+    .sort(
+      (x, y) =>
+        teams[y]!.wins + teams[y]!.ties / 2 - (teams[x]!.wins + teams[x]!.ties / 2) ||
+        teams[y]!.fpts - teams[x]!.fpts ||
+        teams[x]!.rid - teams[y]!.rid,
+    );
+  const rows = standing.map((i, place) => {
+    const t = teams[i]!;
+    return {
+      rid: t.rid,
+      place: place + 1,
+      wins: t.wins,
+      losses: t.losses,
+      ties: t.ties,
+      projWins: winsSum[i]! / sims,
+      projLosses: lossesSum[i]! / sims,
+      playoffs: madeIt[i]! / sims,
+      bye: gotBye[i]! / sims,
+    };
+  });
   return { rows, weeksLeft: left.length, byes };
 }
 

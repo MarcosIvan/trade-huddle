@@ -93,6 +93,26 @@ describe("playoffOdds", () => {
     for (const r of table.rows) expect(r.projWins + r.projLosses).toBeCloseTo(10);
   });
 
+  it("lists teams in today's standings order, not by their odds", () => {
+    const table = playoffOdds({
+      // Team 2 leads on wins but has the weakest lineup; teams 3 and 4 tie on wins, 4 has more points.
+      teams: [
+        team(1, 3, 3, 200),
+        team(2, 5, 1, 50),
+        { ...team(3, 4, 2, 100), fpts: 500 },
+        { ...team(4, 4, 2, 100), fpts: 600 },
+      ],
+      weeks,
+      lastScored: 6,
+      playoffStart: 11,
+      playoffTeams: 2,
+      medianGame: false,
+      sims: 200,
+    });
+    expect(table.rows.map((r) => r.rid)).toEqual([2, 4, 3, 1]);
+    expect(table.rows.map((r) => r.place)).toEqual([1, 2, 3, 4]);
+  });
+
   it("is the same every time for the same input", () => {
     const input = {
       teams: [team(1, 3, 3, 100), team(2, 3, 3, 100), team(3, 3, 3, 100), team(4, 3, 3, 100)],
