@@ -72,6 +72,8 @@ or apps belong to Sleeper.
   request each for GitHub Actions, the Python packages (pipeline, tools) and
   the npm packages (the site). Security fixes come right away, in their own
   pull requests ([ADR 0017](docs/adr/0017-dependabot-monthly-groups.md)).
+  Routine updates only take versions released at least 14 days earlier
+  ([ADR 0043](docs/adr/0043-dependency-cooldown.md)).
   Major npm versions are updated by hand once the tooling supports them;
   a vulnerability fixed only in a new major still raises a Dependabot alert.
 
