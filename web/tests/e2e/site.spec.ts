@@ -355,6 +355,16 @@ test.describe("demo league", () => {
     await expectNoEmptySpace(page);
   });
 
+  test("clears every picked player from the analyzer", async ({ page }) => {
+    const analyzer = page.locator("#analyzer");
+    await page.getByRole("button", { name: "Open in analyzer" }).first().click();
+    await expect(analyzer.locator("input:checked").first()).toBeVisible();
+
+    await analyzer.getByRole("button", { name: "Clear" }).click();
+    await expect(analyzer.locator("input:checked")).toHaveCount(0);
+    await expect(analyzer.locator(".card")).toHaveCount(0);
+  });
+
   test("keeps the cards simple: no need badges and no list of what is missing", async ({
     page,
   }) => {

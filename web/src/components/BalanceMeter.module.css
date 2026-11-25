@@ -3,6 +3,7 @@
   justify-items: start;
   gap: 8px;
 }
+.meter > .head,
 .meter > .bar,
 .meter > .row {
   justify-self: stretch;
@@ -15,6 +16,26 @@
   gap: 6px 10px;
   font-size: 14px;
   color: var(--ink-2);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+.clear {
+  margin-left: auto;
+  padding: 2px 4px;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.clear:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 .row b {
   color: var(--ink);

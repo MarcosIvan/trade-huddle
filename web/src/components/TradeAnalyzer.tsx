@@ -33,6 +33,7 @@ export function TradeAnalyzer({
   onPartner,
   onToggleGive,
   onToggleGet,
+  onClear,
 }: {
   model: Model;
   teams: Team[];
@@ -48,6 +49,8 @@ export function TradeAnalyzer({
   onPartner: (rid: number) => void;
   onToggleGive: (id: string) => void;
   onToggleGet: (id: string) => void;
+  /** Unselects every player on both sides. */
+  onClear: () => void;
 }) {
   const partnerId = useId();
   const sport = useSport();
@@ -134,7 +137,12 @@ export function TradeAnalyzer({
         {result && (
           <div className={`card ${styles.result}`}>
             <h3 className="visually-hidden">Trade result</h3>
-            <BalanceMeter sGive={result.sGive} sGet={result.sGet} fairness={result.fairness} />
+            <BalanceMeter
+              sGive={result.sGive}
+              sGet={result.sGet}
+              fairness={result.fairness}
+              onClear={onClear}
+            />
             <div className={styles.teams}>
               <TradeSide
                 title="You send"
