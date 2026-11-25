@@ -299,6 +299,9 @@ export function LeagueScreen({
                       onToggleGet={(id) =>
                         setAnalyzer({ ...current, partnerRid, get: toggle(current.get, id) })
                       }
+                      onClear={() =>
+                        setAnalyzer({ ...current, partnerRid, give: new Set(), get: new Set() })
+                      }
                     />
                   </Section>
 

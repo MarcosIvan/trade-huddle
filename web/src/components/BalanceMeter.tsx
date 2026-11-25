@@ -90,15 +90,30 @@ export function BalanceMeter({
   sGive,
   sGet,
   fairness,
+  onClear,
 }: {
   sGive: number;
   sGet: number;
   fairness: number;
+  /** When given, a "Clear" button on the badge's line, at the right. */
+  onClear?: () => void;
 }) {
   const favors = sGet > sGive ? "you" : sGive > sGet ? "them" : null;
   return (
     <div className={styles.meter}>
-      <FairnessBadge fairness={fairness} favors={favors} />
+      <div className={styles.head}>
+        <FairnessBadge fairness={fairness} favors={favors} />
+        {onClear && (
+          <button
+            type="button"
+            className={styles.clear}
+            onClick={onClear}
+            title="Unselect every player"
+          >
+            Clear
+          </button>
+        )}
+      </div>
       <ValueBar
         left={sGive}
         right={sGet}
